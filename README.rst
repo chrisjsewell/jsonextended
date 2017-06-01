@@ -134,14 +134,14 @@ Units Schema
 
     initial: 
       crystallographic: 
-        volume: 924.62752781 Å ** 3
+        volume: 924.62752781 A ** 3
       primitive: 
-        volume: 462.313764 Å ** 3
+        volume: 462.313764 A ** 3
     optimised: 
       crystallographic: 
-        volume: 1063.98960509 Å ** 3
+        volume: 1063.98960509 A ** 3
       primitive: 
-        volume: 531.994803 Å ** 3
+        volume: 531.994803 A ** 3
 
 
 .. code:: ipython2
