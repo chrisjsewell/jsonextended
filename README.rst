@@ -1,3 +1,4 @@
+=============
 JSON Extended
 =============
 
@@ -5,6 +6,9 @@ JSON Extended
 
 .. image:: https://travis-ci.org/chrisjsewell/jsonextended.svg?branch=master
     :target: https://travis-ci.org/chrisjsewell/jsonextended
+	.. image:: https://coveralls.io/repos/github/chrisjsewell/jsonextended/badge.svg?branch=master
+:target: https://coveralls.io/github/chrisjsewell/jsonextended?branch=master
+
 
 
 A python module to extend the json package; treating path structures,
@@ -30,3 +34,36 @@ It provides:
 -  Parser abstract class for dealing with converting other file formats
    to JSON
 
+Examples
+********
+
+Data Folders JSONisation
+------------------------
+
+.. code:: python
+
+    import jsonextended as ejson
+    
+    path = ejson.get_test_path()
+    ejson.json_keys(path)
+
+
+.. parsed-literal::
+
+    ['dir1', 'dir2', 'dir3']
+
+
+.. code:: python
+
+    jdict1 = ejson.json_to_dict(path)
+    ejson.dict_pprint(jdict1,depth=2)
+
+.. parsed-literal::
+
+    dir1: 
+      dir1_1: {...}
+      file1: {...}
+      file2: {...}
+    dir2: 
+      file1: {...}
+    dir3: 
