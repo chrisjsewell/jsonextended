@@ -1,0 +1,5 @@
+pathlib2
+ijson
+numpy
+pandas
+pint
