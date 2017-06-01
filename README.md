@@ -58,52 +58,10 @@ ejson.dict_pprint(jdict1,depth=2)
 
 
 ```python
-ejson.dict_to_html(jdict2,depth=2)
+ejson.dict_to_html(jdict1,depth=3)
 ```
 
-    <head>
-        <meta charset="UTF-8">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-		<title>Example JSON JavaScript Representation</title>
-
-    </head>
-    
-    <body>
-		
-	<div id="content"></div>	
-		
-<style type="text/css">
-    .renderjson a              { text-decoration: none; }
-    .renderjson .disclosure    { color: red;
-                                 font-size: 125%; }
-    .renderjson .syntax        { color: darkgrey; }
-    .renderjson .string        { color: black; }
-    .renderjson .number        { color: black; }
-    .renderjson .boolean       { color: purple; }
-    .renderjson .key           { color: royalblue; }
-    .renderjson .keyword       { color: orange; }
-    .renderjson .object.syntax { color: lightseagreen; }
-    .renderjson .array.syntax  { color: lightseagreen; }
-    </style><div id="37e54692-0cc1-469a-bd9f-911c498fb526" style="max-height: 600px; width:100%%;"></div>
-                <script >
-            require(["https://rawgit.com/caldwell/renderjson/master/renderjson.js"], function() {
-                document.getElementById("37e54692-0cc1-469a-bd9f-911c498fb526").appendChild(
-                    renderjson.set_max_string_length(20)
-                              //.set_icons(circled plus, circled minus)
-                              .set_icons(String.fromCharCode(8853), String.fromCharCode(8854))
-                              .set_sort_objects(true)
-					.set_show_to_level(2)(
-
-
-						{'a':1,'b':2}
-					
-					
-					))
-            });</script>
-
-		
-    </body>
+To See Rendered JSON Output: https://chrisjsewell.github.io/
 
 ### Nested Dict Manipulation
 
