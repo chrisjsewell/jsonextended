@@ -77,8 +77,8 @@ ejson.dict_to_html(jdict1,depth=2)
     .renderjson .object.syntax { color: lightseagreen; }
     .renderjson .array.syntax  { color: lightseagreen; }
     </style><div id="879b84e7-01b9-435d-9e6a-a69a5ccb8a8f" style="max-height: 600px; width:100%%;"></div>
-                <script>
-            require(["jsonextended/renderjson.js"], function() {
+    <script>
+            require(["https://rawgit.com/caldwell/renderjson/master/renderjson.js"], function() {
                 document.getElementById("879b84e7-01b9-435d-9e6a-a69a5ccb8a8f").appendChild(
                     renderjson.set_max_string_length(20)
                               //.set_icons(circled plus, circled minus)
