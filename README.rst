@@ -1,4 +1,3 @@
-
 JSON Extended
 =============
 
@@ -16,14 +15,14 @@ It provides:
 -  Functions for decoding/encoding between the on-disk JSON structure
    and in-memory nested dictionary structure, including
 
-   -  on-disk indexing of the json structure (using the ijson package)
-   -  extended data type serialisation (numpy.ndarray, Decimals,
-      pint.Quantities)
+-  on-disk indexing of the json structure (using the ijson package)
+
+-  extended data type serialisation (numpy.ndarray, Decimals,
+    pint.Quantities)
 
 -  Functions for viewing and manipulating the nested dictionaries
 
-   -  including Javascript rendered, expandable tree in the Jupyter
-      Notebook
+-  including Javascript rendered, expandable tree in the Jupyter Notebook
 
 -  Units schema concept to apply and convert physical units (using the
    pint package)
