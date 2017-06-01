@@ -48,22 +48,3 @@ Data Folders JSONisation
     ejson.json_keys(path)
 
 
-.. parsed-literal::
-
-    ['dir1', 'dir2', 'dir3']
-
-
-.. code:: python
-
-    jdict1 = ejson.json_to_dict(path)
-    ejson.dict_pprint(jdict1,depth=2)
-
-.. parsed-literal::
-
-    dir1: 
-      dir1_1: {...}
-      file1: {...}
-      file2: {...}
-    dir2: 
-      file1: {...}
-    dir3: 
