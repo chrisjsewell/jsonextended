@@ -61,6 +61,7 @@ ejson.dict_pprint(jdict1,depth=2)
 ejson.dict_to_html(jdict2,depth=2)
 ```
 
+```html
 <html>
     <head>
         <meta charset="UTF-8">
@@ -106,7 +107,7 @@ ejson.dict_to_html(jdict2,depth=2)
 		
     </body>
 </html>
-
+```
 
 ### Nested Dict Manipulation
 
