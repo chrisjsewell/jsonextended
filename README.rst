@@ -37,7 +37,7 @@ Examples
 Data Folders JSONisation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code:: ipython2
+.. code:: python
 
     import jsonextended as ejson
     
