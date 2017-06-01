@@ -31,7 +31,18 @@ It provides:
 -  Parser abstract class for dealing with converting other file formats
    to JSON
 
-**Examples**
+Examples
+---------
+
+Data Folders JSONisation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: ipython2
+
+    import jsonextended as ejson
+    
+    path = ejson.get_test_path()
+    ejson.json_keys(path)
 
 
 
