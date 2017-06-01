@@ -1,9 +1,12 @@
 
+JSON Extended
+=============
+
+**Project**: https://github.com/chrisjsewell/jsonextended
+
 .. image:: https://travis-ci.org/chrisjsewell/jsonextended.svg?branch=master
     :target: https://travis-ci.org/chrisjsewell/jsonextended
 
-JSON Extended
-=============
 
 A python module to extend the json package; treating path structures,
 with nested directories and multiple .json files, as a single json.
