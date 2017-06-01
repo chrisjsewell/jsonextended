@@ -40,11 +40,6 @@ Examples
 Data Folders JSONisation
 ------------------------
 
-.. code:: python
-
-    import jsonextended as ejson
-    
-    path = ejson.get_test_path()
-    ejson.json_keys(path)
+a
 
 
