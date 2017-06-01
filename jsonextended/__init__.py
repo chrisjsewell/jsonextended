@@ -3,10 +3,25 @@
 """ a python module to extend the json package;
 treating path structures, with nested directories and multiple .json files, as a single json.
 
-It provides functions for decoding/encoding between the on-disk json and in-memory nested dictionary structures,
-and susequent functions to explore and manipulate the nested dictionaries.
+It provides:
 
-It also allows for on-disk indexing of the json structure, before reading into memory,
+- Functions for decoding/encoding between the on-disk JSON structure and in-memory nested dictionary structure, including
+
+    - on-disk indexing of the json structure (using the ijson package)
+    - extended data type serialisation (numpy.ndarray, Decimals, pint.Quantities) 
+
+- Functions for viewing and manipulating the nested dictionaries
+
+    - including Javascript rendered, expandable tree in the Jupyter Notebook
+
+- Units schema concept to apply and convert physical units (using the pint package)
+
+- Parser abstract class for dealing with converting other file formats to JSON
+
+Notes
+-----
+
+On-disk indexing of the json structure, before reading into memory,
 to reduce memory overhead when dealing with large json structures/files (using the ijson package).
 e.g.
     path = get_test_path()
@@ -16,10 +31,6 @@ e.g.
     %memit jdict1 = json_to_dict(path,['dir1','file2','meta'],in_memory=False)
     maximum of 3: 6.996094 MB per loop
 
-It also includes subpackages
-
-    - parsers: for dealing with converting other file formats to JSON
-    - units: for working with physical units (using pint), via unitschema
 
 Examples
 --------
@@ -64,7 +75,7 @@ optimised:
   primitive: 
     volume: 531.994803
 
->>> ejson.dict_pprint(dict_flatten(filtered))
+>>> ejson.dict_pprint(ejson.dict_flatten(filtered))
 ('initial', 'crystallographic', 'volume'):   924.62752781
 ('initial', 'primitive', 'volume'):          462.313764
 ('optimised', 'crystallographic', 'volume'): 1063.98960509
