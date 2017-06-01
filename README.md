@@ -62,7 +62,6 @@ ejson.dict_to_html(jdict2,depth=2)
 ```
 
 ```html
-<html>
     <head>
         <meta charset="UTF-8">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
@@ -106,7 +105,6 @@ ejson.dict_to_html(jdict2,depth=2)
 
 		
     </body>
-</html>
 ```
 
 ### Nested Dict Manipulation
