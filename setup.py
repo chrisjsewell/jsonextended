@@ -27,7 +27,7 @@ with io.open('README.rst') as readme:
             'Environment :: Web Environment',
             'Intended Audience :: End Users/Desktop',
             'Intended Audience :: Science/Research',
-            'Intended Audience :: Financial and Insurance Industry'
+            'Intended Audience :: Financial and Insurance Industry',
             'License :: OSI Approved :: MIT License',
             'Operating System :: OS Independent',
             'Programming Language :: Python',
