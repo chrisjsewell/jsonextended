@@ -1,6 +1,6 @@
 
 [![Build Status](https://travis-ci.org/chrisjsewell/jsonextended.svg?branch=master)](https://travis-ci.org/chrisjsewell/jsonextended)
-
+[![Coverage Status](https://coveralls.io/repos/github/chrisjsewell/jsonextended/badge.svg?branch=master)](https://coveralls.io/github/chrisjsewell/jsonextended?branch=master)
 
 # JSON Extended
 
