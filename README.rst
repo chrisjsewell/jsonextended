@@ -34,8 +34,7 @@ It provides:
 -  Parser abstract class for dealing with converting other file formats
    to JSON
 
-Examples
-********
+**Examples**
 
 Data Folders JSONisation
 ------------------------
