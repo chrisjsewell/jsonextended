@@ -50,6 +50,7 @@ Examples
 
 For more information, all functions contain docstrings with tested examples.
 
+
 Data Folders JSONisation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -91,7 +92,7 @@ To try the rendered JSON tree, output in the Jupyter Notebook, go to : https://c
 
 
 Nested Dictionary Manipulation
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
@@ -144,6 +145,7 @@ Units Schema
 ~~~~~~~~~~~~
 
 Unit schema builds on the concept of standard jsonschema, whereby one JSON can be used to validate another.
+
 In this case one JSON, containing physical units for a given key path, is applied to a data JSON.
 
 .. code:: python
