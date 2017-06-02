@@ -5,24 +5,32 @@
 
 # JSON Extended
 
-A python module to extend the json package; treating path structures, with nested directories and multiple .json files, as a single json.
+A module to extend the python json package functionality: 
 
-It provides:
+-  decoding/encoding between the on-disk JSON structure
+   and in-memory nested dictionary structure, including:
 
-- Functions for decoding/encoding between the on-disk JSON structure and in-memory nested dictionary structure, including
+   -  treating path structures, with nested directories and multiple .json files, as a single json.
 
-    - on-disk indexing of the json structure (using the ijson package)
-    - extended data type serialisation (numpy.ndarray, Decimals, pint.Quantities) 
+   -  on-disk indexing of the json structure (using the ijson package)
 
-- Functions for viewing and manipulating the nested dictionaries
+   -  extended data type serialisation (numpy.ndarray, Decimals,
+      pint.Quantities)
 
-    - including Javascript rendered, expandable tree in the Jupyter Notebook
+-  viewing and manipulating the nested dictionaries:
 
-- Units schema concept to apply and convert physical units (using the pint package)
+   -  enhanced pretty printer
+   
+   -  Javascript rendered, expandable tree in the Jupyter Notebook
+   
+   -  filter, merge, flatten, unflatten functions
 
-- Parser abstract class for dealing with converting other file formats to JSON
+-  Units schema concept to apply and convert physical units (using the
+   pint package)
 
-
+-  Parser abstract class for dealing with converting other file formats
+   to JSON
+   
 ## Installation
 
     pip install jsonextended

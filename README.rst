@@ -8,22 +8,25 @@ JSON Extended
     :target: https://travis-ci.org/chrisjsewell/jsonextended
 
 
-A python module to extend the json package; treating path structures,
-with nested directories and multiple .json files, as a single json.
+A module to extend the python json package functionality: 
 
-It provides:
+-  decoding/encoding between the on-disk JSON structure
+   and in-memory nested dictionary structure, including:
 
--  Functions for decoding/encoding between the on-disk JSON structure
-   and in-memory nested dictionary structure, including
+   -  treating path structures, with nested directories and multiple .json files, as a single json.
 
    -  on-disk indexing of the json structure (using the ijson package)
 
    -  extended data type serialisation (numpy.ndarray, Decimals,
       pint.Quantities)
 
--  Functions for viewing and manipulating the nested dictionaries
+-  viewing and manipulating the nested dictionaries:
 
-   -  including Javascript rendered, expandable tree in the Jupyter Notebook
+   -  enhanced pretty printer
+   
+   -  Javascript rendered, expandable tree in the Jupyter Notebook
+   
+   -  filter, merge, flatten, unflatten functions
 
 -  Units schema concept to apply and convert physical units (using the
    pint package)

@@ -14,7 +14,7 @@ with io.open('README.rst') as readme:
     setup(
         name='jsonextended',
         version=import_module('jsonextended').__version__,
-        description='Extending the python json package; to treat path structures, with nested directories and multiple .json files, as a single JSON.',
+        description='Extending the python json package functionality',
         long_description=readme.read(),
         install_requires=requirements,
         license='MIT',
