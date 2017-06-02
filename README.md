@@ -71,7 +71,7 @@ ejson.dict_pprint(jdict1,depth=2)
 ejson.dict_to_html(jdict1,depth=3)
 ```
 
-To see the rendered JSON Output, seen in the Jupyter Notebook : https://chrisjsewell.github.io/
+To view the rendered JSON Output, seen in the Jupyter Notebook : https://chrisjsewell.github.io/
 
 ### Nested Dict Manipulation
 

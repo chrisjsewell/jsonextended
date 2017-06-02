@@ -31,7 +31,7 @@ It provides:
 -  Parser abstract class for dealing with converting other file formats
    to JSON
 
-Instillation
+Installation
 ------------
 
 .. parsed-literal::
@@ -85,7 +85,7 @@ Data Folders JSONisation
      ejson.dict_to_html(jdict1,depth=3)
 
 
-To see the rendered JSON Output, seen in the Jupyter Notebook : https://chrisjsewell.github.io/
+To try the rendered JSON tree, output in the Jupyter Notebook, go to : https://chrisjsewell.github.io/
 
 
 Nested Dict Manipulation
