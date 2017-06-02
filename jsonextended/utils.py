@@ -2,9 +2,10 @@ def memory_usage():
     """return memory usage of python process in MB 
     
     from http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
+    psutil is quicker
     
-    >>> type(memory_usage())
-    <type 'float'>
+    >>> isinstance(memory_usage(),float)
+    True
     
     """
     try:
@@ -19,8 +20,8 @@ def memory_usage():
 def _memory_usage_ps():
     """return memory usage of python process in MB 
     
-    >>> type(memory_usage_ps())
-    <type 'float'>
+    >>> isinstance(_memory_usage_ps(),float)
+    True
     
     """
     import subprocess, os
