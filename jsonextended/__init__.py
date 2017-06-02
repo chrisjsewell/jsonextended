@@ -83,7 +83,7 @@ optimised:
 
 """
 
-__version__ = '0.1.2.11'
+__version__ = '0.1.2.12'
 
 from jsonextended.core import (get_test_path,json_keys,json_to_dict, dict_to_json,
                             dict_pprint,dict_extract,dict_multiindex, dict_rename_keys,
