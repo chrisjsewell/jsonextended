@@ -146,18 +146,18 @@ def load_memit():
                     else:
                         p.terminate()
                         if p.exitcode == None:
-                            print 'Subprocess timed out.'
+                            print('Subprocess timed out.')
                         else:
-                            print 'Subprocess exited with code %d.' % p.exitcode
+                            print('Subprocess exited with code %d.' % p.exitcode)
                         q.put(float('-inf'))
 
                 if not at_least_one_worked:
-                    print ('ERROR: all subprocesses exited unsuccessfully. Try '
+                    print('ERROR: all subprocesses exited unsuccessfully. Try '
                            'again with the `-i` option.')
 
             usages = [q.get() for _ in xrange(repeat)]
             usage = max(usages)
-            print u"maximum of %d: %f MB per loop" % (repeat, usage)
+            print("maximum of %d: %f MB per loop" % (repeat, usage))
 
     ip.register_magics(MemMagics)
 
