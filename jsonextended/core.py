@@ -51,10 +51,13 @@ import warnings
 warnings.simplefilter('once',ImportWarning)
 try:
     import pandas as pd
+except ImportError:
+    pass
+try:
     import ijson
 except ImportError:
     pass
-
+    
 # local imports
 try:
     from jsonextended import _example_json_folder
@@ -73,21 +76,24 @@ def get_test_path():
     """
     return pathlib.Path(os.path.dirname(os.path.abspath(inspect.getfile(_example_json_folder))))
 
-def _json_get_keys(file_obj,key_path=[]):
-        data = json.load(file_obj)
-        data = dict_multiindex(data,key_path)
-        if hasattr(data,'keys'):
-            return sorted([str(k) if isinstance(k,basestring) else k for k in data.keys()])
-        else:
-            return []
+def _json_get_keys(file_obj,key_path=None):
+    key_path = [] if key_path is None else key_path
+    data = json.load(file_obj)
+    data = dict_multiindex(data,key_path)
+    if hasattr(data,'keys'):
+        return sorted([str(k) if isinstance(k,basestring) else k for k in data.keys()])
+    else:
+        return []
 
-def _json_get_keys_ijson(file_obj,key_path=[]):
+def _json_get_keys_ijson(file_obj,key_path=None):
+
+    key_path = [] if key_path is None else key_path
     try:
         path_str = '.'.join(key_path)
         keys = []
         for prefix, etype, value in ijson.parse(file_obj):
-            if prefix == 'map_key':
-                if etype == path_str:
+            if etype == 'map_key':
+                if prefix == path_str:
                     keys.append(value)
         return sorted([str(k) if isinstance(k,basestring) else k for k in keys])
     except NameError:
@@ -189,6 +195,10 @@ def json_keys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
     >>> json_keys(path)
     ['dir1', 'dir2', 'dir3']
 
+    >>> path = get_test_path()
+    >>> json_keys(path, ['dir1','file1'], in_memory=True)
+    ['initial', 'meta', 'optimised', 'units']
+
     """
     key_path = [] if key_path is None else key_path
 
@@ -214,24 +224,24 @@ def json_keys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
             with jfile.open('r') as file_obj:
                 return eval_file(file_obj)
         else:
-            return _json_get_keys_folder(jfile, key_path, in_memory)
+            return _json_get_keys_folder(jfile, key_path, in_memory, ignore_prefix)
     else:
         raise ValueError('jfile should be a str, file_like or path_like object: {}'.format(jfile))
 
-def _json_file_with_keys(file_obj,key_path=None,parse_float=Decimal):
+def _json_file_with_keys(file_obj,key_path=None,parse_decimal=False):
     """read json with keys
 
     file_obj : object
         object with read method
     key_path : list of str
         key to index befor parsing
-    parse_float : bool
-        class/function to parse float
+    parse_decimal : bool
+        whether to parse numbers as Decimal instances (retains exact precision)
 
     Notes
     -----
-    ijson outputs decimals as Decimal class (for arbitrary precision),
-    but this isn't serializable back into json, and doesn't play nice with some packages
+    ijson outputs decimals as Decimal class (for arbitrary precision)
+
     """
     key_path = [] if key_path is None else key_path
 
@@ -240,7 +250,7 @@ def _json_file_with_keys(file_obj,key_path=None,parse_float=Decimal):
     except NameError:
         warnings.warn('ijson package not found in environment, \
         please install for on-disk key indexing',ImportWarning)
-        data = json.load(file_obj, parse_float=parse_float)
+        data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
         return dict_multiindex(data,key_path)
     try:
         data = objs.next()
@@ -264,7 +274,7 @@ def _json_file_with_keys(file_obj,key_path=None,parse_float=Decimal):
             else:
                 dic[key] = convert(dic[key])
 
-    if not isinstance(parse_float,Decimal):
+    if not parse_decimal:
         if isinstance(data,dict):
             traverse_dict(data)
         else:
@@ -280,7 +290,7 @@ class _Terminus(object):
         return True
 
 def _folder_to_json(jdir, key_path=None, in_memory=True,
-                    ignore_prefix=('.','_'), dic={}, parse_float=Decimal):
+                    ignore_prefix=('.','_'), dic={}, parse_decimal=False):
     """ read in folder structure as json
 
     e.g.
@@ -314,13 +324,13 @@ def _folder_to_json(jdir, key_path=None, in_memory=True,
             if name == search_key or not key_path:
                 key_found = True
                 if key_path:
-                    data = json_to_dict(jsub,key_path[1:],in_memory,ignore_prefix,parse_float)
+                    data = json_to_dict(jsub,key_path[1:],in_memory,ignore_prefix,parse_decimal)
                     if isinstance(data,dict):
                         dic.update(data)
                     else:
                         dic.update({_Terminus():data})
                 else:
-                    dic[name] = json_to_dict(jsub,key_path[1:],in_memory,ignore_prefix,parse_float)
+                    dic[name] = json_to_dict(jsub,key_path[1:],in_memory,ignore_prefix,parse_decimal)
 
         elif jsub.is_dir() and not jsub.name.startswith(ignore_prefix) and (jsub.name == search_key or not key_path):
 
@@ -332,13 +342,13 @@ def _folder_to_json(jdir, key_path=None, in_memory=True,
             else:
                 dic[jsub.name] = {}
                 sub_d = dic[jsub.name]
-            _folder_to_json(jsub,key_path[1:],in_memory,ignore_prefix,sub_d,parse_float)
+            _folder_to_json(jsub,key_path[1:],in_memory,ignore_prefix,sub_d,parse_decimal)
 
     if not key_found:
         raise KeyError('key not found: {0}'.format(search_key))
 
 def json_to_dict(jfile, key_path=None, in_memory=True ,
-                ignore_prefix=('.','_'), parse_float=Decimal):
+                ignore_prefix=('.','_'), parse_decimal=False):
     """ input json to dict
 
     jfile : str, file_like or path_like
@@ -351,8 +361,8 @@ def json_to_dict(jfile, key_path=None, in_memory=True ,
         if true reads full json into memory before filtering keys (this is faster but uses more memory)
     ignore_prefix : list of str
         ignore folders beginning with these prefixes
-    parse_float : bool
-        class/function to parse float
+    parse_decimal : bool
+        whether to parse numbers as Decimal instances (retains exact precision)
 
     Examples
     --------
@@ -368,7 +378,13 @@ def json_to_dict(jfile, key_path=None, in_memory=True ,
     ... }
     ... ''')
     ...
+
     >>> dstr = pformat(json_to_dict(json_obj))
+    >>> print(dstr.replace("u'","'"))
+    {'a': 1, 'b': [1.1, 2.1], 'c': {'d': 'e'}}
+
+    >>> i = json_obj.seek(0)
+    >>> dstr = pformat(json_to_dict(json_obj,parse_decimal=True))
     >>> print(dstr.replace("u'","'"))
     {'a': 1, 'b': [Decimal('1.1'), Decimal('2.1')], 'c': {'d': 'e'}}
 
@@ -387,14 +403,14 @@ def json_to_dict(jfile, key_path=None, in_memory=True ,
       file1: {...}
     dir3: 
 
-    >>> jdict2 = json_to_dict(path,['dir1','file1'])
+    >>> jdict2 = json_to_dict(path,['dir1','file1'],in_memory=False)
     >>> dict_pprint(jdict2,depth=1)
     initial: {...}
     meta: {...}
     optimised: {...}
     units: {...}
 
-    """
+    """        
     key_path = [] if key_path is None else key_path
 
     if isinstance(jfile,basestring):
@@ -403,39 +419,39 @@ def json_to_dict(jfile, key_path=None, in_memory=True ,
         if os.path.isdir(jfile):
             data = {}
             jpath = pathlib.Path(jfile)
-            _folder_to_json(jpath,key_path[:],in_memory,ignore_prefix,data,parse_float)
+            _folder_to_json(jpath,key_path[:],in_memory,ignore_prefix,data,parse_decimal)
             if isinstance(list(data.keys())[0], _Terminus):
                 data = data.values()[0]
         else:
             with open(jfile, 'r') as file_obj:
                 if key_path and not in_memory:
-                    data = _json_file_with_keys(file_obj,key_path,parse_float)
+                    data = _json_file_with_keys(file_obj,key_path,parse_decimal)
                 elif key_path:
-                    data = json.load(file_obj, parse_float=parse_float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
                     data = dict_multiindex(data,key_path)
                 else:
-                    data = json.load(file_obj, parse_float=parse_float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
     elif hasattr(jfile,'read'):
         if key_path and not in_memory:
-            data = _json_file_with_keys(jfile,key_path)
+            data = _json_file_with_keys(jfile,key_path,parse_decimal)
         elif key_path:
-            data = json.load(jfile, parse_float=parse_float)
+            data = json.load(jfile, parse_float=Decimal if parse_decimal else float)
             data = dict_multiindex(data,key_path)
         else:
-            data = json.load(jfile, parse_float=parse_float)
+            data = json.load(jfile, parse_float=Decimal if parse_decimal else float)
     elif hasattr(jfile,'iterdir'):
         if jfile.is_file():
             with jfile.open() as file_obj:
                 if key_path and not in_memory:
-                    data = _json_file_with_keys(file_obj,key_path,parse_float)
+                    data = _json_file_with_keys(file_obj,key_path,parse_decimal)
                 elif key_path:
-                    data = json.load(file_obj, parse_float=parse_float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
                     data = dict_multiindex(data,key_path)
                 else:
-                    data = json.load(file_obj, parse_float=parse_float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
         else:
             data = {}
-            _folder_to_json(jfile,key_path[:],in_memory,ignore_prefix,data,parse_float)
+            _folder_to_json(jfile,key_path[:],in_memory,ignore_prefix,data,parse_decimal)
             if isinstance(list(data.keys())[0], _Terminus):
                 data = data.values()[0]
     else:
