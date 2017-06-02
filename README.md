@@ -34,6 +34,8 @@ for full functionallity, it is advised to install the following packages:
 
 ## Examples
 
+For more information, all functions contain docstrings with tested examples.
+
 ### Data Folders JSONisation
 
 
@@ -71,9 +73,9 @@ ejson.dict_pprint(jdict1,depth=2)
 ejson.dict_to_html(jdict1,depth=3)
 ```
 
-To view the rendered JSON Output, seen in the Jupyter Notebook : https://chrisjsewell.github.io/
+To try the rendered JSON tree, output in the Jupyter Notebook, go to: https://chrisjsewell.github.io/
 
-### Nested Dict Manipulation
+### Nested Dictionary Manipulation
 
 
 ```python
@@ -118,6 +120,8 @@ ejson.dict_pprint(ejson.dict_flatten(filtered))
 
 ### Units Schema
 
+Unit schema builds on the concept of standard jsonschema, whereby one JSON can be used to validate another.
+In this case one JSON, containing physical units for a given key path, is applied to a data JSON.
 
 ```python
 from jsonextended.units import apply_unitschema, split_quantities
