@@ -228,6 +228,76 @@ def json_keys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
     else:
         raise ValueError('jfile should be a str, file_like or path_like object: {}'.format(jfile))
 
+def dict_convert_type(d, intype, outtype, convert_list=True, in_place=True):
+    """ convert all values of one type to another 
+    
+    d : dict
+    intype : type_class
+    outtype : type_class
+    convert_list : bool
+        whether to convert instances inside lists and tuples
+    in_place : bool
+        if True, applies conversions to original dict, else returns copy
+    
+    Examples
+    --------
+    
+    >>> d = {'a':'1','b':'2'}
+    >>> dict_convert_type(d,str,float)
+    {'a': 1.0, 'b': 2.0}
+    
+    >>> d = {'a':['1','2']}
+    >>> dict_convert_type(d,str,float)
+    {'a': [1.0, 2.0]}
+
+    >>> d = {'a':[('1','2'),[3,4]]}
+    >>> dict_convert_type(d,str,float)
+    {'a': [(1.0, 2.0), [3, 4]]}
+
+    """
+    if not in_place:
+        out_dict = copy.deepcopy(d)
+    else: 
+        out_dict = d
+    
+    def _convert(obj):
+        if isinstance(obj,intype):
+            try:
+                obj = outtype(obj)
+            except:
+                pass 
+        elif isinstance(obj, list) and convert_list:
+            obj = _traverse_iter(obj)
+        elif isinstance(obj, tuple) and convert_list:
+            obj = tuple(_traverse_iter(obj))
+        
+        return obj
+
+    def _traverse_dict(dic):
+        for key in dic.keys():
+            if isinstance(dic[key], dict):
+                _traverse_dict(dic[key])
+            else:
+                dic[key] = _convert(dic[key])
+
+    def _traverse_iter(iter):
+        new_iter = []
+        for key in iter:
+            if isinstance(key, dict):
+                _traverse_dict(key)
+                new_iter.append(key)
+            else:
+                new_iter.append(_convert(key))
+                
+        return new_iter
+
+    if isinstance(out_dict,dict):
+        _traverse_dict(out_dict)
+    else:
+        data = _convert(out_dict)
+    
+    return out_dict
+
 def _json_file_with_keys(file_obj,key_path=None,parse_decimal=False):
     """read json with keys
 
@@ -258,27 +328,8 @@ def _json_file_with_keys(file_obj,key_path=None,parse_decimal=False):
         raise KeyError('key path not available in json: {}'.format(key_path))
 
     # by default ijson parses Decimal values
-    def convert(obj):
-        if isinstance(obj,Decimal):
-            return float(obj)
-        elif isinstance(obj, list):
-            return [float(val) if isinstance(val,Decimal) else val for val in obj]
-        elif isinstance(obj, tuple):
-            return tuple([float(val) if isinstance(val,Decimal) else val for val in obj])
-        else:
-            return obj
-    def traverse_dict(dic):
-        for key in dic.keys():
-            if isinstance(dic[key], dict):
-                traverse_dict(dic[key])
-            else:
-                dic[key] = convert(dic[key])
-
     if not parse_decimal:
-        if isinstance(data,dict):
-            traverse_dict(data)
-        else:
-            data = convert(data)
+        dict_convert_type(data, Decimal, float, in_place=True)
 
     return data
 
