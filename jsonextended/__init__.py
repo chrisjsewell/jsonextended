@@ -1,22 +1,30 @@
 #!/usr/bin/env python
 # -- coding: utf-8 --
-""" a python module to extend the json package;
-treating path structures, with nested directories and multiple .json files, as a single json.
+""" a module to extend the python json package functionality;
 
-It provides:
+-  decoding/encoding between the on-disk JSON structure
+   and in-memory nested dictionary structure, including:
 
-- Functions for decoding/encoding between the on-disk JSON structure and in-memory nested dictionary structure, including
+   -  treating path structures, with nested directories and multiple .json files, as a single json.
 
-    - on-disk indexing of the json structure (using the ijson package)
-    - extended data type serialisation (numpy.ndarray, Decimals, pint.Quantities) 
+   -  on-disk indexing of the json structure (using the ijson package)
 
-- Functions for viewing and manipulating the nested dictionaries
+   -  extended data type serialisation (numpy.ndarray, Decimals,
+      pint.Quantities,...)
 
-    - including Javascript rendered, expandable tree in the Jupyter Notebook
+-  viewing and manipulating the nested dictionaries:
 
-- Units schema concept to apply and convert physical units (using the pint package)
+   -  enhanced pretty printer
+   
+   -  Javascript rendered, expandable tree in the Jupyter Notebook
+   
+   -  filter, merge, flatten, unflatten functions
 
-- Parser abstract class for dealing with converting other file formats to JSON
+-  Units schema concept to apply and convert physical units (using the
+   pint package)
+
+-  Parser abstract class for dealing with converting other file formats
+   to JSON
 
 Notes
 -----
@@ -92,7 +100,7 @@ from jsonextended.core import (get_test_path,json_keys,json_to_dict, dict_to_jso
                             dict_filter_values,dict_filter_keys,dict_filter_paths,
                             DictTree,dict_to_html)
 
-from jsonextended import parsers, units
+from jsonextended import parsers, units, utils
 
 def _run_nose_tests(doctests=True, verbose=True):
     """ 

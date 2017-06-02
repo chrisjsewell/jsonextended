@@ -18,7 +18,7 @@ A module to extend the python json package functionality:
    -  on-disk indexing of the json structure (using the ijson package)
 
    -  extended data type serialisation (numpy.ndarray, Decimals,
-      pint.Quantities)
+      pint.Quantities,...)
 
 -  viewing and manipulating the nested dictionaries:
 
