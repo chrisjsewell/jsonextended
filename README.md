@@ -23,7 +23,16 @@ It provides:
 - Parser abstract class for dealing with converting other file formats to JSON
 
 
-## Example
+## Installation
+
+    pip install jsonextended
+
+jsonextended has no import dependancies, on Python 3.x and only `pathlib2` on 2.7 but,
+for full functionallity, it is advised to install the following packages:
+
+    conda install -c conda-forge ijson numpy pandas pint 
+
+## Examples
 
 ### Data Folders JSONisation
 
@@ -62,7 +71,7 @@ ejson.dict_pprint(jdict1,depth=2)
 ejson.dict_to_html(jdict1,depth=3)
 ```
 
-To See Rendered JSON Output: https://chrisjsewell.github.io/
+To see the rendered JSON Output, seen in the Jupyter Notebook : https://chrisjsewell.github.io/
 
 ### Nested Dict Manipulation
 
