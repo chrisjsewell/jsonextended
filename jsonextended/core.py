@@ -242,16 +242,18 @@ def dict_convert_type(d, intype, outtype, convert_list=True, in_place=True):
     Examples
     --------
     
+    >>> from pprint import pprint
+    
     >>> d = {'a':'1','b':'2'}
-    >>> dict_convert_type(d,str,float)
+    >>> pprint(dict_convert_type(d,str,float))
     {'a': 1.0, 'b': 2.0}
     
     >>> d = {'a':['1','2']}
-    >>> dict_convert_type(d,str,float)
+    >>> pprint(dict_convert_type(d,str,float))
     {'a': [1.0, 2.0]}
 
     >>> d = {'a':[('1','2'),[3,4]]}
-    >>> dict_convert_type(d,str,float)
+    >>> pprint(dict_convert_type(d,str,float))
     {'a': [(1.0, 2.0), [3, 4]]}
 
     """
