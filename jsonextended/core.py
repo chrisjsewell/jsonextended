@@ -2,36 +2,14 @@
 # -- coding: utf-8 --
 
 ## TODO see below
-# make tutorial jupyter notebook
 # deal with dictionaries in lists?
-# remove dict_ prefix and have all functions be able to accept dicts and jsons?
-# standadardize test for dict across functions
-#       isinstance and has attr => is_dict function
 # output json with arrays all on one line
 #      doesn't seem an easy way
 #      could use this: https://stackoverflow.com/a/13252112, but wrap lists with NoIndent first
 #      would need to go through first and wrap values that are list instances with NoIndent first
-# option for first n keys of json to be output as folders/files
-# append to existing json (on on-disk rather than in-memory)
-# json_keys: ijson.parse is really slow, maybe do partial in_memory, using ijson.items
-#         %timeit json_to_dict('test.json',['initial','crystallographic'], in_memory=True)
-#         100 loops, best of 3: 5.1 ms per loop
-#         %timeit json_to_dict('test.json',['initial','crystallographic'], in_memory=False)
-#         100 loops, best of 3: 4.78 ms per loop
-#         %timeit json_keys('test.json',['initial','crystallographic'], in_memory=True)
-#         100 loops, best of 3: 10.7 ms per loop
-#         %timeit json_keys('test.json',['initial','crystallographic'], in_memory=False)
-#         1 loop, best of 3: 697 ms per loop
-# make JSONTree, like DictTree, but lazy loads JSON data,
-#      actually probably better to have json_to_lazydict function
-#      or just use_lazy in keyword in json_to_dict, would need to check if compatible with pandas, etc
-# should write some tests for json_extended_encoder
-# sort issues with getting relative path to jsonrenderer.js, have it use html version of quantities
+
 # have a look at:
 #    mergers: https://pypi.python.org/pypi/jsonmerge, https://pypi.python.org/pypi/json-merger/0.2.5
-#    html json expander: https://github.com/oscar6echo/ezprettyjson
-#    lazy loading: https://github.com/tiras-j/json-cherry-pick
-#    diff evaluaters: https://gitlab.com/mcepl/json_diff/blob/master/json_diff.py
 
 # NB: uses lots of recursion, might not be good for very large levels of nesting
 # NB: examples use pprint to make sure keys are sorted
@@ -1202,7 +1180,7 @@ class dict_to_html(object):
     ---------
 
     dic = {'sape': {'value': 22}, 'jack': 4098, 'guido': 4127}
-    prettyjson(dic, depth=1, max_length=10, sort=False)
+    dict_to_html(dic, depth=1, max_length=10, sort=False)
 
     """
 

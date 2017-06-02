@@ -6,9 +6,6 @@
 
 ## TODO see below
 # design plugin system for adding/registering new parsers?
-# have read_file produces dictionary, then only merge at end of read
-#    then wouldn't have to use self.__init_file_keys
-# write parse_dir_jsons
 # handle if fields touch
 # CIF parser (look at pycifrw)
 
