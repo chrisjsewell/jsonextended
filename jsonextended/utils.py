@@ -35,7 +35,7 @@ def load_memit():
     """load memory usage ipython magic, 
     require memory_profiler package to be installed
     
-    usage : %memit <python code>
+    to get usage: %memit?
     
     Author: Vlad Niculae <vlad@vene.ro>
     Makes use of memory_profiler from Fabian Pedregosa
@@ -122,9 +122,9 @@ def load_memit():
 
             def _get_usage(q, stmt, setup='pass', ns={}):
                 try:
-                    exec setup in ns
+                    exec(setup) in ns
                     _mu0 = _mu()[0]
-                    exec stmt in ns
+                    exec(stmt) in ns
                     _mu1 = _mu()[0]
                     q.put(_mu1 - _mu0)
                 except Exception as e:
