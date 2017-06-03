@@ -161,6 +161,8 @@ def _json_get_keys_folder(jdir,key_path=None,in_memory=True,ignore_prefix=('.','
 def json_keys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
     """ get keys for initial json level, or at level after following key_path
 
+    Parameters
+    ----------
     jfile : str, file_like or path_like
         if str, must be existing file or folder,
         if file_like, must have 'read' method
@@ -231,6 +233,8 @@ def json_keys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
 def dict_convert_type(d, intype, outtype, convert_list=True, in_place=True):
     """ convert all values of one type to another 
     
+    Parameters
+    ----------
     d : dict
     intype : type_class
     outtype : type_class
@@ -303,6 +307,8 @@ def dict_convert_type(d, intype, outtype, convert_list=True, in_place=True):
 def _json_file_with_keys(file_obj,key_path=None,parse_decimal=False):
     """read json with keys
 
+    Parameters
+    ----------
     file_obj : object
         object with read method
     key_path : list of str
@@ -404,6 +410,8 @@ def json_to_dict(jfile, key_path=None, in_memory=True ,
                 ignore_prefix=('.','_'), parse_decimal=False):
     """ input json to dict
 
+    Parameters
+    ----------
     jfile : str, file_like or path_like
         if str, must be existing file or folder,
         if file_like, must have 'read' method
@@ -580,6 +588,8 @@ def dict_to_json(d, jfile, overwrite=False, dirlevel=1,
                  sort_keys=True, indent=2, encoder=json_extended_encoder, **kwargs):
     """ output dict to json
 
+    Parameters
+    ----------
     d : dict
     jfile : str or file_like
         if file_like, must have write method
@@ -645,6 +655,8 @@ def dict_pprint(d, lvlindent=2, initindent=0, delim=':',
                 encoder=json_extended_encoder, print_func=None):
     """ print a nested dict in readable format
 
+    Parameters
+    ----------
     d : dict
     lvlindent : int
         additional indentation spaces for each level
@@ -759,6 +771,8 @@ def dict_pprint(d, lvlindent=2, initindent=0, delim=':',
 def dict_extract(d,path=None):
     """ extract section of dictionary
 
+    Parameters
+    ----------
     d : dict
     path : list of str
         keys to section
@@ -795,6 +809,8 @@ def dict_extract(d,path=None):
 def dict_multiindex(dic, keys=None):
     """ index dictionary by multiple keys
 
+    Parameters
+    ----------
     dic : dict
     keys : list
 
@@ -820,6 +836,8 @@ def dict_multiindex(dic, keys=None):
 def dict_flatten(d,key_as_tuple=True,sep='.'):
     """ get nested dict as {key:val,...}, where key is tuple/string of all nested keys
 
+    Parameters
+    ----------
     d : dict
     key_as_tuple : bool
         whether keys are list of nested keys or delimited string of nested keys
@@ -860,6 +878,8 @@ def dict_flatten2d(d,key_as_tuple=True,sep='.'):
     """ get nested dict as {key:dict,...},
     where key is tuple/string of all-1 nested keys
 
+    Parameters
+    ----------
     d : dict
     key_as_tuple : bool
         whether keys are list of nested keys or delimited string of nested keys
@@ -891,6 +911,8 @@ def dict_unflatten(d,delim='.'):
     """ unlatten dictionary
     with keys as tuples or delimited strings
 
+    Parameters
+    ----------
     d : dict
     delim : str
         if keys are strings, then split by delim
@@ -927,6 +949,8 @@ def dicts_merge(dicts,overwrite=False,append=False):
     """ merge dicts,
     starting with dicts[1] into dicts[0]
 
+    Parameters
+    ----------
     dicts : list
         list of dictionaries
     overwrite : bool
@@ -1029,6 +1053,8 @@ def dict_remove_paths(d, keys=None):
 def dict_filter_values(d,vals=None):
     """ filters leaf nodes of nested dictionary
 
+    Parameters
+    ----------
     d : dict
     vals : list
         values to filter by
@@ -1059,6 +1085,8 @@ def dict_filter_values(d,vals=None):
 def dict_filter_keys(d, keys, use_wildcards=False):
     """ filter dict by certain keys
 
+    Parameters
+    ----------
     d : dict
     keys: list
     use_wildcards : bool
@@ -1112,6 +1140,8 @@ def dict_filter_keys(d, keys, use_wildcards=False):
 def dict_filter_paths(d, paths):
     """ filter dict by certain paths containing key sets
 
+    Parameters
+    ----------
     d : dict
     paths : list
 
@@ -1137,6 +1167,8 @@ def dict_filter_paths(d, paths):
 def dict_rename_keys(d,keymap=None):
     """ rename keys in dict
 
+    Parameters
+    ----------
     d : dict
     keymap : dict
         dictionary of key name mappings
@@ -1236,6 +1268,8 @@ class dict_to_html(object):
     """
     Pretty display dictionary in collapsible format with indents
 
+    Parameters
+    ----------
     depth: int
         Depth of the json tree structure displayed, the rest is collapsed.
     max_length: int
@@ -1245,7 +1279,7 @@ class dict_to_html(object):
     sort: bool
         Whether the json keys are sorted alphabetically.
 
-    Examples:
+    Examples
     ---------
 
     dic = {'sape': {'value': 22}, 'jack': 4098, 'guido': 4127}

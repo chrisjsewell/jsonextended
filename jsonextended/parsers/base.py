@@ -57,6 +57,8 @@ def parse_dir_dict(path,parser_class,file_regexes,
     """ find all files in a directory,
     apply parser and read into memory
 
+    Parameters
+    ----------
     path : str or path_like
         if str, must be existing folder,
         if path_like, must have 'iterdir' method (see pathlib.Path)

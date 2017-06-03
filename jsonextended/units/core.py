@@ -20,6 +20,8 @@ def apply_unitschema(data, uschema, as_quantity=True,
                     raise_outerr=False, convert_base=False):
     """ apply the unit schema to the data 
     
+    Parameters
+    ----------
     data : dict
     uschema : dict
         units schema to apply
@@ -100,6 +102,8 @@ def apply_unitschema(data, uschema, as_quantity=True,
 def split_quantities(data,units='units',magnitude='magnitude'):
     """ split pint.Quantity objects into <unit,magnitude> pairs
     
+    Parameters
+    ----------
     data : dict
     units : str
         name for units key
@@ -139,6 +143,8 @@ def split_quantities(data,units='units',magnitude='magnitude'):
 def combine_quantities(data,units='units',magnitude='magnitude'):
     """ combine <unit,magnitude> pairs into pint.Quantity objects 
 
+    Parameters
+    ----------
     data : dict
     units : str
         name of units key
