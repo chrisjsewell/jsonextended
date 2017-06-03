@@ -115,6 +115,7 @@ def _run_nose_tests(doctests=True, verbose=True):
         nose_argv.append('-v')
     if doctests:
         nose_argv.append('--with-doctest')
+    nose_argv.append('jsonextended')
     initial_dir = os.getcwd()
     my_package_file = os.path.abspath(jsonextended.__file__)
     print(my_package_file)
