@@ -874,46 +874,15 @@ def dict_flatten(d,key_as_tuple=True,sep='.'):
 
     return dict(items)
 
-def dict_flatten2d(d,key_as_tuple=True,sep='.'):
-    """ get nested dict as {key:dict,...},
-    where key is tuple/string of all-1 nested keys
-
-    Parameters
-    ----------
-    d : dict
-    key_as_tuple : bool
-        whether keys are list of nested keys or delimited string of nested keys
-    sep : str
-        if key_as_tuple=False, delimiter for keys
-
-    Examples
-    --------
-
-    >>> from pprint import pprint
-
-    >>> d = {1:{2:{3:{'b':'B','c':'C'},4:'D'}}}
-    >>> pprint(dict_flatten2d(d))
-    {(1, 2): {4: 'D'}, (1, 2, 3): {'b': 'B', 'c': 'C'}}
-
-    >>> pprint(dict_flatten2d(d,key_as_tuple=False))
-    {'1.2': {4: 'D'}, '1.2.3': {'b': 'B', 'c': 'C'}}
-
-    """
-    new_d = {}
-    for key, value in dict_flatten(d,True,sep).items():
-        new_key = key[:-1] if key_as_tuple else sep.join([str(k) for k in key[:-1]])
-        if not new_key in new_d:
-            new_d[new_key] = {}
-        new_d[new_key][key[-1]] = value
-    return new_d
-
-def dict_unflatten(d,delim='.'):
+def dict_unflatten(d, key_as_tuple=True,delim='.'):
     """ unlatten dictionary
     with keys as tuples or delimited strings
 
     Parameters
     ----------
     d : dict
+    key_as_tuple : bool
+        if true, keys are tuples, else, keys are delimited strings
     delim : str
         if keys are strings, then split by delim
 
@@ -927,22 +896,35 @@ def dict_unflatten(d,delim='.'):
     {'a': {'b': 1, 'c': 2}}
 
     >>> d2 = {'a.b':1,'a.c':2}
-    >>> pprint(dict_unflatten(d2))
+    >>> pprint(dict_unflatten(d2,key_as_tuple=False))
     {'a': {'b': 1, 'c': 2}}
 
     """
-    result = d.pop(()) if () in d else {}
+    d = copy.deepcopy(d)
+    
+    if key_as_tuple:
+        result = d.pop(()) if () in d else {}
+    else:
+        result = d.pop('') if '' in d else {}
+        
     for key, value in d.items():
-        if isinstance(key,basestring):
+
+        if not isinstance(key,tuple) and key_as_tuple:
+            raise ValueError('key not tuple and key_as_tuple set to True: {}'.format(key))
+        elif not isinstance(key,basestring) and not key_as_tuple:
+            raise ValueError('key not string and key_as_tuple set to False: {}'.format(key))
+        elif isinstance(key,basestring) and not key_as_tuple:
             parts = key.split(delim)
         else:
             parts = key
+            
         d = result
         for part in parts[:-1]:
             if part not in d:
                 d[part] = {}
             d = d[part]
         d[parts[-1]] = value
+
     return result
 
 def dicts_merge(dicts,overwrite=False,append=False):
@@ -980,6 +962,13 @@ def dicts_merge(dicts,overwrite=False,append=False):
     ...
     ValueError: different data already exists at 1.a: old: A, new: X
 
+    >>> dicts_merge([{},{}],overwrite=False)
+    {}
+    >>> dicts_merge([{},{'a':1}],overwrite=False)
+    {'a': 1}
+    >>> dicts_merge([{},{'a':1},{'a':1},{'b':2}],overwrite=False)
+    {'a': 1, 'b': 2}
+
     """
     outdict = copy.deepcopy(dicts[0])
 
@@ -1007,6 +996,99 @@ def dicts_merge(dicts,overwrite=False,append=False):
     reduce(merge, [outdict]+dicts[1:])
 
     return outdict
+
+def dict_flattennd(d,levels=0,key_as_tuple=True,delim='.'):
+    """ get nested dict as {key:dict,...},
+    where key is tuple/string of all-nlevels of nested keys
+
+    Parameters
+    ----------
+    d : dict
+    levels : int
+        the number of levels to leave unflattened
+    key_as_tuple : bool
+        whether keys are list of nested keys or delimited string of nested keys
+    delim : str
+        if key_as_tuple=False, delimiter for keys
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+
+    >>> d = {1:{2:{3:{'b':'B','c':'C'},4:'D'}}}
+    >>> pprint(dict_flattennd(d,0))
+    {(1, 2, 3, 'b'): 'B', (1, 2, 3, 'c'): 'C', (1, 2, 4): 'D'}
+
+    >>> pprint(dict_flattennd(d,1))
+    {(1, 2): {4: 'D'}, (1, 2, 3): {'b': 'B', 'c': 'C'}}
+
+    >>> pprint(dict_flattennd(d,2))
+    {(1,): {2: {4: 'D'}}, (1, 2): {3: {'b': 'B', 'c': 'C'}}}
+
+    >>> pprint(dict_flattennd(d,3))
+    {(): {1: {2: {4: 'D'}}}, (1,): {2: {3: {'b': 'B', 'c': 'C'}}}}
+    
+    >>> pprint(dict_flattennd(d,4))
+    {(): {1: {2: {3: {'b': 'B', 'c': 'C'}, 4: 'D'}}}}
+
+    >>> pprint(dict_flattennd(d,5))
+    {(): {1: {2: {3: {'b': 'B', 'c': 'C'}, 4: 'D'}}}}
+
+    >>> pprint(dict_flattennd(d,1,key_as_tuple=False,delim='.'))
+    {'1.2': {4: 'D'}, '1.2.3': {'b': 'B', 'c': 'C'}}
+
+    """
+    if levels < 0:
+        raise ValueError('unflattened levels must be greater than 0')
+
+    new_d = {}
+    flattened = dict_flatten(d,True,delim)
+    if levels == 0:
+        return flattened
+    
+    for key, value in flattened.items():
+        new_key = key[:-(levels)] if key_as_tuple else delim.join([str(k) for k in key[:-(levels)]])
+        new_levels = key[-(levels):]
+
+        val_dict = {new_levels:value}
+        val_dict = dict_unflatten(val_dict,True,delim)
+
+        if not new_key in new_d:
+            new_d[new_key] = val_dict
+        else:
+            new_d[new_key] = dicts_merge([new_d[new_key],val_dict])
+
+    return new_d
+
+def dict_flatten2d(d,key_as_tuple=True,delim='.'):
+    """ get nested dict as {key:dict,...},
+    where key is tuple/string of all-1 nested keys
+    
+    NB: is same as dict_flattennd(d,1,key_as_tuple,delim)
+
+    Parameters
+    ----------
+    d : dict
+    key_as_tuple : bool
+        whether keys are list of nested keys or delimited string of nested keys
+    delim : str
+        if key_as_tuple=False, delimiter for keys
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+
+    >>> d = {1:{2:{3:{'b':'B','c':'C'},4:'D'}}}
+    >>> pprint(dict_flatten2d(d))
+    {(1, 2): {4: 'D'}, (1, 2, 3): {'b': 'B', 'c': 'C'}}
+
+    >>> pprint(dict_flatten2d(d,key_as_tuple=False,delim=','))
+    {'1,2': {4: 'D'}, '1,2,3': {'b': 'B', 'c': 'C'}}
+
+    """
+    return dict_flattennd(d,1,key_as_tuple,delim)
 
 def dict_remove_keys(d, keys=None):
     """ remove certain keys from nested dict, retaining preceeding paths
