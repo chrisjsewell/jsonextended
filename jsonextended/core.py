@@ -1270,6 +1270,77 @@ def dict_rename_keys(d,keymap=None):
     else:
         return {keymap[key] if key in keymap else key: dict_rename_keys(value,keymap) for key, value in d.items()}
 
+def dict_combine_lists(d, combine, 
+                 combine_key='combined',check_length=True):
+    """combine key:list pairs into dicts for each item in the lists
+    
+    Parameters
+    ----------
+    d : dict
+    combine : list
+        keys to combine
+    combine_key : str
+        top level key for combined items
+    check_length : bool
+        if true, raise error if any lists are of a different length
+        
+    Examples
+    --------
+
+    >>> from pprint import pprint
+
+    >>> d = {'path_key':{'x':[1,2],'y':[3,4],'a':1}}
+    >>> new_d = dict_combine_lists(d,['x','y'])
+    >>> pprint(new_d)
+    {'path_key': {'a': 1,
+                  'combined': {'1': {'x': 1, 'y': 3}, '2': {'x': 2, 'y': 4}}}}
+    
+    >>> dict_combine_lists(d,['x','a'])
+    Traceback (most recent call last):
+    ...
+    ValueError: "a" data at the following path is not a list ('path_key',)
+
+    >>> d2 = {'path_key':{'x':[1,7],'y':[3,4,5]}}
+    >>> dict_combine_lists(d2,['x','y'])
+    Traceback (most recent call last):
+    ...
+    ValueError: lists at the following path do not have the same size ('path_key',)
+
+
+    """    
+    flattened = dict_flatten2d(d)
+
+    new_d = {}
+    for key, value in flattened.items():
+        if set(combine).issubset(value.keys()):
+            combine_d = {}
+            sub_d = {}
+            length = None
+            for subkey, subvalue in value.items(): 
+                if subkey in combine:
+                    if not isinstance(subvalue,list):
+                        raise ValueError('"{0}" data at the following path is not a list {1}'.format(subkey,key))
+
+                    if check_length and length is not None:
+                        if len(subvalue)!=length:
+                            raise ValueError('lists at the following path '
+                                             'do not have the same size {0}'.format(key))
+
+                    length = len(subvalue)
+                    new_combine = {str(k+1):{subkey:v} for k,v in enumerate(subvalue)}
+                    combine_d = dicts_merge([combine_d,new_combine])
+                else:
+                    sub_d[subkey] = subvalue
+                try:
+                    new_d[key] = dicts_merge([sub_d,{combine_key:combine_d}])
+                except ValueError as err:
+                    raise ValueError('combined data key: '
+                                     '{0}, already exists at this level for {1}'.format(combine_key,key))
+        else:
+            new_d[key] = value
+    
+    return dict_unflatten(new_d)
+
 class DictTree(object):
     """ a class to explore nested dictionaries by attributes
 
