@@ -966,7 +966,7 @@ def dicts_merge(dicts,overwrite=False,append=False):
     {}
     >>> dicts_merge([{},{'a':1}],overwrite=False)
     {'a': 1}
-    >>> dicts_merge([{},{'a':1},{'a':1},{'b':2}],overwrite=False)
+    >>> pprint(dicts_merge([{},{'a':1},{'a':1},{'b':2}]))
     {'a': 1, 'b': 2}
 
     """
