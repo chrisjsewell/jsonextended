@@ -728,6 +728,7 @@ def dict_pprint(d, lvlindent=2, initindent=0, delim=':',
                 key_str = convert_str(key)
                 key_width = max(key_width, len(key_str))
 
+    max_depth = depth
     for key in sorted(d.keys(),key=_natural_keys):
         value = d[key]
         key_str = convert_str(key)
@@ -737,7 +738,6 @@ def dict_pprint(d, lvlindent=2, initindent=0, delim=':',
         else:
             key_str = '{0}{1} '.format(key_str,delim)
 
-        max_depth = depth
         depth = max_depth if not max_depth is None else 2
         if depth <= 0:
             pass
