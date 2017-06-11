@@ -226,6 +226,8 @@ class BasicParser(object):
     >>> parser.output_json(out_file_obj)
 
     """
+    _always_exit_section = True
+    
     def __init__(self):
         """ a class for parsing data to json format """
         self.reset()
@@ -375,7 +377,9 @@ class BasicParser(object):
                 self.__file_line =self.__file_line.strip()
                 for func_name, func in self.__class__.__dict__.items():
                     if func_name[0:6]=='_eval_':
-                        func(self)
+                        # if returns True then line has been evaluated
+                        if func(self)==True:
+                            break
                 self.__file_line = f.readline()
                 self.__file_line_number += 1
         finally:
@@ -394,17 +398,49 @@ class BasicParser(object):
         self.__file_line = line
     _line = property(__get_line,__set_line)
 
-    def _get_section(self):
+    def _get_section(self,level=None):
+        if not self.__in_file_section:
+            raise IOError('no file section available')
+        if level is not None:
+            if len(self.__in_file_section) < level - 1:
+                raise IOError('no file section available for level: {}'.format(level))
+            else:
+                return self.__in_file_section[level-1]
         return self.__in_file_section[:]
 
-    def _update_file_section(self,section,level=1):
-
-        if level <= len(self.__in_file_section) + 1:
+    def _exit_file_section(self,level=1):
+        """ exit file section
+        
+        level : int
+        """
+        assert level > 0, 'level must be 1 or greater'
+        self.__in_file_section = self.__in_file_section[:level-1]        
+        
+    def _enter_file_section(self,section,level=1):
+        """ enter file section
+        
+        section : str
+        level : int
+        """
+        if not self._always_exit_section and level>len(self.__in_file_section):
+            raise IOError("attempting to enter '{0}' as level {1} but already in file section: {2} (line number: {3})".format(
+                section,level, self.__in_file_section,self.__file_line_number))                
+        elif level <= len(self.__in_file_section) + 1:
             self.__in_file_section = self.__in_file_section[0:level-1] + [section]
         else:
             raise IOError("attempting to set '{0}' as level {1} for current file section: {2} (line number: {3})".format(
                 section,level, self.__in_file_section,self.__file_line_number))
 
+    def _in_section(self, section, *sections):
+        """ test if in section(s) """
+        if len(self.__in_file_section) < 1 + len(sections):
+            return False
+        for i,s in enumerate([section]+list(sections)):
+            if self.__in_file_section[i] != s:
+                return False
+        return True
+            
+        
     def _skip_lines(self, i=1):
         """skip i lines of file """
         if self.__file is None:
