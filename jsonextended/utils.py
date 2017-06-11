@@ -1,4 +1,9 @@
 import os, inspect
+# python 2/3 compatibility
+try:
+    basestring
+except NameError:
+    basestring = str
 
 def get_data_path(data, module, check_exists=True):
     """return a directory path to data within a module
