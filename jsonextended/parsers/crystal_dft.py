@@ -25,7 +25,7 @@ class CrystalDFTParser(BasicParser):
     >>> datapath = utils.get_data_path('crystal_test.data',parsers)
     >>> parser = CrystalDFTParser()
     >>> parser.read_file(datapath)
-    >>> parser.data.keys()
+    >>> list(parser.data.keys())
     ['initial', 'scf', 'meta', 'optimised', 'optimisation']
 
     """
