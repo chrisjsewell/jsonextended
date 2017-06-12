@@ -134,7 +134,7 @@ class CrystalDFTParser(BasicParser):
             return
 
         if self._has_sig('CHARGE NORMALIZATION FACTOR'):
-            int(step) = self._get_section(3)
+            step = int(self._get_section(3))
             self._exit_file_section(3)
             self._enter_file_section(str(step+1),level=3)
             self.add_data('charge normalisation',self._get_fields(4),
