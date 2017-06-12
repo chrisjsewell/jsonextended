@@ -98,7 +98,7 @@ from jsonextended.core import (get_test_path,json_keys,json_to_dict, dict_to_jso
                             dict_flatten,dict_unflatten,dict_flatten2d,dict_flattennd,
                             dicts_merge, dict_remove_keys,dict_remove_paths,
                             dict_filter_values,dict_filter_keys,dict_filter_paths,
-                            DictTree,dict_to_html)
+                            DictTree,dict_to_html,dict_combine_lists)
 
 from jsonextended import parsers, units, utils
 

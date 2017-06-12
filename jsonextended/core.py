@@ -64,6 +64,8 @@ try:
 except:
     import _example_json_folder
 
+from  jsonextended.utils import natural_sort
+
 def get_test_path():
     """ returns test path object
 
@@ -637,15 +639,6 @@ def dict_to_json(d, jfile, overwrite=False, dirlevel=1,
         json.dump(d, jfile,
                   sort_keys=sort_keys,indent=indent, default=encoder)
 
-def _atoi(text):
-    return int(text) if text.isdigit() else text
-def _natural_keys(text):
-    """human order sorting
-
-    alist.sort(key=_natural_keys)
-    """
-    return [_atoi(c) for c in re.split('(\d+)',str(text))]
-
 def _default_print_func(s):
     print(s)
 
@@ -729,7 +722,7 @@ def dict_pprint(d, lvlindent=2, initindent=0, delim=':',
                 key_width = max(key_width, len(key_str))
 
     max_depth = depth
-    for key in sorted(d.keys(),key=_natural_keys):
+    for key in natural_sort(d.keys()):
         value = d[key]
         key_str = convert_str(key)
 

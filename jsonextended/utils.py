@@ -1,4 +1,6 @@
 import os, inspect
+import re
+
 # python 2/3 compatibility
 try:
     basestring
@@ -21,6 +23,30 @@ def get_data_path(data, module, check_exists=True):
         assert os.path.exists(dirpath), '{0} does not exist'.format(dirpath)
     
     return dirpath
+
+def _atoi(text):
+    return int(text) if text.isdigit() else text
+def _natural_keys(text):
+    """human order sorting
+
+    alist.sort(key=_natural_keys)
+    """
+    return [_atoi(c) for c in re.split('(\d+)',str(text))]
+
+def natural_sort(iterable):
+    """human order sorting of number strings 
+
+    Examples
+    --------
+    
+    >>> sorted(['011','1', '21'])
+    ['011', '1', '21']
+    
+    >>> natural_sort(['011','1', '21'])
+    ['1', '011', '21']
+    
+    """
+    return sorted(iterable, key=_natural_keys)
 
 def memory_usage():
     """return memory usage of python process in MB 

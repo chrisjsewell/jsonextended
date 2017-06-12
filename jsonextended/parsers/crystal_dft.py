@@ -137,6 +137,9 @@ class CrystalDFTParser(BasicParser):
             step = int(self._get_section(3))
             self._exit_file_section(3)
             self._enter_file_section(str(step+1),level=3)
+            self.add_data('step',step+1,
+                          init_keys=self._get_section(),
+                          dtype=int)
             self.add_data('charge normalisation',self._get_fields(4),
                         init_keys=self._get_section(),dtype=float)
             return True
