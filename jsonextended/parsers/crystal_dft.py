@@ -123,7 +123,7 @@ class CrystalDFTParser(BasicParser):
             self._enter_file_section('scf',level=1)
             ctyp = self._get_fields_after(8,join=True)
             self.add_data('calculation type',ctyp,init_keys=['scf'])
-            self._enter_file_section('step',level=2)            
+            self._enter_file_section('steps',level=2)            
             self._enter_file_section(0,level=3)            
             return True
         if self._has_sig('== SCF ENDED -'):
@@ -134,9 +134,9 @@ class CrystalDFTParser(BasicParser):
             return
 
         if self._has_sig('CHARGE NORMALIZATION FACTOR'):
-            step = self._get_section(3)
+            int(step) = self._get_section(3)
             self._exit_file_section(3)
-            self._enter_file_section(step+1,level=3)
+            self._enter_file_section(str(step+1),level=3)
             self.add_data('charge normalisation',self._get_fields(4),
                         init_keys=self._get_section(),dtype=float)
             return True

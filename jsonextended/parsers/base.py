@@ -445,8 +445,9 @@ class BasicParser(object):
         """skip i lines of file """
         if self.__file is None:
             return ''
-        if self.__file.closed:
-            return ''
+        if hasattr(self.__file,'closed'):
+            if self.__file.closed:
+                return ''
         for _ in range(i):
             self.__file_line = self.__file.readline()
             self.__file_line_number += 1
