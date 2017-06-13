@@ -9,6 +9,8 @@ from setuptools import setup, find_packages
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
+with open('test_requirements.txt') as f:
+    test_requirements = f.read().splitlines()
 
 with io.open('README.rst') as readme:
     setup(
@@ -17,6 +19,7 @@ with io.open('README.rst') as readme:
         description='Extending the python json package functionality',
         long_description=readme.read(),
         install_requires=requirements,
+        test_requires=test_requirements,
         license='MIT',
         author='Chris Sewell',
         author_email='chrisj_sewell@hotmail.com',
