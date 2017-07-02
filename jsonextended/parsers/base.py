@@ -30,14 +30,10 @@ try:
 except ImportError:
     import pathlib2 as pathlib
 
-# external imports
-from jsonextended import json_to_dict, dict_to_json, dicts_merge
-
 # local imports
-try:
-    from jsonextended.parsers import _example_data_folder
-except:
-    import _example_data_folder
+from jsonextended.ejson import to_dict
+from jsonextended.edict import to_json, merge
+from jsonextended.parsers import _example_data_folder
 
 def get_test_path():
     """ returns test path object
@@ -255,7 +251,7 @@ class BasicParser(object):
             if true allow overwriting of current data
 
         """
-        self.__data = dicts_merge([self.__data,d],overwrite=overwrite)
+        self.__data = merge([self.__data,d],overwrite=overwrite)
 
     def add_json(self, jfile, overwrite=False,
                  key_path=[], in_memory=True, ignore_prefix=('.', '_')):
@@ -275,8 +271,8 @@ class BasicParser(object):
             ignore folders beginning with these prefixes
 
         """
-        new_data = json_to_dict(jfile, key_path, in_memory, ignore_prefix)
-        self.__data = dicts_merge([self.__data,new_data],overwrite=overwrite)
+        new_data = to_dict(jfile, key_path, in_memory, ignore_prefix)
+        self.__data = merge([self.__data,new_data],overwrite=overwrite)
 
     def output_json(self, jfile, overwrite=False, dirlevel=1, sort_keys=True, indent=2, **kwargs):
         """ output parsed data to json
@@ -296,7 +292,7 @@ class BasicParser(object):
             keywords for json.dump
 
         """
-        dict_to_json(self.__data, jfile, overwrite=overwrite, dirlevel=dirlevel,
+        to_json(self.__data, jfile, overwrite=overwrite, dirlevel=dirlevel,
                            sort_keys=sort_keys, indent=indent, **kwargs)
 
     def add_data(self,keys,values,init_keys=None,
@@ -360,6 +356,8 @@ class BasicParser(object):
         
         if isinstance(rfile,basestring):
             f = open(rfile,'r')
+        elif hasattr(rfile, 'open'):
+            f = rfile.open('r')
         elif not hasattr(rfile,'readline'):
             raise ValueError('rfile should be a str or file_like object: {}'.format(rfile))
         else:

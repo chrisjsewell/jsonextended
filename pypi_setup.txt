@@ -1,0 +1,38 @@
+create ~/.pypirc
+
+	[distutils]
+	index-servers=
+	    pypi
+	    testpypi
+
+	[testpypi]
+	repository = https://testpypi.python.org/pypi
+	username = <your user name goes here>
+	password = <your live password optionally goes here>
+
+	[pypi]
+	username = <your user name goes here>
+	password = <your live password optionally goes here>
+
+register testpypi package
+
+	python setup.py register -r https://testpypi.python.org/pypi
+
+1. register pypi package
+
+	pip install wheel
+	python setup.py bdist_wheel --universal
+	pip install twine
+	twine upload dist/*
+
+download ruby:
+
+	curl -sSL https://get.rvm.io | bash -s stable --ruby
+	
+download travis command line tool:
+
+	/usr/local/bin/gem install travis
+	
+Create encrypted password (goes straight into .travis.yml if present):
+
+	travis encrypt --add deploy.password

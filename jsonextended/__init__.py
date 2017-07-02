@@ -33,10 +33,10 @@ On-disk indexing of the json structure, before reading into memory,
 to reduce memory overhead when dealing with large json structures/files (using the ijson package).
 e.g.
     path = get_test_path()
-    %memit jdict1 = json_to_dict(path,['dir1','file2','meta'],in_memory=True)
+    %memit jdict1 = to_dict(path,['dir1','file2','meta'],in_memory=True)
     maximum of 3: 12.242188 MB per loop
 
-    %memit jdict1 = json_to_dict(path,['dir1','file2','meta'],in_memory=False)
+    %memit jdict1 = to_dict(path,['dir1','file2','meta'],in_memory=False)
     maximum of 3: 6.996094 MB per loop
 
 
@@ -45,15 +45,15 @@ Examples
 
 >>> import jsonextended as ejson
 
->>> path = ejson.get_test_path()
+>>> path = ejson.ejson.get_test_path()
 >>> path.is_dir()
 True
 
->>> json_keys(path)
+>>> ejson.ejson.jkeys(path)
 ['dir1', 'dir2', 'dir3']
 
->>> jdict1 = ejson.json_to_dict(path)
->>> ejson.dict_pprint(jdict1,depth=2)
+>>> jdict1 = ejson.ejson.to_dict(path)
+>>> ejson.edict.pprint(jdict1,depth=2)
 dir1: 
   dir1_1: {...}
   file1: {...}
@@ -63,15 +63,15 @@ dir2:
 dir3: 
 
 
->>> jdict2 = ejson.json_to_dict(path,['dir1','file1'])
->>> ejson.dict_pprint(jdict2,depth=1)
+>>> jdict2 = ejson.ejson.to_dict(path,['dir1','file1'])
+>>> ejson.edict.pprint(jdict2,depth=1)
 initial: {...}
 meta: {...}
 optimised: {...}
 units: {...}
 
->>> filtered = ejson.dict_filter_keys(jdict2,['vol*'],use_wildcards=True)
->>> ejson.dict_pprint(filtered)
+>>> filtered = ejson.edict.filter_keys(jdict2,['vol*'],use_wildcards=True)
+>>> ejson.edict.pprint(filtered)
 initial: 
   crystallographic: 
     volume: 924.62752781
@@ -83,7 +83,7 @@ optimised:
   primitive: 
     volume: 531.994803
 
->>> ejson.dict_pprint(ejson.dict_flatten(filtered))
+>>> ejson.edict.pprint(ejson.edict.flatten(filtered))
 ('initial', 'crystallographic', 'volume'):   924.62752781
 ('initial', 'primitive', 'volume'):          462.313764
 ('optimised', 'crystallographic', 'volume'): 1063.98960509
@@ -93,14 +93,7 @@ optimised:
 
 __version__ = '0.1.4'
 
-from jsonextended.core import (get_test_path,json_keys,json_to_dict, dict_to_json,
-                            dict_pprint,dict_extract,dict_multiindex, dict_rename_keys,
-                            dict_flatten,dict_unflatten,dict_flatten2d,dict_flattennd,
-                            dicts_merge, dict_remove_keys,dict_remove_paths,
-                            dict_filter_values,dict_filter_keys,dict_filter_paths,
-                            DictTree,dict_to_html,dict_combine_lists)
-
-from jsonextended import parsers, units, utils
+from jsonextended import ejson, parsers, units, utils, edict, encoders
 
 def _run_nose_tests(doctests=True, verbose=True):
     """ 

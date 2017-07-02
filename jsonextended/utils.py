@@ -6,6 +6,16 @@ try:
     basestring
 except NameError:
     basestring = str
+# python 3 to 2 compatibility
+try:
+    import pathlib
+except ImportError:
+    import pathlib2 as pathlib
+
+
+def get_module_path(module):
+    """return a directory path to a module"""
+    return pathlib.Path(os.path.dirname(os.path.abspath(inspect.getfile(module))))
 
 def get_data_path(data, module, check_exists=True):
     """return a directory path to data within a module
@@ -22,7 +32,7 @@ def get_data_path(data, module, check_exists=True):
     if check_exists:
         assert os.path.exists(dirpath), '{0} does not exist'.format(dirpath)
     
-    return dirpath
+    return pathlib.Path(dirpath)
 
 def _atoi(text):
     return int(text) if text.isdigit() else text
