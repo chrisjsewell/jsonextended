@@ -846,6 +846,8 @@ class to_html(object):
 
     Parameters
     ----------
+    obj : str or dict
+        dict or json
     depth: int
         Depth of the json tree structure displayed, the rest is collapsed.
     max_length: int
@@ -885,7 +887,7 @@ class to_html(object):
                                   //.set_icons(circled plus, circled minus)
                                   .set_icons(String.fromCharCode(8853), String.fromCharCode(8854))
                                   .set_sort_objects(false)
-                                  .set_show_to_level(1)({"sape": {"value": 22}, "jack": 4098, "guido": 4127}))
+                                  .set_show_to_level(1)({"guido": 4127, "jack": 4098, "sape": {"value": 22}}))
                 });</script>
 
 
@@ -909,6 +911,8 @@ class to_html(object):
     def __init__(self, obj, depth=2, max_length=20, max_height=600,
                  sort=True, local=True, uniqueid=None):
         """
+        obj : str or dict
+            dict or json
         depth: int
             Depth of the json tree structure displayed, the rest is collapsed.
         max_length: int
@@ -928,7 +932,7 @@ class to_html(object):
             return True
 
         if isinstance(obj, dict):
-            self.str = json.dumps(obj,default=encode)
+            self.str = json.dumps(obj,default=encode,sort_keys=True)
         elif is_json(obj):
             self.str = obj
         else:
