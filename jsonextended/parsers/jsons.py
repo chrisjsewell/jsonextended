@@ -3,7 +3,10 @@
 import json
 
 class JSON_Parser(object):
+    
+    plugin_name = 'json.basic'
     file_regex = '*.json'
+    
     def read_file(self, file_obj, **kwargs):
         
         return json.load(file_obj, object_hook=kwargs.get('object_hook',None), 

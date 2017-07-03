@@ -183,7 +183,7 @@ class BasicParser(object):
                 mdict[k] = dtype(v) if dtype is not None else v
 
     def read_file(self, rfile, delim=None,
-                  init_section=[], init_keys=None):
+                  init_section=[], init_keys=None, **kwargs):
         """ read file to json format
 
         rfile : str or file_like

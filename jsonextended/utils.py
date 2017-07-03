@@ -34,6 +34,19 @@ def get_module_path(module):
     """return a directory path to a module"""
     return pathlib.Path(os.path.dirname(os.path.abspath(inspect.getfile(module))))
 
+from jsonextended import _example_data_folder
+def get_test_path():
+    """ returns test path object
+
+    Examples
+    --------
+    >>> path = get_test_path()
+    >>> path.name
+    '_example_data_folder'
+
+    """
+    return get_module_path(_example_data_folder)
+
 def get_data_path(data, module, check_exists=True):
     """return a directory path to data within a module
 

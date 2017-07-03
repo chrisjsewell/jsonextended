@@ -2,6 +2,7 @@ import pickle
 
 class Encode_Set(object):
 
+    plugin_name = 'python.set'
     objclass = set
     dict_signature = ['_python_set_']
 

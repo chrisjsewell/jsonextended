@@ -6,6 +6,7 @@ import numpy as np
 
 class Encode_NDArray(object):
 
+    plugin_name = 'numpy.ndarray'
     objclass = np.ndarray
     dict_signature = ['_numpy_ndarray']
 

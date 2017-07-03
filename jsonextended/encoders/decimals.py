@@ -5,6 +5,7 @@ from decimal import Decimal
 
 class Encode_Decimal(object):
     
+    plugin_name = 'decimal.Decimal'
     objclass = Decimal
     dict_signature = ['_python_Decimal_']
     

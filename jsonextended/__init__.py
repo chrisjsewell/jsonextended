@@ -43,9 +43,9 @@ e.g.
 Examples
 --------
 
->>> from jsonextended import ejson, edict
+>>> from jsonextended import ejson, edict, utils
 
->>> path = ejson.get_test_path()
+>>> path = utils.get_test_path()
 >>> path.is_dir()
 True
 

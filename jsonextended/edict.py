@@ -12,7 +12,7 @@ import json
 import re
 from fnmatch import fnmatch
 import textwrap
-from functools import reduce
+from functools import reduce, total_ordering
 
 # python 3 to 2 compatibility
 try:
@@ -34,7 +34,7 @@ except ImportError:
 
 # local imports
 from jsonextended.utils import natural_sort
-from jsonextended.plugins import encode
+from jsonextended.plugins import encode, decode, parse, parser_available
 
 def is_dict_like(obj,attr=('keys','items')):
     """test if object dict like"""
@@ -1007,72 +1007,200 @@ class to_html(object):
         display_html(self._CSS+self._get_html())
         display_javascript(self._get_javascript())
 
-class DictTree(object):
-    """ a class to explore nested dictionaries by attributes
+@total_ordering 
+class LazyLoad(object):
+    """ lazy load a dict_like object or file structure as a pseudo dictionary
+    (works with all edict functions)
+    supplies tab completion of keys
+    
+    Properties
+    ----------
+    obj : dict, string, file_like
+        object 
+    ignore_prefix : list of str
+        ignore files and folders beginning with these prefixes 
+    recursive : bool
+        if True, load subdirectories
+    parent : obj
+         the parent object of this instance
+    parser_kwargs : keywords or dict 
+        additional keywords for parser plugins read_file method
+        
+    
+    Examples
+    --------
+    
+    >>> from jsonextended import plugins
+    >>> plugins.load_builtin_plugins()
+    []
+    
+    >>> l = LazyLoad({'a':2,3:4})
+    >>> print(l)
+    {3:..,a:..}
+    >>> l.a
+    2
+    >>> l.i3
+    4
+    
+    >>> from jsonextended.utils import get_test_path
+    >>> from jsonextended.edict import pprint
+    
+    >>> lazydict = LazyLoad(get_test_path())
+    >>> pprint(lazydict,depth=2)
+    data.crystal.out: 
+      initial: {...}
+      meta: {...}
+      optimisation: {...}
+      optimised: {...}
+      scf: {...}
+    dir1: 
+      dir1_1: {...}
+      file1.json: {...}
+      file2.json: {...}
+    dir2: 
+      file1.json: {...}
+    dir3: 
+    
+    >>> 'dir1' in lazydict
+    True
+    
+    >>> sorted(lazydict.keys())
+    ['data.crystal.out', 'dir1', 'dir2', 'dir3']
+    
+    >>> sorted(lazydict.values())
+    [{}, {file1.json:..}, {dir1_1:..,file1.json:..,file2.json:..}, {initial:..,meta:..,optimisation:..,optimised:..,scf:..}]
+    
+    >>> lazydict.dir1.file1_json
+    {initial:..,meta:..,optimised:..,units:..}
+        
+    >>> ldict = lazydict.dir1.file1_json.to_dict()
+    >>> isinstance(ldict,dict)
+    True
+    >>> pprint(ldict,depth=1)
+    initial: {...}
+    meta: {...}
+    optimised: {...}
+    units: {...}
+    
+    >>> lazydict = LazyLoad(get_test_path(),recursive=False)
+    >>> lazydict
+    {data.crystal.out:..}
+    
+    >>> LazyLoad([1,2,3])
+    Traceback (most recent call last):
+     ...
+    ValueError: not an expandable object: [1, 2, 3]
 
-        Examples
-        --------
-
-        >>> from pprint import pprint
-
-        >>> d = {'a':{'b':{'c':[1,2,3],'d':[4,5,6]}}}
-        >>> tree = DictTree(d)
-        >>> pprint(tree.a.b.attr_Dict)
-        {'c': [1, 2, 3], 'd': [4, 5, 6]}
-        >>> tree.a.b.c
-        [1, 2, 3]
-        >>> tree[['a','b','d']]
-        [4, 5, 6]
-        >>> tree.a.b.attr_DF
-           c  d
-        0  1  4
-        1  2  5
-        2  3  6
-
+    >>> plugins.unload_all_plugins()    
+    
     """
-    def __init__(self, ndict):
-        """ explore nested dictionaries by attributes
-
-        ndict : dict
-            nested dictionary
-
+    def __init__(self, obj, 
+                 ignore_prefixes=('.','_'), recursive=True,
+                 parent=None, 
+                 **parser_kwargs): 
+        """ initialise
         """
-        self._val = ndict
-
-        for name in ndict:
-            val = ndict[name]
-            if is_dict_like(val):
-                val = DictTree(val)
-            setattr(self,self._convert(name),val)
-
-        if is_dict_like(ndict):
-            setattr(self,'attr_Dict',ndict)
-            try:
-                setattr(self,'attr_DF',pd.DataFrame(ndict))
-            except NameError:
-                warnings.warn('pandas package not found in environment, please install to view leaf dicts as DataFrames',ImportWarning)
-            except:
-                pass
-
+        self._obj = obj
+        self._ignore_prefixes = ignore_prefixes
+        self._parser_kwargs = parser_kwargs
+        if 'object_hook' not in parser_kwargs:
+            self._parser_kwargs['object_hook']=decode
+        self._recurse = recursive
+        self._itemmap = None
+        self._tabmap = None
+    
+    def _next_level(self, obj):
+        """get object for next level of tab """
+        if hasattr(obj, 'items'):
+            child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+            return child
+        try:
+            if not obj.name.startswith(self._ignore_prefixes):
+                if parser_available(obj):
+                    child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+                    return child
+                elif obj.is_dir():
+                    child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+                    return child
+        except AttributeError:
+            pass            
+            
+        return obj
+    
+    def _expand(self):
+        """ create item map for 
+        """
+        if self._itemmap is not None:
+            return
+        
+        obj = self._obj
+        if hasattr(obj, 'items'):
+            self._itemmap = {key:self._next_level(val) for key,val in obj.items()}
+        
+        elif isinstance(obj, basestring):
+            obj = Path(obj)
+        try:
+            if obj.is_file():
+                new_obj = parse(obj,**self._parser_kwargs)
+                self._itemmap = {key:self._next_level(val) for key,val in new_obj.items()}
+            if obj.is_dir():
+                new_obj = {}
+                for subpath in obj.iterdir():
+                    if not subpath.name.startswith(self._ignore_prefixes):
+                        if parser_available(subpath):                            
+                            new_obj[subpath.name] = self._next_level(subpath)
+                        elif subpath.is_dir() and self._recurse:
+                            new_obj[subpath.name] = self._next_level(subpath)
+                self._itemmap = new_obj
+        except AttributeError:
+            pass
+        
+        if self._itemmap is None:
+            raise ValueError('not an expandable object: {}'.format(obj))
+        self._tabmap = {self._sanitise(key):val for key,val in self._itemmap.items()}
+     
+    def __dir__(self):
+        self._expand()
+        return ['keys','items','values','to_dict'] + [name for name in self._tabmap]
+    
+    def __getattr__(self,attr):
+        self._expand()
+        if attr in self._tabmap:
+            return self._tabmap[attr]
+        return super(LazyLoad,self).__getattr__(attr)
+        
+    def __getitem__(self, item):
+        self._expand()
+        return self._itemmap[item]        
+    
+    def __contains__(self, item):
+        self._expand()
+        return item in self._itemmap
+                
+    def __iter__(self):
+        self._expand()
+        for key in self._itemmap:
+            yield key        
+            
     def __repr__(self):
-        return 'dicttree({})'.format(str(self._val.__repr__()))
+        self._expand()
+        end=':..' if len(self._itemmap)>0 else ''
+        return '{'+':..,'.join(sorted([str(_) for _ in self._itemmap]))+end+'}'
+    def __str__(self):
+        return self.__repr__()
+    
+    def __gt__(self,other):
+        if not hasattr(other, '__str__'):
+            return NotImplemented
+        return len(self.__str__()) > len(other.__str__())
+    def __eq__(self,other):
+        if not hasattr(other, '__str__'):
+            return NotImplemented
+        return len(self.__str__()) == len(other.__str__())
 
-    def __getitem__(self, keys):
-        if isinstance(keys,basestring):
-            keys = [keys]
-        if not is_dict_like(self._val):
-            return None
-        else:
-            d = self._val
-            for k in keys:
-                d = d[k]
-            if is_dict_like(d):
-                return DictTree(d)
-            else:
-                return d
-
-    def _convert(self,val):
-        """attributes aren't allowed to start with a number
+    def _sanitise(self,val):
+        """sanitise tab names
+        attributes aren't allowed to start with a number
         and replace non alphanumeric characters with _
         """
         try:
@@ -1080,4 +1208,35 @@ class DictTree(object):
             val = 'i'+str(val)
         except:
             pass
-        return re.sub('[^0-9a-zA-Z]+', '_', str(val))
+        val = re.sub('[^0-9a-zA-Z]+', '_', str(val))
+        val = 's'+val if val.startswith('_') else val
+        val = val+'_key' if val in ['keys','items','values','to_dict'] else val
+        return val
+
+    def keys(self):
+        """ D.keys() -> iter of D's keys        
+        """
+        return self.__iter__()
+    def values(self):
+        """ D.values() -> list of D's values
+        """
+        self._expand()
+        for val in self._itemmap.values():
+            yield val        
+    def items(self):
+        """ D.items() -> list of D's (key, value) pairs, as 2-tuples
+        """
+        self._expand()
+        for key, val in self._itemmap.items():
+            yield key, val
+    
+    def _recurse_children(self, obj, root=None):
+        root = {} if root is None else root
+        if not hasattr(obj, 'items'):
+            return obj
+        else:
+            return {root[key] if key in root else key: self._recurse_children(value,root) for key, value in obj.items()}
+    
+    def to_dict(self):
+        """ return D.to_dict -> D (fully loaded) as nested dict """
+        return self._recurse_children(self)

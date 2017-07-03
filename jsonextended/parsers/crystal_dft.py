@@ -29,6 +29,8 @@ class CrystalDFTParser(BasicParser):
     ['initial', 'meta', 'optimisation', 'optimised', 'scf']
 
     """
+    
+    plugin_name = 'crystal.out'
     file_regex = '*crystal.out'
     
     def _eval_meta_data(self):

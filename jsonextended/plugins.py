@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
+
 import os, glob, inspect
 import imp
 import uuid
 from fnmatch import fnmatch
-
 
 #py 2/3 compatibility
 try:
@@ -14,127 +16,277 @@ try:
 except ImportError:
     from io import StringIO
 
+from jsonextended.utils import get_module_path
 
-from jsonextended.utils import get_module_path, class_to_str
+# list of plugin categories,
+# and their minimal class attribute interface
+# must include plugin_name
+_plugins_interface = {
+    'encoders':['plugin_name','objclass'],
+    'decoders':['plugin_name','dict_signature'],
+    'parsers': ['plugin_name','file_regex','read_file']}
+    
+# builtin plugin locations
+from jsonextended import encoders, parsers
+_plugins_builtin = [get_module_path(encoders),get_module_path(parsers)] 
+                
+# the internal plugin store
+_all_plugins = {name:{} for name in _plugins_interface}
 
-def _remove_plugins(name_list,cache):
-    """ remove plugins list
+def view_interfaces(category=None):
+    """ return a view of the plugin minimal class attribute interface(s)
+    
+    Properties
+    ----------
+    category : None or str
+        if str, apply for single plugin category
+    
+    Examples
+    --------
+    
+    >>> from pprint import pprint
+    >>> pprint(view_interfaces())
+    {'decoders': ['plugin_name', 'dict_signature'],
+     'encoders': ['plugin_name', 'objclass'],
+     'parsers': ['plugin_name', 'file_regex', 'read_file']}
+
+    """
+    if category is not None:
+        return sorted(_plugins_interface[category][:])
+    else:
+        return {k:v[:] for k,v in _plugins_interface.items()}
+
+def view_plugins(category=None):
+    """ return a view of the loaded plugin names
+    
+    Properties
+    ----------
+    category : None or str
+        if str, apply for single plugin category
+
+    Examples
+    --------
+    
+    >>> from pprint import pprint
+    >>> pprint(view_plugins())
+    {'decoders': [], 'encoders': [], 'parsers': []}
+
+    >>> class DecoderPlugin(object):
+    ...     plugin_name = 'example'
+    ...     dict_signature = ('_example_',)
+    ...
+    >>> errors = load_plugin_classes([DecoderPlugin])
+
+    >>> pprint(view_plugins())
+    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+    >>> view_plugins('decoders')
+    ['example']
+
+    >>> unload_all_plugins()
     
     """
-    if isinstance(name_list, basestring):
-        name_list=[name_list]
-    for name in name_list:
-        if name in cache:
-            cache.pop(name)
+    dct = _all_plugins
+    if not category is None:
+        return [name for name,klass in _all_plugins[category].items()]
+    else:
+        return {cat:sorted([name for name,klass in plugins.items()]) for cat,plugins in _all_plugins.items()}
+                        
+def get_plugins(category):
+    """ get plugins for category """
+    return _all_plugins[category]
+    
+def unload_all_plugins(category=None):
+    """ clear all plugins
 
+    Properties
+    ----------
+    category : None or str
+        if str, apply for single plugin category
+    
+    Examples
+    --------
+    
+    >>> from pprint import pprint
+    >>> pprint(view_plugins())
+    {'decoders': [], 'encoders': [], 'parsers': []}
 
-_encoders = {}
-def load_encoders(path,overwrite=False):
-    """ load encoders from path """
-    cache, signature = _encoders, ['objclass']
+    >>> class DecoderPlugin(object):
+    ...     plugin_name = 'example'
+    ...     dict_signature = ('_example_',)
+    ...
+    >>> errors = load_plugin_classes([DecoderPlugin])
+
+    >>> pprint(view_plugins())
+    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+    >>> unload_all_plugins()
+    >>> pprint(view_plugins())
+    {'decoders': [], 'encoders': [], 'parsers': []}
+
+    """
+    if category is None:
+        for cat in _all_plugins:
+            _all_plugins[cat] = {}
+    else:
+        _all_plugins[category] = {}
+
+def unload_plugin(name,category):
+    """ remove single plugin 
+    
+    Properties
+    ----------
+    name : str
+        plugin name
+    category : str
+        plugin category
+
+    Examples
+    --------
+    
+    >>> from pprint import pprint
+    >>> pprint(view_plugins())
+    {'decoders': [], 'encoders': [], 'parsers': []}
+
+    >>> class DecoderPlugin(object):
+    ...     plugin_name = 'example'
+    ...     dict_signature = ('_example_',)
+    ...
+    >>> errors = load_plugin_classes([DecoderPlugin],category='decoders')
+
+    >>> pprint(view_plugins())
+    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+    >>> unload_plugin('example','decoders')
+    >>> pprint(view_plugins())
+    {'decoders': [], 'encoders': [], 'parsers': []}
+
+    """
+    _all_plugins[category].pop(name)
+
+def load_plugin_classes(classes, category=None, overwrite=False):
+    """ load plugins from class objects    
+
+    Properties
+    ----------
+    category : None or str
+        if str, apply for single plugin category
+    overwrite : bool
+        if True, allow existing plugins to be overwritten
+
+    Examples
+    --------
+    
+    >>> from pprint import pprint
+    >>> pprint(view_plugins())
+    {'decoders': [], 'encoders': [], 'parsers': []}
+
+    >>> class DecoderPlugin(object):
+    ...     plugin_name = 'example'
+    ...     dict_signature = ('_example_',)
+    ...
+    >>> errors = load_plugin_classes([DecoderPlugin])
+
+    >>> pprint(view_plugins())
+    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+
+    >>> unload_all_plugins()
+
+    """    
+    load_errors = []
+    for klass in classes:
+        for pcat, pinterface in _plugins_interface.items():
+            if category is not None and not pcat == category:
+                continue
+            if all([hasattr(klass,attr) for attr in pinterface]):
+                if klass.plugin_name in _all_plugins[pcat] and not overwrite:
+                    err = '{0} is already set for {1}'.format(klass.plugin_name,pcat)
+                    load_errors.append(( str(pypath),'{}'.format(err) ))
+                    continue
+                _all_plugins[pcat][klass.plugin_name] = klass()
+    return load_errors
+
+def load_plugins_dir(path, category=None, overwrite=False):
+    """ load plugins from a directory   
+    
+    Properties
+    ----------
+    category : None or str
+        if str, apply for single plugin category
+    overwrite : bool
+        if True, allow existing plugins to be overwritten
+ 
+    """    
+    # get potential plugin python files
     if hasattr(path,'glob'):
         pypaths = path.glob('*.py')
     else:
         pypaths = glob.glob(os.path.join(path,'*.py')) 
     
+    load_errors = []
     for pypath in pypaths:
         try:
+            # use uuid to ensure no conflicts in name space
             module = imp.load_source(str(uuid.uuid4()),str(pypath))
         except Exception as err:
+            load_errors.append(( str(pypath),'{}'.format(err) ))
             continue
-            
-        for name, klass in inspect.getmembers(module, inspect.isclass):
-            if all([hasattr(klass,attr) for attr in signature]):
-                    name = class_to_str(klass.objclass)
-                    # py 2/3 compatibility
-                    name = name.replace('__builtin__','builtins')  
-                    if name in cache and not overwrite:
-                        raise ValueError('{0} already has a function set in {1}'.format(name,cache))
-                    cache[name] = klass
+        
+        classes =  [klass for klass_name, klass in inspect.getmembers(module, inspect.isclass)]
+        load_errors += load_plugin_classes(classes, category, overwrite)
 
-def reset_encoders():
-    """ reset to default encoders"""
-    for key in list(_encoders.keys()):
-        _encoders.pop(key)
-    from jsonextended import encoders
-    load_encoders(get_module_path(encoders))
-reset_encoders()
+    return load_errors
 
-def add_encoders(klass_list, overwrite=False):
-    """ encoders must be classes, with attributes: objclass, to_str and to_json
+def load_builtin_plugins(category=None, overwrite=False):
+    """load plugins from builtin directories
     
+    Properties
+    ----------
+    category : None or str
+        if str, apply for single plugin category
+
     Examples
     --------
-    >>> from jsonextended import plugins
-    >>> class ListDecoder(object):
-    ...     objclass = list
-    ...     def to_str(self, obj):
-    ...         return str(list)
-    ...     def to_json(self, obj):
-    ...         return obj
-    ...
-    >>> plugins.add_encoders([ListDecoder])
-    >>> 'builtins.list' in plugins.current_encoders()
-    True
-    >>> plugins.reset_encoders()
-    >>> 'builtins.list' in plugins.current_encoders()
-    False
     
-    """
-    cache, signature = _encoders, ['objclass']
+    >>> from pprint import pprint
+    >>> pprint(view_plugins())
+    {'decoders': [], 'encoders': [], 'parsers': []}
 
-    # check all first
-    for klass in klass_list:
-        if not all([hasattr(klass,attr) for attr in signature]):
-            raise ValueError('{0} must have attributes: {1}'.format(klass,signature))
-        name = class_to_str(klass.objclass)
-        # py 2/3 compatibility
-        name = name.replace('__builtin__','builtins')  
-        if name in cache and not overwrite:
-            raise ValueError('{0} already has a function set in {1}'.format(name,cache))
-    for klass in klass_list:  
-        name = class_to_str(klass.objclass)
-        # py 2/3 compatibility
-        name = name.replace('__builtin__','builtins')  
-        cache[name] = klass
+    >>> errors = load_builtin_plugins()
+    >>> errors
+    []
 
-def remove_encoders(name_list):
-    """ remove encoders in encoder list
-    
-    Examples
-    --------
-    >>> from jsonextended import plugins
-    >>> plugins.current_encoders()
-    ['builtins.set', 'decimal.Decimal', 'numpy.ndarray', 'pint.quantity._Quantity']
-    >>> plugins.remove_encoders('decimal.Decimal')
-    >>> plugins.current_encoders()
-    ['builtins.set', 'numpy.ndarray', 'pint.quantity._Quantity']
-    
+    >>> pprint(view_plugins())
+    {'decoders': ['decimal.Decimal',
+                  'numpy.ndarray',
+                  'pint.Quantity',
+                  'python.set'],
+     'encoders': ['decimal.Decimal',
+                  'numpy.ndarray',
+                  'pint.Quantity',
+                  'python.set'],
+     'parsers': ['crystal.out', 'json.basic']}
+
+    >>> unload_all_plugins()    
+
     """
-    _remove_plugins(name_list,_encoders)
+    load_errors = []
+    for path in _plugins_builtin:
+        load_errors += load_plugins_dir(path,category,overwrite=overwrite)
+    return load_errors
+
+def encode(obj, outtype='json', raise_error=False):
+    """ encode objects, via encoder plugins, to new types
     
-def current_encoders():
-    """ view encoder plugins
-    
-    Example
-    -------
-    >>> from jsonextended import plugins
-    >>> plugins.current_encoders()
-    ['builtins.set', 'decimal.Decimal', 'numpy.ndarray', 'pint.quantity._Quantity']
-    
-    """
-    # py 2 and 3 compatibility
-    #return _encoders.viewitems() if hasattr(_encoders,'viewitems') else _encoders.items()
-    return sorted(_encoders.keys())
-    
-def encode(obj, outtype='json'):
-    """ encode objects, via encoder plugins, to new type
-    
+    Properties
+    ----------
     outtype: str
         use encoder method to_<outtype> to encode
+    raise_error : bool
+        if True, raise ValueError if no suitable plugin found 
     
     Examples
     --------
+    >>> load_builtin_plugins('encoders')
+    []
+    
     >>> from decimal import Decimal
     >>> encode(Decimal('1.3425345'))
     {'_python_Decimal_': '1.3425345'}
@@ -146,234 +298,70 @@ def encode(obj, outtype='json'):
     >>> encode(set([1,2,3,4,4]),outtype='str')
     '{1, 2, 3, 4}'
     
-    class A(object):
-        def __init__(self):
-            self.a = 2
-        def b(self):
-            return 1
-
+    >>> unload_all_plugins()    
 
     """            
-    for klass_name, encoder in _encoders.items():
+    for encoder in get_plugins('encoders').values():
         if isinstance(obj, encoder.objclass) and hasattr(encoder, 'to_{}'.format(outtype)):
-            return getattr(encoder(),'to_{}'.format(outtype))(obj)
+            return getattr(encoder,'to_{}'.format(outtype))(obj)
             break  
                 
-    raise TypeError('No JSON serializer is available for {0} (of type {1})'.format(obj,type(obj)))
+    if raise_error:
+        raise ValueError('No JSON serializer is available for {0} (of type {1})'.format(obj,type(obj)))
+    else:  
+        return obj
 
-_decoders = {}
-def load_decoders(path,overwrite=False):
-    """ load decoders from path """
-    cache, signature = _decoders, ['dict_signature']
-    if hasattr(path,'glob'):
-        pypaths = path.glob('*.py')
-    else:
-        pypaths = glob.glob(os.path.join(path,'*.py')) 
+def decode(dct, outtype='json', raise_error=False):
+    """ decode dict objects, via decoder plugins, to new type
     
-    for pypath in pypaths:
-        try:
-            module = imp.load_source(str(uuid.uuid4()),str(pypath))
-        except Exception as err:
-            continue
-            
-        for name, klass in inspect.getmembers(module, inspect.isclass):
-            if all([hasattr(klass,attr) for attr in signature]):
-                    name = tuple(sorted(klass.dict_signature))
-                    if name in cache and not overwrite:
-                        raise ValueError('{0} already has a function set in {1}'.format(klass.dict_signature,cache))
-                    cache[name] = klass
-
-def reset_decoders():
-    """ reset to default decoders"""
-    for key in list(_decoders.keys()):
-        _decoders.pop(key)
-    from jsonextended import encoders
-    load_decoders(get_module_path(encoders))
-reset_decoders()
-
-def add_decoders(klass_list, overwrite=False):
-    """ decoders must be classes, with attributes: dict_signature
-    
-    Examples
-    --------
-    >>> from jsonextended import plugins
-    >>> class ListDecoder(object):
-    ...     dict_signature = ['_python_list_']
-    ...     def from_json(self, obj):
-    ...         return obj
-    ...
-    >>> plugins.add_decoders([ListDecoder])
-    >>> ('_python_list_',) in plugins.current_decoders()
-    True
-    >>> plugins.reset_decoders()
-    >>> ('_python_list_',) in plugins.current_decoders()
-    False
-    
-    """
-    cache, signature = _decoders, ['dict_signature']
-
-    # check all first
-    for klass in klass_list:
-        if not all([hasattr(klass,attr) for attr in signature]):
-            raise ValueError('{0} must have attributes: {1}'.format(klass,signature))
-        name = tuple(sorted(klass.dict_signature)) 
-        if name in cache and not overwrite:
-            raise ValueError('{0} already has a function set in {1}'.format(name,cache))
-    for klass in klass_list:  
-        name = tuple(sorted(klass.dict_signature))  
-        cache[name] = klass
-
-def remove_decoders(name_list):
-    """ remove decoders in decoder list
-    
-    Examples
-    --------
-    >>> from jsonextended import plugins
-    >>> plugins.current_decoders()
-    [('_numpy_ndarray',), ('_pint_Quantity_',), ('_python_Decimal_',), ('_python_set_',)]
-    >>> plugins.remove_decoders([('_python_Decimal_',)])
-    >>> plugins.current_decoders()
-    [('_numpy_ndarray',), ('_pint_Quantity_',), ('_python_set_',)]
-    
-    """
-    for name in name_list:
-        if name in _decoders:
-            _decoders.pop(name)
-    
-def current_decoders():
-    """ view encoder plugins
-    
-    Example
-    -------
-    >>> from jsonextended import plugins
-    >>> plugins.current_decoders()
-    [('_numpy_ndarray',), ('_pint_Quantity_',), ('_python_Decimal_',), ('_python_set_',)]
-    
-    """
-    # py 2 and 3 compatibility
-    #return _encoders.viewitems() if hasattr(_encoders,'viewitems') else _encoders.items()
-    return sorted(_decoders.keys())
-    
-def decode(dct, outtype='json'):
-    """ decode objects, via decoder plugins, to new type
-    
+    Properties
+    ----------
     outtype: str
         use decoder method from_<outtype> to encode
+    raise_error : bool
+        if True, raise ValueError if no suitable plugin found 
     
     Examples
     --------
+    >>> load_builtin_plugins('decoders')
+    []
+
     >>> from decimal import Decimal
     >>> decode({'_python_Decimal_':'1.3425345'})
     Decimal('1.3425345')
 
+    >>> unload_all_plugins()    
+
     """            
-    for klass_name, decoder in _decoders.items():
-        if set(decoder.dict_signature).issubset(dct.keys()) and hasattr(decoder, 'to_{}'.format(outtype)):
-            return getattr(decoder(),'from_{}'.format(outtype))(dct)
+    for decoder in get_plugins('decoders').values():
+        if set(decoder.dict_signature).issubset(dct.keys()) and hasattr(decoder, 'from_{}'.format(outtype)):
+            return getattr(decoder,'from_{}'.format(outtype))(dct)
             break  
-                
-    return dct
+              
+    if raise_error:
+        raise ValueError('no suitable plugin found for: {}'.format(dct))
+    else:  
+        return dct
 
-_parsers = {}
-_parser_load_errors = []
-def load_parsers(path,overwrite=False):
-    """ load parsers from path """
-    parser_load_errors = []
-    cache, signature = _parsers, ['file_regex','read_file']
-    if hasattr(path,'glob'):
-        pypaths = path.glob('*.py')
-    else:
-        pypaths = glob.glob(os.path.join(path,'*.py')) 
-    
-    for pypath in pypaths:
-        try:
-            with open(str(pypath), 'r') as infile:
-                module = imp.load_module(str(uuid.uuid4()),infile,
-                str(pypath),("py","r",imp.PY_SOURCE))
-        except Exception as err:
-            parser_load_errors.append('{}, {}'.format(pypath, err)) 
-            continue
-            
-        for name, klass in inspect.getmembers(module, inspect.isclass):
-            if all([hasattr(klass,attr) for attr in signature]):
-                    name = klass.file_regex
-                    if name in cache and not overwrite:
-                        raise ValueError('{0} already has a function set in {1}'.format(klass.file_regex,cache))
-                    cache[name] = klass
-    return parser_load_errors
-        
-def reset_parsers():
-    """ reset to default parsers """
-    for key in list(_parsers.keys()):
-        _parsers.pop(key)
-    from jsonextended import parsers
-    return load_parsers(get_module_path(parsers))
-_parser_load_errors = reset_parsers()
-
-def add_parsers(klass_list, overwrite=False):
-    """ parsers must be classes, with attributes: file_regex, read_file
+def parser_available(fpath):
+    """ test if parser plugin available for fpath
     
     Examples
     --------
-    >>> from jsonextended import plugins
-    >>> class Reader(object):
-    ...     file_regex = '*suffix.ext'
-    ...     def read_file(self, obj, **kwargs):
-    ...         return obj
-    ...
-    >>> plugins.add_parsers([Reader])
-    >>> '*suffix.ext' in plugins.current_parsers()
+    
+    >>> load_builtin_plugins('parsers')
+    []
+    >>> test_file = StringIO('{"a":[1,2,3.4]}')
+    >>> test_file.name = 'test.json'
+    >>> parser_available(test_file)
     True
-    >>> errors = plugins.reset_parsers()
-    >>> '*suffix.ext' in plugins.current_decoders()
+    >>> test_file.name = 'test.other'
+    >>> parser_available(test_file)
     False
     
-    """
-    cache, signature = _parsers, ['file_regex','read_file']
-
-    # check all first
-    for klass in klass_list:
-        if not all([hasattr(klass,attr) for attr in signature]):
-            raise ValueError('{0} must have attributes: {1}'.format(klass,signature))
-        name = klass.file_regex
-        if name in cache and not overwrite:
-            raise ValueError('{0} already has a function set in {1}'.format(name,cache))
-    for klass in klass_list:  
-        name = klass.file_regex
-        cache[name] = klass
-
-def remove_parsers(name_list):
-    """ remove parsers in parser list
-    
-    Examples
-    --------
-    >>> from jsonextended import plugins
-    >>> plugins.current_parsers()
-    ['*.json', '*crystal.out']
-    >>> plugins.remove_parsers([('_python_Decimal_',)])
-    >>> plugins.current_parsers()
-    ['*.json', '*crystal.out']
+    >>> unload_all_plugins()    
     
     """
-    for name in name_list:
-        if name in _parsers:
-            _parsers.pop(name)
-    
-def current_parsers():
-    """ view parsers plugins
-    
-    Example
-    -------
-    >>> from jsonextended import plugins
-    >>> plugins.current_parsers()
-    ['*.json', '*crystal.out']
-    
-    """
-    # py 2 and 3 compatibility
-    #return _encoders.viewitems() if hasattr(_encoders,'viewitems') else _encoders.items()
-    return sorted(_parsers.keys())
-    
-def can_parse(fpath):
     if isinstance(fpath,basestring):
         fname = fpath
     elif hasattr(fpath, 'open') and hasattr(fpath, 'name'):
@@ -383,16 +371,15 @@ def can_parse(fpath):
     else:
         raise ValueError('fpath should be a str or file_like object: {}'.format(rfile))
     
-    # find longest match first
-    for regex, parser in _parsers.items():
-        if fnmatch(fname,regex):
+    for parser in get_plugins('parsers').values():
+        if fnmatch(fname,parser.file_regex):
             return True
                 
     return False
-    
-    
+
 def parse(fpath, **kwargs):
     """ parse file contents, via parser plugins, to dict like object
+    NB: the longest file regex will be used from plugins
     
     Properties
     ----------
@@ -405,10 +392,14 @@ def parse(fpath, **kwargs):
     Examples
     --------
     
+    >>> load_builtin_plugins('parsers')
+    []
+
     >>> from pprint import pformat
 
     >>> json_file = StringIO('{"a":[1,2,3.4]}')
     >>> json_file.name = 'test.json'
+    
     >>> dct = parse(json_file)
     >>> print(pformat(dct).replace("u'","'"))
     {'a': [1, 2, 3.4]}
@@ -418,6 +409,19 @@ def parse(fpath, **kwargs):
     >>> dct = parse(json_file, parse_float=Decimal,other=1)
     >>> print(pformat(dct).replace("u'","'"))    
     {'a': [1, 2, Decimal('3.4')]}
+    
+    >>> class NewParser(object):
+    ...     plugin_name = 'example'
+    ...     file_regex = 'test.json'
+    ...     def read_file(self, file_obj, **kwargs):
+    ...         return {'example':1}
+    >>> load_plugin_classes([NewParser],'parsers')
+    []
+    >>> reset = json_file.seek(0)
+    >>> parse(json_file)
+    {'example': 1}
+    
+    >>> unload_all_plugins()    
 
     """            
     if isinstance(fpath,basestring):
@@ -429,18 +433,22 @@ def parse(fpath, **kwargs):
     else:
         raise ValueError('fpath should be a str or file_like object: {}'.format(rfile))
     
+    parser_dict = {plugin.file_regex:plugin for plugin in get_plugins('parsers').values()}
+    
     # find longest match first
-    for regex, parser in sorted(_parsers.items(),key=len,reverse=True):
+    for regex in sorted(parser_dict.keys(),key=len,reverse=True):
+        parser = parser_dict[regex]
         if fnmatch(fname,regex):
             if isinstance(fpath,basestring):
                 with open(fpath,'r') as file_obj:
-                    data = parser().read_file(file_obj, **kwargs)
+                    data = parser.read_file(file_obj, **kwargs)
             elif hasattr(fpath, 'open'):
                 with fpath.open('r') as file_obj:
-                    data = parser().read_file(file_obj, **kwargs)            
+                    data = parser.read_file(file_obj, **kwargs)            
             elif hasattr(fpath, 'readline'):
-                data = parser().read_file(fpath, **kwargs)            
+                data = parser.read_file(fpath, **kwargs)            
             return data
                 
     raise ValueError('{} does not match any regex'.format(fname))
 
+    

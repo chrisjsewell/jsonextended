@@ -4,6 +4,7 @@ from pint.quantity import _Quantity
 
 class Encode_Quantity(object):
     
+    plugin_name = 'pint.Quantity'
     objclass = _Quantity
     dict_signature = ['_pint_Quantity_']
     
