@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """ a module to manipulate python dictionary like objects
 
 """
@@ -130,18 +132,19 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     Examples
     --------
 
-    >>> d = {'a':{'b':{'c':[1,2],'de':[4,5,6,7,8,9]}}}
+    >>> d = {'a':{'b':{'c':'Å','de':[4,5,[7,'x'],9]}}}
     >>> pprint(d,depth=None)
     a: 
       b: 
-        c:  [1, 2]
-        de: [4, 5, 6, 7, 8, 9]
+        c:  Å
+        de: [4, 5, [7, x], 9]
     >>> pprint(d,max_width=17,depth=None)
     a: 
       b: 
-        c:  [1, 2]
-        de: [4, 5, 6, 
-            7, 8, 9]
+        c:  Å
+        de: [4, 5, 
+            [7, x], 
+            9]
     >>> pprint(d,no_values=True,depth=None)
     a: 
       b: 
@@ -159,29 +162,34 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
         print_func('{}'.format(d))
         return
 
-    def convert_str(obj):
-        """ convert unicode to str (so no u'' prefix in python 2) """
+    def decode_to_str(obj):
+        val_string = obj
         if isinstance(obj, list):
-            return str([str(v) if isinstance(v,basestring) else v for v in obj])
-        if isinstance(obj, tuple):
-            return str(tuple([str(v) if isinstance(v,basestring) else v for v in obj]))
+            val_string = '['+', '.join([decode_to_str(o) for o in obj])+']'
+        elif isinstance(obj, tuple):
+            val_string = '('+', '.join([decode_to_str(o) for o in obj])+')'
         else:
             try:
-                return str(obj)
-            except:
-                return unicode(obj)
+                val_string = encode(obj, outtype='str')
+            except (TypeError, UnicodeError):
+               pass
+        # convert unicode to str (so no u'' prefix in python 2)         
+        try:
+            return str(val_string)
+        except:
+            return unicode(val_string)
 
     if align_vals:
         key_width = 0
         for key, val in d.items():
             if not isinstance(val,dict):
-                key_str = convert_str(key)
+                key_str = decode_to_str(key)
                 key_width = max(key_width, len(key_str))
 
     max_depth = depth
     for key in natural_sort(d.keys()):
         value = d[key]
-        key_str = convert_str(key)
+        key_str = decode_to_str(key)
 
         if align_vals:
             key_str = '{0: <{1}} '.format(key_str+delim,key_width+len(delim))
@@ -200,12 +208,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                             max_width,depth=max_depth-1 if not max_depth is None else None,
                             no_values=no_values,align_vals=align_vals,print_func=print_func)
         else:
-            val_string = value
-            try:
-                val_string = encode(value, as_str=True)
-            except TypeError:
-               pass
-            val_string = convert_str(val_string) if not no_values else ''
+            val_string = decode_to_str(value) if not no_values else ''
             if not max_width is None:
                 if len(' ' * initindent + key_str)+1 > max_width:
                     raise Exception('cannot fit keys and data within set max_width')
@@ -420,14 +423,14 @@ def merge(dicts,overwrite=False,append=False):
     """
     outdict = copy.deepcopy(dicts[0])
 
-    def merge(a, b, overwrite=overwrite, error_path=None):
+    def single_merge(a, b, overwrite=overwrite, error_path=None):
         """merges b into a
         """
         if error_path is None: error_path = []
         for key in b:
             if key in a:
                 if isinstance(a[key], dict) and isinstance(b[key], dict):
-                    merge(a[key], b[key], overwrite, error_path + [str(key)])
+                    single_merge(a[key], b[key], overwrite, error_path + [str(key)])
                 elif isinstance(a[key], list) and isinstance(b[key], list) and append:
                     a[key] += b[key]
                 elif a[key] == b[key]:
@@ -441,7 +444,7 @@ def merge(dicts,overwrite=False,append=False):
                 a[key] = b[key]
         return a
 
-    reduce(merge, [outdict]+dicts[1:])
+    reduce(single_merge, [outdict]+dicts[1:])
 
     return outdict
 

@@ -1,13 +1,20 @@
+from pint import UnitRegistry
+ureg = UnitRegistry()
 from pint.quantity import _Quantity
 
 class Encode_Quantity(object):
+    
     objclass = _Quantity
+    dict_signature = ['_pint_Quantity_']
+    
     def to_str(self, obj):
         return ' '.join(u'{:~}'.format(obj).split())
+        
     def to_json(self, obj):
         value = obj.magnitude
-        # if numpy array
-        if hasattr(value,'tolist'):
-            return value.tolist()
-        else:
-            return value
+        units = obj.units
+        return {'_pint_Quantity_':{'Magnitude':value,'Units':str(units)}}
+            
+    def from_json(self, obj):
+        return ureg.Quantity(obj['_pint_Quantity_']['Magnitude'],
+                             obj['_pint_Quantity_']['Units'])

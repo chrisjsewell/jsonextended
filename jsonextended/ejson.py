@@ -56,8 +56,8 @@ except ImportError:
 # local imports
 from jsonextended import _example_json_folder
 from jsonextended.utils import get_module_path
-from jsonextended.edict import indexes, pprint
-    
+from jsonextended.edict import indexes, pprint, convert_type
+from jsonextended.plugins import decode    
     
 
 def get_test_path():
@@ -74,7 +74,7 @@ def get_test_path():
 
 def _get_keys(file_obj,key_path=None):
     key_path = [] if key_path is None else key_path
-    data = json.load(file_obj)
+    data = json.load(file_obj,object_hook=decode)
     data = indexes(data,key_path)
     if hasattr(data,'keys'):
         return sorted([str(k) if isinstance(k,basestring) else k for k in data.keys()])
@@ -251,16 +251,19 @@ def _file_with_keys(file_obj,key_path=None,parse_decimal=False):
     except NameError:
         warnings.warn('ijson package not found in environment, \
         please install for on-disk key indexing',ImportWarning)
-        data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
+        data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
         return indexes(data,key_path)
     try:
-        data = objs.next()
+        data = next(objs)#.next()
     except StopIteration:
         raise KeyError('key path not available in json: {}'.format(key_path))
 
     # by default ijson parses Decimal values
     if not parse_decimal:
         convert_type(data, Decimal, float, in_place=True)
+        
+    datastr = json.dumps(data)
+    data = json.loads(datastr,object_hook=decode)
 
     return data
 
@@ -387,12 +390,10 @@ def to_dict(jfile, key_path=None, in_memory=True ,
       file1: {...}
     dir3: 
 
-    >>> jdict2 = to_dict(path,['dir1','file1'],in_memory=False)
+    >>> jdict2 = to_dict(path,['dir1','file1','initial'],in_memory=False)
     >>> pprint(jdict2,depth=1)
-    initial: {...}
-    meta: {...}
-    optimised: {...}
-    units: {...}
+    crystallographic: {...}
+    primitive: {...}
 
     """        
     key_path = [] if key_path is None else key_path
@@ -411,28 +412,28 @@ def to_dict(jfile, key_path=None, in_memory=True ,
                 if key_path and not in_memory:
                     data = _file_with_keys(file_obj,key_path,parse_decimal)
                 elif key_path:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
                     data = indexes(data,key_path)
                 else:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
     elif hasattr(jfile,'read'):
         if key_path and not in_memory:
             data = _file_with_keys(jfile,key_path,parse_decimal)
         elif key_path:
-            data = json.load(jfile, parse_float=Decimal if parse_decimal else float)
+            data = json.load(jfile, parse_float=Decimal if parse_decimal else float,object_hook=decode)
             data = indexes(data,key_path)
         else:
-            data = json.load(jfile, parse_float=Decimal if parse_decimal else float)
+            data = json.load(jfile, parse_float=Decimal if parse_decimal else float,object_hook=decode)
     elif hasattr(jfile,'iterdir'):
         if jfile.is_file():
             with jfile.open() as file_obj:
                 if key_path and not in_memory:
                     data = _file_with_keys(file_obj,key_path,parse_decimal)
                 elif key_path:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
                     data = indexes(data,key_path)
                 else:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
         else:
             data = {}
             _folder_to_json(jfile,key_path[:],in_memory,ignore_prefix,data,parse_decimal)

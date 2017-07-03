@@ -13,6 +13,23 @@ except ImportError:
     import pathlib2 as pathlib
 
 
+def class_to_str(obj):
+    """ get class string from object 
+    
+    Examples
+    --------
+    
+    >>> class_to_str(list).split('.')[1]
+    'list'
+       
+    """
+    mod_str = obj.__module__
+    name_str = obj.__name__
+    if mod_str=='__main__':
+        return name_str 
+    else :
+        return '.'.join([mod_str,name_str])
+
 def get_module_path(module):
     """return a directory path to a module"""
     return pathlib.Path(os.path.dirname(os.path.abspath(inspect.getfile(module))))

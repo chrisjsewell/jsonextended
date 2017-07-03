@@ -84,10 +84,10 @@ optimised:
     volume: 531.994803
 
 >>> ejson.edict.pprint(ejson.edict.flatten(filtered))
-('initial', 'crystallographic', 'volume'):   924.62752781
-('initial', 'primitive', 'volume'):          462.313764
-('optimised', 'crystallographic', 'volume'): 1063.98960509
-('optimised', 'primitive', 'volume'):        531.994803
+(initial, crystallographic, volume):   924.62752781
+(initial, primitive, volume):          462.313764
+(optimised, crystallographic, volume): 1063.98960509
+(optimised, primitive, volume):        531.994803
 
 """
 
