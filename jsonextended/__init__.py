@@ -43,17 +43,17 @@ e.g.
 Examples
 --------
 
->>> import jsonextended as ejson
+>>> from jsonextended import ejson, edict
 
->>> path = ejson.ejson.get_test_path()
+>>> path = ejson.get_test_path()
 >>> path.is_dir()
 True
 
->>> ejson.ejson.jkeys(path)
+>>> ejson.jkeys(path)
 ['dir1', 'dir2', 'dir3']
 
->>> jdict1 = ejson.ejson.to_dict(path)
->>> ejson.edict.pprint(jdict1,depth=2)
+>>> jdict1 = ejson.to_dict(path)
+>>> edict.pprint(jdict1,depth=2)
 dir1: 
   dir1_1: {...}
   file1: {...}
@@ -63,15 +63,15 @@ dir2:
 dir3: 
 
 
->>> jdict2 = ejson.ejson.to_dict(path,['dir1','file1'])
->>> ejson.edict.pprint(jdict2,depth=1)
+>>> jdict2 = ejson.to_dict(path,['dir1','file1'])
+>>> edict.pprint(jdict2,depth=1)
 initial: {...}
 meta: {...}
 optimised: {...}
 units: {...}
 
->>> filtered = ejson.edict.filter_keys(jdict2,['vol*'],use_wildcards=True)
->>> ejson.edict.pprint(filtered)
+>>> filtered = edict.filter_keys(jdict2,['vol*'],use_wildcards=True)
+>>> edict.pprint(filtered)
 initial: 
   crystallographic: 
     volume: 924.62752781
@@ -83,7 +83,7 @@ optimised:
   primitive: 
     volume: 531.994803
 
->>> ejson.edict.pprint(ejson.edict.flatten(filtered))
+>>> edict.pprint(edict.flatten(filtered))
 (initial, crystallographic, volume):   924.62752781
 (initial, primitive, volume):          462.313764
 (optimised, crystallographic, volume): 1063.98960509
@@ -91,9 +91,9 @@ optimised:
 
 """
 
-__version__ = '0.1.4'
+__version__ = '0.2.0'
 
-from jsonextended import ejson, parsers, units, utils, edict, encoders
+from jsonextended import ejson, units, utils, edict, plugins
 
 def _run_nose_tests(doctests=True, verbose=True):
     """ 

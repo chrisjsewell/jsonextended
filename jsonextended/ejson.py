@@ -45,20 +45,15 @@ except ImportError:
 import warnings
 warnings.simplefilter('once',ImportWarning)
 try:
-    import pandas as pd
-except ImportError:
-    pass
-try:
     import ijson
 except ImportError:
     pass
     
 # local imports
-from jsonextended import _example_json_folder
+from jsonextended import _example_data_folder
 from jsonextended.utils import get_module_path
 from jsonextended.edict import indexes, pprint, convert_type
-from jsonextended.plugins import decode    
-    
+from jsonextended.plugins import decode, can_parse, parse   
 
 def get_test_path():
     """ returns test path object
@@ -67,10 +62,10 @@ def get_test_path():
     --------
     >>> path = get_test_path()
     >>> path.name
-    '_example_json_folder'
+    '_example_data_folder'
 
     """
-    return get_module_path(_example_json_folder)
+    return get_module_path(_example_data_folder)
 
 def _get_keys(file_obj,key_path=None):
     key_path = [] if key_path is None else key_path
@@ -443,73 +438,139 @@ def to_dict(jfile, key_path=None, in_memory=True ,
         raise ValueError('jfile should be a str, file_like or path_like object: {}'.format(jfile))
 
     return data
-
-
-class DictTree(object):
-    """ a class to explore nested dictionaries by attributes
-
-        Examples
-        --------
-
-        >>> from pprint import pprint
-
-        >>> d = {'a':{'b':{'c':[1,2,3],'d':[4,5,6]}}}
-        >>> tree = DictTree(d)
-        >>> pprint(tree.a.b.attr_Dict)
-        {'c': [1, 2, 3], 'd': [4, 5, 6]}
-        >>> tree.a.b.c
-        [1, 2, 3]
-        >>> tree[['a','b','d']]
-        [4, 5, 6]
-        >>> tree.a.b.attr_DF
-           c  d
-        0  1  4
-        1  2  5
-        2  3  6
-
+    
+class LazyLoad(object):
+    """ lazy load a file structure as a pseudo dictionary
+    (works with all edict functions)
+    supplies tab completion of keys
+    
+    Properties
+    ----------
+    obj : dict, string, file_like
+        object 
+    ignore_prefix : list of str
+        ignore files and folders beginning with these prefixes
+    
+    Examples
+    --------
+    
+    >>> l = LazyLoad({'a':2,3:4})
+    >>> print(l)
+    {3:..,a:..}
+    >>> l.a
+    2
+    >>> l.i3
+    4
+    
+    >>> path = get_test_path()
+    >>> from jsonextended.edict import pprint
+    >>> l = LazyLoad(path)
+    >>> pprint(l,depth=2)
+    data.crystal.out: 
+      initial: {...}
+      meta: {...}
+      optimisation: {...}
+      optimised: {...}
+      scf: {...}
+    dir1: 
+      dir1_1: {...}
+      file1.json: {...}
+      file2.json: {...}
+    dir2: 
+      file1.json: {...}
+    dir3: 
+    >>> 'dir1' in l
+    True
+    >>> l.dir1.file1_json
+    {initial:..,meta:..,optimised:..,units:..}
+    
+    
     """
-    def __init__(self, ndict):
-        """ explore nested dictionaries by attributes
-
-        ndict : dict
-            nested dictionary
-
+    def __init__(self, obj, ignore_prefixes=('.','_'), parent=None): 
+        self._ignore_prefixes = ignore_prefixes
+        self._obj = obj
+        self._itemmap = None
+        self._tabmap = None
+    
+    def _next_level(self, obj):
+        """get object for next level of tab """
+        if hasattr(obj, 'items'):
+            child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+            return child
+        try:
+            if not obj.name.startswith(self._ignore_prefixes):
+                if can_parse(obj):
+                    child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+                    return child
+                elif obj.is_dir():
+                    child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+                    return child
+        except AttributeError:
+            pass            
+            
+        return obj
+    
+    def _expand(self):
+        """ create item map for 
         """
-        self._val = ndict
-
-        for name in ndict:
-            val = ndict[name]
-            if isinstance(val, dict):
-                val = DictTree(val)
-            setattr(self,self._convert(name),val)
-
-        if isinstance(ndict, dict):
-            setattr(self,'attr_Dict',ndict)
-            try:
-                setattr(self,'attr_DF',pd.DataFrame(ndict))
-            except NameError:
-                warnings.warn('pandas package not found in environment, please install to view leaf dicts as DataFrames',ImportWarning)
-            except:
-                pass
-
+        if self._itemmap is not None:
+            return
+        
+        obj = self._obj
+        if hasattr(obj, 'items'):
+            self._itemmap = {key:self._next_level(val) for key,val in obj.items()}
+        
+        elif isinstance(obj, basestring):
+            obj = Path(obj)
+        try:
+            if obj.is_file():
+                new_obj = parse(obj)
+                self._itemmap = {key:self._next_level(val) for key,val in new_obj.items()}
+            if obj.is_dir():
+                new_obj = {}
+                for subpath in obj.iterdir():
+                    if not subpath.name.startswith(self._ignore_prefixes):
+                        if can_parse(subpath):                            
+                            new_obj[subpath.name] = self._next_level(subpath)
+                        elif subpath.is_dir():
+                            new_obj[subpath.name] = self._next_level(subpath)
+                self._itemmap = new_obj
+        except AttributeError:
+            pass
+        
+        if self._itemmap is None:
+            raise ValueError('not an expandable object: {}'.format(obj))
+        self._tabmap = {self._sanitise(key):val for key,val in self._itemmap.items()}
+     
+    def __dir__(self):
+        self._expand()
+        return ['keys','items'] + [name for name in self._tabmap]
+    
+    def __getattr__(self,attr):
+        self._expand()
+        if attr in self._tabmap:
+            return self._tabmap[attr]
+        return super(LazyLoad,self).__getattr__(attr)
+        
+    def __getitem__(self, item):
+        self._expand()
+        return self._itemmap[item]        
+    
+    def __contains__(self, item):
+        self._expand()
+        return item in self._itemmap
+                
+    def __iter__(self):
+        self._expand()
+        for key in self._itemmap:
+            yield key        
+            
     def __repr__(self):
-        return 'dicttree({})'.format(str(self._val.__repr__()))
+        self._expand()
+        end=':..' if len(self._itemmap)>0 else ''
+        return '{'+':..,'.join(sorted([str(_) for _ in self._itemmap]))+end+'}'
 
-    def __getitem__(self, keys):
-        if isinstance(keys,basestring):
-            keys = [keys]
-        if not isinstance(self._val, dict):
-            return None
-        else:
-            d = self._val
-            for k in keys:
-                d = d[k]
-            if isinstance(d, dict):
-                return DictTree(d)
-            else:
-                return d
-
-    def _convert(self,val):
+    def _sanitise(self,val):
         """attributes aren't allowed to start with a number
         and replace non alphanumeric characters with _
         """
@@ -518,9 +579,16 @@ class DictTree(object):
             val = 'i'+str(val)
         except:
             pass
-        return re.sub('[^0-9a-zA-Z]+', '_', str(val))
+        val = re.sub('[^0-9a-zA-Z]+', '_', str(val))
+        val = 's'+val if val.startswith('_') else val
+        val = val+'_key' if val in ['keys','items'] else val
+        return val
 
-
-if __name__ == '__main__':
-    import doctest
-    print(doctest.testmod())
+    def keys(self):
+        """ D.keys() -> iter of D's keys        
+        """
+        return self.__iter__()
+    def items(self):
+        self._expand()
+        for key, val in self._itemmap.items():
+            yield key, val

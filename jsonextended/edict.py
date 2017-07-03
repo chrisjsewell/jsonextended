@@ -5,10 +5,11 @@
 
 """
 # internal packages
-import sys
+import os, sys
 import copy
 import uuid
 import json
+import re
 from fnmatch import fnmatch
 import textwrap
 from functools import reduce
@@ -23,9 +24,24 @@ try:
 except NameError:
     basestring = str
 
+# external packages
+import warnings
+warnings.simplefilter('once',ImportWarning)
+try:
+    import pandas as pd
+except ImportError:
+    pass
+
 # local imports
 from jsonextended.utils import natural_sort
 from jsonextended.plugins import encode
+
+def is_dict_like(obj,attr=('keys','items')):
+    """test if object dict like"""
+    for a in attr:
+        if not hasattr(obj, a):
+           return False
+    return True 
 
 def convert_type(d, intype, outtype, convert_list=True, in_place=True):
     """ convert all values of one type to another 
@@ -78,7 +94,7 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
 
     def _traverse_dict(dic):
         for key in dic.keys():
-            if isinstance(dic[key], dict):
+            if is_dict_like(dic[key]):
                 _traverse_dict(dic[key])
             else:
                 dic[key] = _convert(dic[key])
@@ -86,7 +102,7 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
     def _traverse_iter(iter):
         new_iter = []
         for key in iter:
-            if isinstance(key, dict):
+            if is_dict_like(key):
                 _traverse_dict(key)
                 new_iter.append(key)
             else:
@@ -94,7 +110,7 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
                 
         return new_iter
 
-    if isinstance(out_dict,dict):
+    if is_dict_like(out_dict):
         _traverse_dict(out_dict)
     else:
         data = _convert(out_dict)
@@ -158,7 +174,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     if print_func is None:
         print_func = _default_print_func
 
-    if not isinstance(d, dict):
+    if not is_dict_like(d):
         print_func('{}'.format(d))
         return
 
@@ -182,7 +198,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     if align_vals:
         key_width = 0
         for key, val in d.items():
-            if not isinstance(val,dict):
+            if not is_dict_like(val):
                 key_str = decode_to_str(key)
                 key_width = max(key_width, len(key_str))
 
@@ -199,7 +215,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
         depth = max_depth if not max_depth is None else 2
         if depth <= 0:
             pass
-        elif isinstance(value, dict):
+        elif is_dict_like(value):
             if depth <= 1:
                 print_func(' ' * initindent + key_str + '{...}')
             else:
@@ -310,7 +326,7 @@ def flatten(d,key_as_tuple=True,sep='.'):
 
     """
     def expand(key, value):
-        if isinstance(value, dict):
+        if is_dict_like(value):
             if key_as_tuple:
                 return [ (key + k, v) for k, v in flatten(value,key_as_tuple).items() ]
             else:
@@ -429,7 +445,7 @@ def merge(dicts,overwrite=False,append=False):
         if error_path is None: error_path = []
         for key in b:
             if key in a:
-                if isinstance(a[key], dict) and isinstance(b[key], dict):
+                if is_dict_like(a[key]) and is_dict_like(b[key]):
                     single_merge(a[key], b[key], overwrite, error_path + [str(key)])
                 elif isinstance(a[key], list) and isinstance(b[key], list) and append:
                     a[key] += b[key]
@@ -604,7 +620,7 @@ def filter_values(d,vals=None):
 
     def fltr(dic):
         for key in list(dic.keys()):
-            if isinstance(dic[key], dict):
+            if is_dict_like(dic[key]):
                 fltr(dic[key])
                 if not dic[key]:
                     del dic[key]
@@ -639,19 +655,19 @@ def filter_keys(d, keys, use_wildcards=False):
     {1: {'axxxx': 'A'}}
 
     """
-    if isinstance(d, dict):
+    if is_dict_like(d):
         retVal = {}
         for key in d:
             if use_wildcards and isinstance(key, basestring):
                 if any([fnmatch(key,k) for k in keys]):
                     retVal[key] = copy.deepcopy(d[key])
-                elif isinstance(d[key], list) or isinstance(d[key], dict):
+                elif isinstance(d[key], list) or is_dict_like(d[key]):
                     child = filter_keys(d[key], keys, use_wildcards)
                     if child:
                         retVal[key] = child
             elif key in keys:
                 retVal[key] = copy.deepcopy(d[key])
-            elif isinstance(d[key], list) or isinstance(d[key], dict):
+            elif isinstance(d[key], list) or is_dict_like(d[key]):
                 child = filter_keys(d[key], keys, use_wildcards)
                 if child:
                     retVal[key] = child
@@ -934,7 +950,7 @@ class to_html(object):
                 return False
             return True
 
-        if isinstance(obj, dict):
+        if is_dict_like(obj):
             self.str = json.dumps(obj,default=encode,sort_keys=True)
         elif is_json(obj):
             self.str = obj
@@ -990,3 +1006,78 @@ class to_html(object):
         from IPython.display import display_html, display_javascript
         display_html(self._CSS+self._get_html())
         display_javascript(self._get_javascript())
+
+class DictTree(object):
+    """ a class to explore nested dictionaries by attributes
+
+        Examples
+        --------
+
+        >>> from pprint import pprint
+
+        >>> d = {'a':{'b':{'c':[1,2,3],'d':[4,5,6]}}}
+        >>> tree = DictTree(d)
+        >>> pprint(tree.a.b.attr_Dict)
+        {'c': [1, 2, 3], 'd': [4, 5, 6]}
+        >>> tree.a.b.c
+        [1, 2, 3]
+        >>> tree[['a','b','d']]
+        [4, 5, 6]
+        >>> tree.a.b.attr_DF
+           c  d
+        0  1  4
+        1  2  5
+        2  3  6
+
+    """
+    def __init__(self, ndict):
+        """ explore nested dictionaries by attributes
+
+        ndict : dict
+            nested dictionary
+
+        """
+        self._val = ndict
+
+        for name in ndict:
+            val = ndict[name]
+            if is_dict_like(val):
+                val = DictTree(val)
+            setattr(self,self._convert(name),val)
+
+        if is_dict_like(ndict):
+            setattr(self,'attr_Dict',ndict)
+            try:
+                setattr(self,'attr_DF',pd.DataFrame(ndict))
+            except NameError:
+                warnings.warn('pandas package not found in environment, please install to view leaf dicts as DataFrames',ImportWarning)
+            except:
+                pass
+
+    def __repr__(self):
+        return 'dicttree({})'.format(str(self._val.__repr__()))
+
+    def __getitem__(self, keys):
+        if isinstance(keys,basestring):
+            keys = [keys]
+        if not is_dict_like(self._val):
+            return None
+        else:
+            d = self._val
+            for k in keys:
+                d = d[k]
+            if is_dict_like(d):
+                return DictTree(d)
+            else:
+                return d
+
+    def _convert(self,val):
+        """attributes aren't allowed to start with a number
+        and replace non alphanumeric characters with _
+        """
+        try:
+            int(str(val)[0])
+            val = 'i'+str(val)
+        except:
+            pass
+        return re.sub('[^0-9a-zA-Z]+', '_', str(val))

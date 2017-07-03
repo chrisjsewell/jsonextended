@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -- coding: utf-8 --
 
-from jsonextended.parsers.base import BasicParser
+from jsonextended.parsers.basic_abstract import BasicParser
 
 class CrystalDFTParser(BasicParser):
     """ a class for parsing Crystal DFT Simulation Data
@@ -21,14 +21,16 @@ class CrystalDFTParser(BasicParser):
     Examples
     --------
     
-    >>> from jsonextended import utils, parsers
-    >>> datapath = utils.get_data_path('crystal_test.data',parsers)
+    >>> from jsonextended import utils, _example_data_folder
+    >>> datapath = utils.get_data_path('data.crystal.out',_example_data_folder)
     >>> parser = CrystalDFTParser()
-    >>> parser.read_file(datapath)
-    >>> sorted(parser.data.keys())
+    >>> data = parser.read_file(datapath)
+    >>> sorted(data.keys())
     ['initial', 'meta', 'optimisation', 'optimised', 'scf']
 
     """
+    file_regex = '*crystal.out'
+    
     def _eval_meta_data(self):
         if self._has_sig('date:'):
             self.add_data('start date',' '.join(self._get_fields_after(1)),['meta'])

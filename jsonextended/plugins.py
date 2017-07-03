@@ -1,13 +1,19 @@
 import os, glob, inspect
 import imp
 import uuid
-import warnings
+from fnmatch import fnmatch
+
 
 #py 2/3 compatibility
 try:
     basestring
 except NameError:
     basestring = str
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 
 from jsonextended.utils import get_module_path, class_to_str
 
@@ -266,5 +272,175 @@ def decode(dct, outtype='json'):
             return getattr(decoder(),'from_{}'.format(outtype))(dct)
             break  
                 
-    return dct#raise TypeError('No JSON deserializer is available for {0} (of type {1})'.format(dct,type(dct)))
+    return dct
+
+_parsers = {}
+_parser_load_errors = []
+def load_parsers(path,overwrite=False):
+    """ load parsers from path """
+    parser_load_errors = []
+    cache, signature = _parsers, ['file_regex','read_file']
+    if hasattr(path,'glob'):
+        pypaths = path.glob('*.py')
+    else:
+        pypaths = glob.glob(os.path.join(path,'*.py')) 
+    
+    for pypath in pypaths:
+        try:
+            with open(str(pypath), 'r') as infile:
+                module = imp.load_module(str(uuid.uuid4()),infile,
+                str(pypath),("py","r",imp.PY_SOURCE))
+        except Exception as err:
+            parser_load_errors.append('{}, {}'.format(pypath, err)) 
+            continue
+            
+        for name, klass in inspect.getmembers(module, inspect.isclass):
+            if all([hasattr(klass,attr) for attr in signature]):
+                    name = klass.file_regex
+                    if name in cache and not overwrite:
+                        raise ValueError('{0} already has a function set in {1}'.format(klass.file_regex,cache))
+                    cache[name] = klass
+    return parser_load_errors
+        
+def reset_parsers():
+    """ reset to default parsers """
+    for key in list(_parsers.keys()):
+        _parsers.pop(key)
+    from jsonextended import parsers
+    return load_parsers(get_module_path(parsers))
+_parser_load_errors = reset_parsers()
+
+def add_parsers(klass_list, overwrite=False):
+    """ parsers must be classes, with attributes: file_regex, read_file
+    
+    Examples
+    --------
+    >>> from jsonextended import plugins
+    >>> class Reader(object):
+    ...     file_regex = '*suffix.ext'
+    ...     def read_file(self, obj, **kwargs):
+    ...         return obj
+    ...
+    >>> plugins.add_parsers([Reader])
+    >>> '*suffix.ext' in plugins.current_parsers()
+    True
+    >>> errors = plugins.reset_parsers()
+    >>> '*suffix.ext' in plugins.current_decoders()
+    False
+    
+    """
+    cache, signature = _parsers, ['file_regex','read_file']
+
+    # check all first
+    for klass in klass_list:
+        if not all([hasattr(klass,attr) for attr in signature]):
+            raise ValueError('{0} must have attributes: {1}'.format(klass,signature))
+        name = klass.file_regex
+        if name in cache and not overwrite:
+            raise ValueError('{0} already has a function set in {1}'.format(name,cache))
+    for klass in klass_list:  
+        name = klass.file_regex
+        cache[name] = klass
+
+def remove_parsers(name_list):
+    """ remove parsers in parser list
+    
+    Examples
+    --------
+    >>> from jsonextended import plugins
+    >>> plugins.current_parsers()
+    ['*.json', '*crystal.out']
+    >>> plugins.remove_parsers([('_python_Decimal_',)])
+    >>> plugins.current_parsers()
+    ['*.json', '*crystal.out']
+    
+    """
+    for name in name_list:
+        if name in _parsers:
+            _parsers.pop(name)
+    
+def current_parsers():
+    """ view parsers plugins
+    
+    Example
+    -------
+    >>> from jsonextended import plugins
+    >>> plugins.current_parsers()
+    ['*.json', '*crystal.out']
+    
+    """
+    # py 2 and 3 compatibility
+    #return _encoders.viewitems() if hasattr(_encoders,'viewitems') else _encoders.items()
+    return sorted(_parsers.keys())
+    
+def can_parse(fpath):
+    if isinstance(fpath,basestring):
+        fname = fpath
+    elif hasattr(fpath, 'open') and hasattr(fpath, 'name'):
+        fname = fpath.name
+    elif hasattr(fpath, 'readline') and hasattr(fpath, 'name'):
+        fname = fpath.name
+    else:
+        raise ValueError('fpath should be a str or file_like object: {}'.format(rfile))
+    
+    # find longest match first
+    for regex, parser in _parsers.items():
+        if fnmatch(fname,regex):
+            return True
+                
+    return False
+    
+    
+def parse(fpath, **kwargs):
+    """ parse file contents, via parser plugins, to dict like object
+    
+    Properties
+    ----------
+    fpath : file_like
+         string, object with 'open' and 'name' attributes, or 
+         object with 'readline' and 'name' attributes
+    kwargs : keywords
+        to pass to parser plugin
+    
+    Examples
+    --------
+    
+    >>> from pprint import pformat
+
+    >>> json_file = StringIO('{"a":[1,2,3.4]}')
+    >>> json_file.name = 'test.json'
+    >>> dct = parse(json_file)
+    >>> print(pformat(dct).replace("u'","'"))
+    {'a': [1, 2, 3.4]}
+    
+    >>> reset = json_file.seek(0)
+    >>> from decimal import Decimal
+    >>> dct = parse(json_file, parse_float=Decimal,other=1)
+    >>> print(pformat(dct).replace("u'","'"))    
+    {'a': [1, 2, Decimal('3.4')]}
+
+    """            
+    if isinstance(fpath,basestring):
+        fname = fpath
+    elif hasattr(fpath, 'open') and hasattr(fpath, 'name'):
+        fname = fpath.name
+    elif hasattr(fpath, 'readline') and hasattr(fpath, 'name'):
+        fname = fpath.name
+    else:
+        raise ValueError('fpath should be a str or file_like object: {}'.format(rfile))
+    
+    # find longest match first
+    for regex, parser in sorted(_parsers.items(),key=len,reverse=True):
+        if fnmatch(fname,regex):
+            if isinstance(fpath,basestring):
+                with open(fpath,'r') as file_obj:
+                    data = parser().read_file(file_obj, **kwargs)
+            elif hasattr(fpath, 'open'):
+                with fpath.open('r') as file_obj:
+                    data = parser().read_file(file_obj, **kwargs)            
+            elif hasattr(fpath, 'readline'):
+                data = parser().read_file(fpath, **kwargs)            
+            return data
+                
+    raise ValueError('{} does not match any regex'.format(fname))
 

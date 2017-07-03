@@ -3,18 +3,6 @@
 """ a module for parsing simulation data to json format
 
 """
-
-## TODO see below
-# design plugin system for adding/registering new parsers?
-# handle if fields touch
-# CIF parser (look at pycifrw)
-
-# standard imports
-import os
-import inspect
-import warnings
-from fnmatch import fnmatch
-
 # python 3 to 2 compatibility
 try:
     basestring
@@ -24,157 +12,6 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-# python 3 to 2 compatibility
-try:
-    import pathlib
-except ImportError:
-    import pathlib2 as pathlib
-
-# local imports
-from jsonextended.ejson import to_dict
-from jsonextended.edict import to_json, merge
-from jsonextended.parsers import _example_data_folder
-
-def get_test_path():
-    """ returns test path object
-
-    Examples
-    --------
-    >>> path = get_test_path()
-    >>> path.name
-    '_example_data_folder'
-
-    """
-    return pathlib.Path(os.path.dirname(os.path.abspath(inspect.getfile(_example_data_folder))))
-
-def parse_dir_dict(path,parser_class,file_regexes,
-                   ignore_prefixes=('.','_'),
-                   recursive=False, **kwargs):
-    """ find all files in a directory,
-    apply parser and read into memory
-
-    Parameters
-    ----------
-    path : str or path_like
-        if str, must be existing folder,
-        if path_like, must have 'iterdir' method (see pathlib.Path)
-    parser_class : BasicParser
-        the parser class
-    file_regexes : list of str
-        regexes to match files,
-        can include * (matches everything) and ? (matches any single character)
-    ignore_prefix : list of str
-        ignore files and folders beginning with these prefixes
-    recursive : bool
-        if true, recursively walk through sub-directories
-    kwargs : dict
-        additional keyword arguments for parser_class
-
-    Returns
-    -------
-    parser : BaseParser.parser_class
-
-    Examples
-    --------
-
-    >>> class TestParser(BasicParser):
-    ...     def _eval_init(self):
-    ...         if self._has_sig('sim_name ='):
-    ...             self.add_data('name', self._get_fields_after(2,join=True),['meta'])
-    ...
-    ...     def _eval_data(self):
-    ...         if self._has_sig('a table of x,y,z data'):
-    ...             self._skip_lines(2)
-    ...             cdict = self._table_todict(['x','y','z'],[float,float,float])
-    ...             self.add_data('geometry',cdict,['config'])
-    ...
-    >>> from pprint import pformat
-    >>> path = get_test_path()
-    >>> parser = parse_dir_dict(path,TestParser,'*.data',recursive=True)
-    >>> dstr = pformat(parser.data)
-    >>> print(dstr.replace("u'","'"))
-    {'dir1': {'example2': {'config': {'geometry': {'x': [7.0],
-                                                   'y': [8.0],
-                                                   'z': [9.0]}},
-                           'meta': {'name': 'test simulation 2'}}},
-     'example1': {'config': {'geometry': {'x': [1.0, 4.0],
-                                          'y': [2.0, 5.0],
-                                          'z': [3.0, 6.0]}},
-                  'meta': {'name': 'test simulation'}}}
-
-    """
-    # hides recursive data parsing from the user
-    parser, read_errors = _recursive_parse_dir_dict(path,parser_class,file_regexes,
-                   ignore_prefixes, recursive,
-                    parser=None, init_keys=[], read_errors=None, **kwargs)
-
-    if read_errors:
-        warnings.warn('The following paths failed to parse: \n'+'\n'.join(read_errors))
-
-    return parser
-
-def _get_path_obj(path):
-    """get path as pathlib.Path object """
-    if isinstance(path,basestring):
-        if not os.path.exists(path):
-            raise IOError('path does not exist: {}'.format(path))
-        if os.path.isdir(path):
-            path = pathlib.Path(path)
-        else:
-            raise IOError('path is a file: {}'.format(path))
-    elif not hasattr(path,'iterdir'):
-        raise ValueError('path should be a str or path_like object: {}'.format(path))
-    return path
-
-def _recursive_parse_dir_dict(path,parser_class,file_regexes,
-                   ignore_prefixes=['.','_'],
-                   recursive=False, parser=None, init_keys=[], read_errors=None,
-                   **kwargs):
-    """ find all files in a directory,
-    apply parser and read into memory
-
-    """
-    path = _get_path_obj(path)
-
-    # initialise parser
-    if parser is None:
-        parser = parser_class(**kwargs)
-
-    if isinstance(file_regexes,basestring):
-        file_regexes = [file_regexes]
-
-    if read_errors is None:
-        read_errors = []
-
-    # read through directory
-
-    for subpath in path.iterdir():
-        if subpath.name.startswith(tuple(ignore_prefixes)):
-            pass
-        elif subpath.is_file():
-            if any([fnmatch(subpath.name,reg) for reg in file_regexes]):
-                name, ext = os.path.splitext(subpath.name)
-                with subpath.open('r') as file_obj:
-                    try:
-                        parser.read_file(file_obj, init_keys=init_keys+[name])
-                    except Exception as error:
-                        read_errors.append('{0}: {1}'.format(subpath.absolute(),error))
-        elif recursive:
-            parser, read_errors = _recursive_parse_dir_dict(subpath,parser_class,file_regexes,
-                   ignore_prefixes=ignore_prefixes,
-                    recursive=recursive, parser=parser,
-                    init_keys=init_keys+[subpath.name],read_errors=read_errors,
-                   **kwargs)
-
-    return parser, read_errors
-
-def parse_dir_jsons(path,parser_class,file_regex,
-                   out_ext='.json', recursive=False):
-    """ find all files in a directory,
-    apply parser and output corresponding jsons
-
-    """
-    raise NotImplementedError
 
 class BasicParser(object):
     """ a base class for parsing simulation data to json
@@ -213,15 +50,16 @@ class BasicParser(object):
     ...
     >>> from pprint import pprint
     >>> parser = TestParser()
-    >>> parser.read_file(file_obj)
-    >>> pprint(parser.data)
+    >>> data = parser.read_file(file_obj)
+    >>> pprint(data)
     {'config': {'geometry': {'x': [1.0, 4.0], 'y': [2.0, 5.0], 'z': [3.0, 6.0]}},
      'meta': {'name': 'test simulation'}}
 
     >>> out_file_obj = StringIO()
     >>> parser.output_json(out_file_obj)
 
-    """
+    """  
+      
     _always_exit_section = True
     
     def __init__(self):
@@ -251,6 +89,7 @@ class BasicParser(object):
             if true allow overwriting of current data
 
         """
+        from jsonextended.edict import merge
         self.__data = merge([self.__data,d],overwrite=overwrite)
 
     def add_json(self, jfile, overwrite=False,
@@ -271,6 +110,8 @@ class BasicParser(object):
             ignore folders beginning with these prefixes
 
         """
+        from jsonextended.edict import merge
+        from jsonextended.ejson import to_dict
         new_data = to_dict(jfile, key_path, in_memory, ignore_prefix)
         self.__data = merge([self.__data,new_data],overwrite=overwrite)
 
@@ -292,6 +133,7 @@ class BasicParser(object):
             keywords for json.dump
 
         """
+        from jsonextended.edict import to_json
         to_json(self.__data, jfile, overwrite=overwrite, dirlevel=dirlevel,
                            sort_keys=sort_keys, indent=indent, **kwargs)
 
@@ -388,6 +230,8 @@ class BasicParser(object):
             self.__file = None
             self.__file_line_number = 0
             self.__delim = None
+        
+        return self.data
 
     def __get_line(self):
         return self.__file_line
