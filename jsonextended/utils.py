@@ -267,11 +267,11 @@ class MockPath(object):
     def __gt__(self,other):
         if not hasattr(other, 'name'):
             return NotImplemented
-        return len(self.name) > len(other.name)
+        return self.name > other.name
     def __eq__(self,other):
         if not hasattr(other, 'name'):
             return NotImplemented
-        return len(self.name) == len(other.name)
+        return self.name == other.name
         
     def _recurse_print(self, obj, text='',indent=0,indentlvl=2,file_content=False):
         indent += indentlvl

@@ -31,10 +31,6 @@ except ImportError:
 # external packages
 import warnings
 warnings.simplefilter('once',ImportWarning)
-try:
-    import pandas as pd
-except ImportError:
-    pass
 
 # local imports
 from jsonextended.utils import natural_sort
