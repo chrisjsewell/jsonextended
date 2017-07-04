@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+import ast
 
-class CSV_Parser(object):
+class CSVLiteral_Parser(object):
     """
     Examples
     --------
@@ -10,20 +11,29 @@ class CSV_Parser(object):
     >>> fileobj = MockPath(is_file=True,
     ... content='''# comment line
     ... head1,head2
-    ... val1,val2
-    ... val3,val4'''
+    ... 1.1,3
+    ... 2.2,"3.3"'''
     ... )
     >>> with fileobj.open() as f:
-    ...     data = CSV_Parser().read_file(f)
+    ...     data = CSVLiteral_Parser().read_file(f)
     >>> pprint(data)
-    {'head1': ['val1', 'val3'], 'head2': ['val2', 'val4']}
+    {'head1': [1.1, 2.2], 'head2': [3, '3.3']}
     
     """
     
-    plugin_name = 'csv.basic'
-    plugin_descript = 'read *.csv delimited file with headers to {header:[column_values]}'
-    file_regex = '*.csv'
+    plugin_name = 'csv.literal'
+    plugin_descript = "read *.literal.csv delimited files with headers to {header:column_values}" 
+    ", s.t. values are converted to their python type"
+    file_regex = '*.literal.csv'
     
+    @staticmethod
+    def tryeval(val):
+      try:
+        val = ast.literal_eval(val)
+      except ValueError:
+        pass
+      return val
+
     def read_file(self, file_obj, **kwargs):
         
         delim = kwargs.get('csv_delim',',')
@@ -39,5 +49,5 @@ class CSV_Parser(object):
             assert len(keypairs)==len(values), 'row different length to headers'
             for keypair, value in zip(keypairs,values):
                 keypair[1].append(value)
-                        
-        return {} if keypairs is None else dict(keypairs)
+                                        
+        return {} if keypairs is None else {k:[self.tryeval(v) for v in vs] for k,vs in keypairs}

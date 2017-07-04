@@ -16,19 +16,21 @@ try:
 except ImportError:
     from io import StringIO
 
-from jsonextended.utils import get_module_path
+from jsonextended.utils import get_module_path, class_to_str
 
 # list of plugin categories,
 # and their minimal class attribute interface
-# must include plugin_name
+# must include plugin_name, plugin_descript
 _plugins_interface = {
-    'encoders':['plugin_name','objclass'],
-    'decoders':['plugin_name','dict_signature'],
-    'parsers': ['plugin_name','file_regex','read_file']}
+    'encoders':['plugin_name','plugin_descript','objclass'],
+    'decoders':['plugin_name','plugin_descript','dict_signature'],
+    'parsers': ['plugin_name','plugin_descript','file_regex','read_file']}
     
 # builtin plugin locations
 from jsonextended import encoders, parsers
-_plugins_builtin = [get_module_path(encoders),get_module_path(parsers)] 
+_plugins_builtin = {'encoders':get_module_path(encoders),
+                    'decoders':get_module_path(encoders),
+                    'parsers':get_module_path(parsers)}
                 
 # the internal plugin store
 _all_plugins = {name:{} for name in _plugins_interface}
@@ -46,9 +48,9 @@ def view_interfaces(category=None):
     
     >>> from pprint import pprint
     >>> pprint(view_interfaces())
-    {'decoders': ['plugin_name', 'dict_signature'],
-     'encoders': ['plugin_name', 'objclass'],
-     'parsers': ['plugin_name', 'file_regex', 'read_file']}
+    {'decoders': ['plugin_name', 'plugin_descript', 'dict_signature'],
+     'encoders': ['plugin_name', 'plugin_descript', 'objclass'],
+     'parsers': ['plugin_name', 'plugin_descript', 'file_regex', 'read_file']}
 
     """
     if category is not None:
@@ -57,7 +59,7 @@ def view_interfaces(category=None):
         return {k:v[:] for k,v in _plugins_interface.items()}
 
 def view_plugins(category=None):
-    """ return a view of the loaded plugin names
+    """ return a view of the loaded plugin names and descriptions
     
     Properties
     ----------
@@ -69,27 +71,31 @@ def view_plugins(category=None):
     
     >>> from pprint import pprint
     >>> pprint(view_plugins())
-    {'decoders': [], 'encoders': [], 'parsers': []}
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     >>> class DecoderPlugin(object):
     ...     plugin_name = 'example'
+    ...     plugin_descript = 'a decoder for dicts containing _example_ key'
     ...     dict_signature = ('_example_',)
     ...
     >>> errors = load_plugin_classes([DecoderPlugin])
 
     >>> pprint(view_plugins())
-    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+    {'decoders': {'example': 'a decoder for dicts containing _example_ key'},
+     'encoders': {},
+     'parsers': {}}
+
     >>> view_plugins('decoders')
-    ['example']
+    {'example': 'a decoder for dicts containing _example_ key'}
 
     >>> unload_all_plugins()
     
     """
     dct = _all_plugins
     if not category is None:
-        return [name for name,klass in _all_plugins[category].items()]
+        return {name:klass.plugin_descript for name,klass in _all_plugins[category].items()}
     else:
-        return {cat:sorted([name for name,klass in plugins.items()]) for cat,plugins in _all_plugins.items()}
+        return {cat:{name:klass.plugin_descript for name,klass in plugins.items()} for cat,plugins in _all_plugins.items()}
                         
 def get_plugins(category):
     """ get plugins for category """
@@ -108,19 +114,23 @@ def unload_all_plugins(category=None):
     
     >>> from pprint import pprint
     >>> pprint(view_plugins())
-    {'decoders': [], 'encoders': [], 'parsers': []}
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     >>> class DecoderPlugin(object):
     ...     plugin_name = 'example'
+    ...     plugin_descript = 'a decoder for dicts containing _example_ key'
     ...     dict_signature = ('_example_',)
     ...
     >>> errors = load_plugin_classes([DecoderPlugin])
 
     >>> pprint(view_plugins())
-    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+    {'decoders': {'example': 'a decoder for dicts containing _example_ key'},
+     'encoders': {},
+     'parsers': {}}
+
     >>> unload_all_plugins()
     >>> pprint(view_plugins())
-    {'decoders': [], 'encoders': [], 'parsers': []}
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     """
     if category is None:
@@ -144,19 +154,23 @@ def unload_plugin(name,category):
     
     >>> from pprint import pprint
     >>> pprint(view_plugins())
-    {'decoders': [], 'encoders': [], 'parsers': []}
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     >>> class DecoderPlugin(object):
     ...     plugin_name = 'example'
+    ...     plugin_descript = 'a decoder for dicts containing _example_ key'
     ...     dict_signature = ('_example_',)
     ...
     >>> errors = load_plugin_classes([DecoderPlugin],category='decoders')
 
     >>> pprint(view_plugins())
-    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+    {'decoders': {'example': 'a decoder for dicts containing _example_ key'},
+     'encoders': {},
+     'parsers': {}}
+
     >>> unload_plugin('example','decoders')
     >>> pprint(view_plugins())
-    {'decoders': [], 'encoders': [], 'parsers': []}
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     """
     _all_plugins[category].pop(name)
@@ -176,16 +190,19 @@ def load_plugin_classes(classes, category=None, overwrite=False):
     
     >>> from pprint import pprint
     >>> pprint(view_plugins())
-    {'decoders': [], 'encoders': [], 'parsers': []}
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     >>> class DecoderPlugin(object):
     ...     plugin_name = 'example'
+    ...     plugin_descript = 'a decoder for dicts containing _example_ key'
     ...     dict_signature = ('_example_',)
     ...
     >>> errors = load_plugin_classes([DecoderPlugin])
 
     >>> pprint(view_plugins())
-    {'decoders': ['example'], 'encoders': [], 'parsers': []}
+    {'decoders': {'example': 'a decoder for dicts containing _example_ key'},
+     'encoders': {},
+     'parsers': {}}
 
     >>> unload_all_plugins()
 
@@ -198,9 +215,11 @@ def load_plugin_classes(classes, category=None, overwrite=False):
             if all([hasattr(klass,attr) for attr in pinterface]):
                 if klass.plugin_name in _all_plugins[pcat] and not overwrite:
                     err = '{0} is already set for {1}'.format(klass.plugin_name,pcat)
-                    load_errors.append(( str(pypath),'{}'.format(err) ))
+                    load_errors.append(( klass.__name__,'{}'.format(err) ))
                     continue
                 _all_plugins[pcat][klass.plugin_name] = klass()
+            else:
+                load_errors.append(( klass.__name__, 'does not match {0} interface: {1}'.format(pcat, pinterface) ))
     return load_errors
 
 def load_plugins_dir(path, category=None, overwrite=False):
@@ -222,14 +241,16 @@ def load_plugins_dir(path, category=None, overwrite=False):
     
     load_errors = []
     for pypath in pypaths:
+        mod_name = str(uuid.uuid4())
         try:
             # use uuid to ensure no conflicts in name space
-            module = imp.load_source(str(uuid.uuid4()),str(pypath))
+            module = imp.load_source(mod_name,str(pypath))
         except Exception as err:
             load_errors.append(( str(pypath),'{}'.format(err) ))
             continue
         
-        classes =  [klass for klass_name, klass in inspect.getmembers(module, inspect.isclass)]
+        # only get classes that are local to the module
+        classes =  [klass for klass_name, klass in inspect.getmembers(module, inspect.isclass) if klass.__module__ == mod_name]
         load_errors += load_plugin_classes(classes, category, overwrite)
 
     return load_errors
@@ -247,29 +268,34 @@ def load_builtin_plugins(category=None, overwrite=False):
     
     >>> from pprint import pprint
     >>> pprint(view_plugins())
-    {'decoders': [], 'encoders': [], 'parsers': []}
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     >>> errors = load_builtin_plugins()
     >>> errors
     []
 
-    >>> pprint(view_plugins())
-    {'decoders': ['decimal.Decimal',
-                  'numpy.ndarray',
-                  'pint.Quantity',
-                  'python.set'],
-     'encoders': ['decimal.Decimal',
-                  'numpy.ndarray',
-                  'pint.Quantity',
-                  'python.set'],
-     'parsers': ['csv.basic', 'json.basic', 'keypair']}
+    >>> pprint(view_plugins(),width=200)
+    {'decoders': {'decimal.Decimal': 'encode/decode Decimal type',
+                  'numpy.ndarray': 'encode/decode numpy.ndarray',
+                  'pint.Quantity': 'encode/decode pint.Quantity object',
+                  'python.set': 'decode/encode python set'},
+     'encoders': {'decimal.Decimal': 'encode/decode Decimal type',
+                  'numpy.ndarray': 'encode/decode numpy.ndarray',
+                  'pint.Quantity': 'encode/decode pint.Quantity object',
+                  'python.set': 'decode/encode python set'},
+     'parsers': {'csv.basic': 'read *.csv delimited file with headers to {header:[column_values]}',
+                 'csv.literal': 'read *.literal.csv delimited files with headers to {header:column_values}',
+                 'json.basic': 'read *.json files using json.load',
+                 'keypair': "read *.keypair, where each line should be; '<key> <pair>'"}}
 
     >>> unload_all_plugins()    
 
     """
     load_errors = []
-    for path in _plugins_builtin:
-        load_errors += load_plugins_dir(path,category,overwrite=overwrite)
+    for cat, path in _plugins_builtin.items():
+        if cat != category and not category is None:
+            continue
+        load_errors += load_plugins_dir(path,cat,overwrite=overwrite)
     return load_errors
 
 def encode(obj, outtype='json', raise_error=False):
@@ -412,6 +438,7 @@ def parse(fpath, **kwargs):
     
     >>> class NewParser(object):
     ...     plugin_name = 'example'
+    ...     plugin_descript = 'loads test.json files'
     ...     file_regex = 'test.json'
     ...     def read_file(self, file_obj, **kwargs):
     ...         return {'example':1}

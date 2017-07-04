@@ -20,7 +20,7 @@ class JSON_Parser(object):
     """
     
     plugin_name = 'json.basic'
-    plugin_decript = 'read a basic json file'
+    plugin_descript = 'read *.json files using json.load'
     file_regex = '*.json'
     
     def read_file(self, file_obj, **kwargs):
