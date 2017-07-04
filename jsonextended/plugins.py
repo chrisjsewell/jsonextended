@@ -227,6 +227,7 @@ def load_plugins_dir(path, category=None, overwrite=False):
     
     Properties
     ----------
+    path : str or path-like
     category : None or str
         if str, apply for single plugin category
     overwrite : bool
@@ -241,12 +242,20 @@ def load_plugins_dir(path, category=None, overwrite=False):
     
     load_errors = []
     for pypath in pypaths:
+        # use uuid to ensure no conflicts in name space
         mod_name = str(uuid.uuid4())
         try:
-            # use uuid to ensure no conflicts in name space
-            module = imp.load_source(mod_name,str(pypath))
+            if hasattr(pypath,'resolve'):
+                # Make the path absolute, resolving any symlinks
+                pypath = pypath.resolve()
+            # for MockPaths
+            if hasattr(pypath,'maketemp'):
+                with pypath.maketemp() as f:
+                    module = imp.load_source(mod_name,f.name)
+            else:
+                module = imp.load_source(mod_name,str(pypath))
         except Exception as err:
-            load_errors.append(( str(pypath),'{}'.format(err) ))
+            load_errors.append(( str(pypath),'Load Error: {}'.format(err) ))
             continue
         
         # only get classes that are local to the module
@@ -337,13 +346,13 @@ def encode(obj, outtype='json', raise_error=False):
     else:  
         return obj
 
-def decode(dct, outtype='json', raise_error=False):
+def decode(dct, intype='json', raise_error=False):
     """ decode dict objects, via decoder plugins, to new type
     
     Properties
     ----------
-    outtype: str
-        use decoder method from_<outtype> to encode
+    intype: str
+        use decoder method from_<intype> to encode
     raise_error : bool
         if True, raise ValueError if no suitable plugin found 
     
@@ -360,8 +369,8 @@ def decode(dct, outtype='json', raise_error=False):
 
     """            
     for decoder in get_plugins('decoders').values():
-        if set(decoder.dict_signature).issubset(dct.keys()) and hasattr(decoder, 'from_{}'.format(outtype)):
-            return getattr(decoder,'from_{}'.format(outtype))(dct)
+        if sorted(list(decoder.dict_signature)) == sorted(dct.keys()) and hasattr(decoder, 'from_{}'.format(intype)):
+            return getattr(decoder,'from_{}'.format(intype))(dct)
             break  
               
     if raise_error:

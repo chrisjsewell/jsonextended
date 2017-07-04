@@ -1092,10 +1092,14 @@ class LazyLoad(object):
     >>> plugins.load_builtin_plugins()
     []
     
-    >>> l = LazyLoad({'a':2,3:4})
+    >>> l = LazyLoad({'a':{'b':2},3:4})
     >>> print(l)
     {3:..,a:..}
-    >>> l.a
+    >>> l['a']
+    {b:..}
+    >>> l[['a','b']]
+    2
+    >>> l.a.b
     2
     >>> l.i3
     4
@@ -1226,9 +1230,14 @@ class LazyLoad(object):
             return self._tabmap[attr]
         return super(LazyLoad,self).__getattr__(attr)
         
-    def __getitem__(self, item):
-        self._expand()
-        return self._itemmap[item]        
+    def __getitem__(self, items):
+        if not isinstance(items,list):
+            items = [items]
+        obj = self
+        for item in items:
+            obj._expand()
+            obj  = obj._itemmap[item]   
+        return obj     
     
     def __contains__(self, item):
         self._expand()

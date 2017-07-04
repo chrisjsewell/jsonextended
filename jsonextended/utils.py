@@ -1,7 +1,9 @@
 import os, inspect
 import re
 import contextlib 
-from functools import total_ordering  
+from functools import total_ordering 
+from fnmatch import fnmatch 
+import tempfile
 
 # python 2/3 compatibility
 try:
@@ -161,6 +163,11 @@ class MockPath(object):
     newline1
     newline2
     
+    >>> with file_obj.maketemp() as temp:
+    ...     with open(temp.name) as f:
+    ...         print(f.readline().strip())
+    newline1
+    
     >>> dir_obj = MockPath(
     ...   structure=[{'dir1':[{'subdir':[]},file_obj]},{'dir2':[file_obj]},file_obj]
     ... )
@@ -248,6 +255,24 @@ class MockPath(object):
         for subobj in sorted(self.children):
             if subobj.exists():
                 yield subobj
+    
+    def glob(self, regex):
+        for subobj in sorted(self.children):
+            if fnmatch(subobj.name,regex):
+                yield subobj     
+    
+    @contextlib.contextmanager    
+    def maketemp(self):
+        """make a named temporary file containing the file contents """
+        if self.is_dir():
+            raise IOError('[Errno 21] Is a directory: {}'.format(self.path))
+        fileTemp = tempfile.NamedTemporaryFile(mode='w+',delete = False)
+        try:
+            fileTemp.write('\n'.join(self._content))
+            fileTemp.close()
+            yield fileTemp
+        finally:
+            os.remove(fileTemp.name)        
         
     @contextlib.contextmanager    
     def open(self, readwrite='r'):
@@ -292,7 +317,7 @@ class MockPath(object):
         return text
         
     def to_string(self,indentlvl=2,file_content=False):
-        
+        """convert to string """
         if self.is_file():
             return '\n'.join(['File("{}") Contents:'.format(self.name)]+self._content)
         elif self.is_dir():
