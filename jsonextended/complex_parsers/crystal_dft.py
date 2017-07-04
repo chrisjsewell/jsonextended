@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -- coding: utf-8 --
 
-from jsonextended.parsers.basic_abstract import BasicParser
+from jsonextended.complex_parsers.basic_abstract import BasicParser
 
 class CrystalDFTParser(BasicParser):
     """ a class for parsing Crystal DFT Simulation Data
@@ -31,6 +31,7 @@ class CrystalDFTParser(BasicParser):
     """
     
     plugin_name = 'crystal.out'
+    plugin_decript = 'read main crystal output file'
     file_regex = '*crystal.out'
     
     def _eval_meta_data(self):

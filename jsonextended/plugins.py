@@ -262,7 +262,7 @@ def load_builtin_plugins(category=None, overwrite=False):
                   'numpy.ndarray',
                   'pint.Quantity',
                   'python.set'],
-     'parsers': ['crystal.out', 'json.basic']}
+     'parsers': ['csv.basic', 'json.basic', 'keypair']}
 
     >>> unload_all_plugins()    
 

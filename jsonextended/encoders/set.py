@@ -1,8 +1,24 @@
 import pickle
 
 class Encode_Set(object):
+    """
+    
+    Examples
+    --------
+    
+    >>> Encode_Set().to_str(set([1,2,3]))
+    '{1, 2, 3}'
+    
+    >>> Encode_Set().to_json(set([1,2,3]))
+    {'_python_set_': [1, 2, 3]}
+    
+    >>> list(Encode_Set().from_json({'_python_set_': [1, 2, 3]}))
+    [1, 2, 3]
+    
+    """
 
     plugin_name = 'python.set'
+    plugin_descript = 'decode/encode python set'
     objclass = set
     dict_signature = ['_python_set_']
 

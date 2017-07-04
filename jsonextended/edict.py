@@ -1105,28 +1105,27 @@ class LazyLoad(object):
     
     >>> lazydict = LazyLoad(get_test_path())
     >>> pprint(lazydict,depth=2)
-    data.crystal.out: 
-      initial: {...}
-      meta: {...}
-      optimisation: {...}
-      optimised: {...}
-      scf: {...}
     dir1: 
       dir1_1: {...}
       file1.json: {...}
       file2.json: {...}
     dir2: 
+      file1.csv: {...}
       file1.json: {...}
     dir3: 
+    file1.keypair: 
+      key1: val1
+      key2: val2
+      key3: val3
     
     >>> 'dir1' in lazydict
     True
     
     >>> sorted(lazydict.keys())
-    ['data.crystal.out', 'dir1', 'dir2', 'dir3']
+    ['dir1', 'dir2', 'dir3', 'file1.keypair']
     
     >>> sorted(lazydict.values())
-    [{}, {file1.json:..}, {dir1_1:..,file1.json:..,file2.json:..}, {initial:..,meta:..,optimisation:..,optimised:..,scf:..}]
+    [{}, {key1:..,key2:..,key3:..}, {file1.csv:..,file1.json:..}, {dir1_1:..,file1.json:..,file2.json:..}]
     
     >>> lazydict.dir1.file1_json
     {initial:..,meta:..,optimised:..,units:..}
@@ -1142,7 +1141,7 @@ class LazyLoad(object):
     
     >>> lazydict = LazyLoad(get_test_path(),recursive=False)
     >>> lazydict
-    {data.crystal.out:..}
+    {file1.keypair:..}
     
     >>> LazyLoad([1,2,3])
     Traceback (most recent call last):
