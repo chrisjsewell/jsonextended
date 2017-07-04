@@ -19,7 +19,7 @@ with io.open('README.rst') as readme:
         description='Extending the python json package functionality',
         long_description=readme.read(),
         install_requires=requirements,
-        test_requires=test_requirements,
+        tests_require=test_requirements,
         license='MIT',
         author='Chris Sewell',
         author_email='chrisj_sewell@hotmail.com',
