@@ -8,10 +8,6 @@ try:
     basestring
 except NameError:
     basestring = str
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 class BasicParser(object):
     """ a base class for parsing simulation data to json
@@ -38,8 +34,9 @@ class BasicParser(object):
     ...                         [float,float,float])
     ...             self.add_data('geometry',cdict,['config'])
     ...
-    >>> file_obj = StringIO(
-    ... '''
+    >>> from jsonextended.utils import MockPath
+    >>> file_obj = MockPath('test.txt',is_file=True,
+    ... content='''
     ...     sim_name = test simulation
     ...
     ...     a table of x,y,z data
@@ -55,8 +52,11 @@ class BasicParser(object):
     {'config': {'geometry': {'x': [1.0, 4.0], 'y': [2.0, 5.0], 'z': [3.0, 6.0]}},
      'meta': {'name': 'test simulation'}}
 
-    >>> out_file_obj = StringIO()
-    >>> parser.output_json(out_file_obj)
+    >>> out_file_obj = MockPath('test.json',is_file=True,exists=False)
+    >>> parser.output_json(out_file_obj,indent=None)
+    >>> print(out_file_obj.to_string())
+    File("test.json") Contents:
+    {"config": {"geometry": {"x": [1.0, 4.0], "y": [2.0, 5.0], "z": [3.0, 6.0]}}, "meta": {"name": "test simulation"}}
 
     """  
       
@@ -115,7 +115,7 @@ class BasicParser(object):
         new_data = to_dict(jfile, key_path, in_memory, ignore_prefix)
         self.__data = merge([self.__data,new_data],overwrite=overwrite)
 
-    def output_json(self, jfile, overwrite=False, dirlevel=1, sort_keys=True, indent=2, **kwargs):
+    def output_json(self, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, **kwargs):
         """ output parsed data to json
 
         jfile : str or file_like
@@ -186,6 +186,8 @@ class BasicParser(object):
                   init_section=[], init_keys=None, **kwargs):
         """ read file to json format
 
+        Properties
+        ----------
         rfile : str or file_like
             file to read
         delim : str or None
@@ -197,14 +199,18 @@ class BasicParser(object):
         init_keys = [] if init_keys is None else init_keys
         
         if isinstance(rfile,basestring):
-            f = open(rfile,'r')
+            with open(rfile,'r') as f:
+                return self._with_open_file(f,delim,init_section,init_keys,**kwargs)
         elif hasattr(rfile, 'open'):
-            f = rfile.open('r')
+            with rfile.open('r') as f:
+                return self._with_open_file(f,delim,init_section,init_keys,**kwargs)
         elif not hasattr(rfile,'readline'):
             raise ValueError('rfile should be a str or file_like object: {}'.format(rfile))
         else:
-            f = rfile
+            return self._with_open_file(rfile,delim,init_section,init_keys,**kwargs)
 
+    def _with_open_file(self, f, delim=None,
+                  init_section=[], init_keys=None, **kwargs):
         self.__file = f
         self.__file_line_number = 1
         self.__delim = delim
@@ -223,8 +229,6 @@ class BasicParser(object):
                 self.__file_line = f.readline()
                 self.__file_line_number += 1
         finally:
-            if isinstance(rfile,basestring):
-                f.close()
             self.__in_file_section = []
             self.__init_file_keys = []
             self.__file = None

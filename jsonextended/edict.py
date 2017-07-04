@@ -16,13 +16,17 @@ from functools import reduce, total_ordering
 
 # python 3 to 2 compatibility
 try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-try:
     basestring
 except NameError:
     basestring = str
+try:
+    unicode
+except NameError:
+    unicode = str
+try:
+    import pathlib
+except ImportError:
+    import pathlib2 as pathlib
 
 # external packages
 import warnings
@@ -808,8 +812,9 @@ def combine_lists(d, combine,
     
     return unflatten(new_d)
 
-def to_json(d, jfile, overwrite=False, dirlevel=1,
-                 sort_keys=True, indent=2, **kwargs):
+def to_json(dct, jfile, overwrite=False, dirlevel=0,
+                 sort_keys=True, indent=2, 
+                 default_name='root.json',**kwargs):
     """ output dict to json
 
     Parameters
@@ -832,32 +837,89 @@ def to_json(d, jfile, overwrite=False, dirlevel=1,
     Examples
     --------
 
-
-    >>> obj = StringIO()
-    >>> d = {'a':{'b':1}}
-    >>> to_json(d, obj)
-    >>> print(obj.getvalue())
+    >>> from jsonextended.utils import MockPath
+    >>> file_obj = MockPath('test.json',is_file=True,exists=False)
+    >>> dct = {'a':{'b':1}}
+    >>> to_json(dct, file_obj)
+    >>> print(file_obj.to_string())
+    File("test.json") Contents:
     {
       "a": {
         "b": 1
       }
     }
+                 
+    >>> from jsonextended.utils import MockPath
+    >>> folder_obj = MockPath()
+    >>> dct = {'x':{'a':{'b':1},'c':{'d':3}}}
+    >>> to_json(dct, folder_obj, dirlevel=0,indent=None)
+    >>> print(folder_obj.to_string(file_content=True))
+    Folder("root") 
+      File("x.json") Contents:
+       {"a": {"b": 1}, "c": {"d": 3}}
 
+    >>> folder_obj = MockPath()
+    >>> to_json(dct, folder_obj, dirlevel=1,indent=None)
+    >>> print(folder_obj.to_string(file_content=True))
+    Folder("root") 
+      Folder("x") 
+        File("a.json") Contents:
+         {"b": 1}
+        File("c.json") Contents:
+         {"d": 3}
+
+                 
     """
+    if hasattr(jfile,'write'):
+        json.dump(dct, jfile, sort_keys=sort_keys,indent=indent, default=encode)
+        return
+    
     if isinstance(jfile,basestring):
-        if os.path.exists(jfile):
-            if os.path.isfile(jfile) and not overwrite:
-                raise IOError('jfile already exists and overwrite is set to false: {}'.format(jfile))
-            if os.path.isdir(jfile):
-                raise NotImplemented
-        with open(jfile, 'w') as outfile:
-            json.dump(d, outfile,
-                      sort_keys=sort_keys,indent=indent, default=encode)
-    elif not hasattr(jfile,'write'):
-        raise ValueError('jfile should be a str or file_like object: {}'.format(jfile))
+        path = pathlib.Path(jfile)
     else:
-        json.dump(d, jfile,
-                  sort_keys=sort_keys,indent=indent, default=encode)
+        path = jfile
+        
+    if not all([hasattr(path,attr) for attr in ['exists','is_dir','is_file','touch','open']]):
+        raise ValueError('jfile should be a str or file_like object: {}'.format(jfile))
+        
+    if path.is_file() and path.exists() and not overwrite:
+         raise IOError('jfile already exists and overwrite is set to false: {}'.format(jfile))
+    
+    if not path.is_dir() and dirlevel <= 0:
+        path.touch() # try to create file if doesn't already exist
+        with path.open('w') as outfile:
+            outfile.write(unicode(json.dumps(
+            dct,sort_keys=sort_keys,indent=indent, default=encode, **kwargs)))
+            return
+
+    if not path.is_dir():
+        path.mkdir()
+        dirlevel -= 1
+            
+    # if one or more values if not a nested dict
+    if not all([hasattr(v,'items') for v in dct.values()]):
+        newpath = path.joinpath(default_name)
+        newpath.touch()
+        with newpath.open('w') as outfile:
+            outfile.write(unicode(json.dumps(
+            dct,sort_keys=sort_keys,indent=indent, default=encode, **kwargs)))
+            return     
+    
+    for key, val in dct.items():
+        if dirlevel <= 0:
+            newpath = path.joinpath('{}.json'.format(key))
+            newpath.touch()
+            with newpath.open('w') as outfile:
+                outfile.write(unicode(json.dumps(
+                val,ensure_ascii=False,sort_keys=sort_keys,indent=indent, default=encode, **kwargs)))   
+        else:            
+            newpath = path.joinpath('{}'.format(key))
+            if not newpath.exists():
+                newpath.mkdir()
+            to_json(val, newpath, overwrite=overwrite, dirlevel=dirlevel-1,
+                             sort_keys=sort_keys, indent=indent, 
+                             default_name='{}.json'.format(key),**kwargs)  
+    
 
 class to_html(object):
     """

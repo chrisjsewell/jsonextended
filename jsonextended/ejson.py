@@ -33,10 +33,6 @@ try:
 except NameError:
     basestring = str
 try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-try:
     from urllib2 import urlopen
 except ImportError:
     from urllib.request import urlopen
@@ -154,8 +150,9 @@ def jkeys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
     Examples
     --------
 
-    >>> obj = StringIO(
-    ... '''
+    >>> from jsonextended.utils import MockPath
+    >>> file_obj = MockPath('test.json',is_file=True,
+    ... content='''
     ... {
     ...  "a": 1,
     ...  "b": [1.1,2.1],
@@ -163,11 +160,10 @@ def jkeys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
     ... }
     ... ''')
     ...
-    >>> jkeys(obj)
+    >>> jkeys(file_obj)
     ['a', 'b', 'c']
 
-    >>> i = obj.seek(0)
-    >>> jkeys(obj,["c"])
+    >>> jkeys(file_obj,["c"])
     ['d', 'f']
 
     >>> from jsonextended.utils import get_test_path
@@ -338,8 +334,9 @@ def to_dict(jfile, key_path=None, in_memory=True ,
 
     >>> from pprint import pformat
 
-    >>> obj = StringIO(
-    ... '''
+    >>> from jsonextended.utils import MockPath
+    >>> file_obj = MockPath('test.json',is_file=True,
+    ... content='''
     ... {
     ...  "a": 1,
     ...  "b": [1.1,2.1],
@@ -348,17 +345,15 @@ def to_dict(jfile, key_path=None, in_memory=True ,
     ... ''')
     ...
 
-    >>> dstr = pformat(to_dict(obj))
+    >>> dstr = pformat(to_dict(file_obj))
     >>> print(dstr.replace("u'","'"))
     {'a': 1, 'b': [1.1, 2.1], 'c': {'d': 'e'}}
 
-    >>> i = obj.seek(0)
-    >>> dstr = pformat(to_dict(obj,parse_decimal=True))
+    >>> dstr = pformat(to_dict(file_obj,parse_decimal=True))
     >>> print(dstr.replace("u'","'"))
     {'a': 1, 'b': [Decimal('1.1'), Decimal('2.1')], 'c': {'d': 'e'}}
 
-    >>> i = obj.seek(0)
-    >>> str(to_dict(obj,["c","d"]))
+    >>> str(to_dict(file_obj,["c","d"]))
     'e'
 
     >>> from jsonextended.utils import get_test_path

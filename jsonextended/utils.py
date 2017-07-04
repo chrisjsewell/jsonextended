@@ -1,5 +1,6 @@
 import os, inspect
 import re
+import contextlib   
 
 # python 2/3 compatibility
 try:
@@ -87,6 +88,223 @@ def natural_sort(iterable):
     
     """
     return sorted(iterable, key=_natural_keys)
+
+
+class _OpenRead(object):
+    def __init__(self, linelist):
+        self._linelist = linelist
+        self._current_indx = 0
+    def read(self):
+        return '\n'.join(self._linelist)
+    def readline(self):
+        if self._current_indx >= len(self._linelist):
+            line = ''
+        else:
+            line = self._linelist[self._current_indx] + '\n'
+        self._current_indx += 1
+        return line
+    def __iter__(self):
+        for line in self._linelist:
+            yield line
+
+class _OpenWrite(object):
+    def __init__(self):
+        self._str = ''
+    def write(self,instr):
+        self._str += instr
+    def writelines(self, lines):
+        for instr in lines:
+            self.write(instr)
+
+class MockPath(object):
+    r"""a mock path, mimicking pathlib.Path, 
+    supporting context open method for read/write
+    
+    Properties
+    ----------
+    path : str
+        the path string
+    is_file : bool
+        if True is file, else folder
+    content : str
+        content of the file
+    structure:
+        structure of the directory
+
+    Examples
+    --------
+    >>> file_obj = MockPath("path/to/test.txt",is_file=True,
+    ...                     content="line1\nline2\nline3")
+    ...
+    >>> file_obj
+    MockFile("test.txt")
+    >>> file_obj.name
+    'test.txt'
+    >>> print(file_obj.to_string())
+    File("test.txt") Contents:
+    line1
+    line2
+    line3
+    >>> file_obj.is_file()
+    True
+    >>> file_obj.is_dir()
+    False
+    >>> with file_obj.open('r') as f:
+    ...     print(f.readline().strip())
+    line1
+    >>> with file_obj.open('w') as f:
+    ...     f.write('newline1\nnewline2')
+    >>> print(file_obj.to_string())
+    File("test.txt") Contents:
+    newline1
+    newline2
+    
+    >>> dir_obj = MockPath(
+    ...   structure=[{'dir1':[{'subdir':[]},file_obj]},{'dir2':[file_obj]},file_obj]
+    ... )
+    >>> dir_obj
+    MockFolder("root")
+    >>> dir_obj.name
+    'root'
+    >>> dir_obj.is_file()
+    False
+    >>> dir_obj.is_dir()
+    True
+    >>> print(dir_obj.to_string())
+    Folder("root") 
+      Folder("dir1") 
+        Folder("subdir") 
+        File("test.txt") 
+      Folder("dir2") 
+        File("test.txt") 
+      File("test.txt") 
+
+    >>> list(dir_obj.iterdir())
+    [MockFolder("dir1"), MockFolder("dir2"), MockFile("test.txt")]
+    
+    >>> new = dir_obj.joinpath('dir3')
+    >>> list(dir_obj.iterdir())
+    [MockFolder("dir1"), MockFolder("dir2"), MockFile("test.txt")]
+
+    >>> new.mkdir()
+    >>> list(dir_obj.iterdir())
+    [MockFolder("dir1"), MockFolder("dir2"), MockFile("test.txt"), MockFolder("dir3")]
+        
+    """
+    def __init__(self, path='root', 
+                 is_file=False,exists=True,
+                 structure=[],content=''):
+        self._path = path
+        self.name = os.path.basename(path)
+        self._exists = exists
+        self._is_file = is_file
+        self._is_dir = not is_file        
+        self._content = content.splitlines()
+        
+        self.children = []
+        for subobj in structure:
+            if hasattr(subobj,'keys'):            
+                key = list(subobj.keys())[0]
+                self.children.append(MockPath(os.path.join(self._path,key),
+                                              structure=subobj[key]))
+            elif isinstance(subobj,MockPath):
+                self.children.append(subobj)
+            else:
+                raise ValueError('items must be dict_like or MockPath: {}'.format(subobj))        
+        
+    def is_file(self):
+        return self._is_file
+    def is_dir(self):
+        return self._is_dir
+    def exists(self):
+        return self._exists
+                        
+    def joinpath(self, path):
+        if len(os.path.split(path)[0]):
+            raise NotImplementedError
+        for child in self.children:
+            if child.name == path:
+                return child
+                
+        # does not yet exist, must use touch or mkdir to convert to file or folder
+        new = MockPath(path=os.path.join(self._path,path),exists=False)
+        self.children.append(new)
+        return new
+        
+    def mkdir(self):
+        if not self._exists:
+            self._is_file = False
+            self._is_dir = True
+            self._exists = True
+    def touch(self):
+        if not self._exists:
+            self._is_file = True
+            self._is_dir = False
+            self._exists = True
+
+    def iterdir(self):
+        for subobj in self.children:
+            if subobj.exists():
+                yield subobj
+        
+    @contextlib.contextmanager    
+    def open(self, readwrite='r'):
+        if self.is_dir():
+            raise IOError('[Errno 21] Is a directory: {}'.format(self.path))
+            
+        if 'r' in readwrite:
+            obj = _OpenRead(self._content)
+            yield obj
+        elif 'w' in readwrite:
+            obj = _OpenWrite()
+            yield obj
+            self._content = obj._str.splitlines()
+        else:
+            raise ValueError('readwrite should contain r or w')
+
+    def _recurse_print(self, obj, text='',indent=0,indentlvl=2,file_content=False):
+        indent += indentlvl
+        for subobj in obj:
+            if not subobj.exists():
+                continue
+            if subobj.is_dir():            
+                text += ' '*indent + 'Folder("{}") \n'.format(subobj.name)
+                text += self._recurse_print(subobj.children,
+                                indent=indent,file_content=file_content)
+            else:
+                if file_content:
+                    sep = '\n'+' '*(indent+1)
+                    text += ' '*indent + sep.join(['File("{}") Contents:'.format(subobj.name)]+subobj._content) + '\n'
+                else:
+                    text += ' '*indent + 'File("{}") \n'.format(subobj.name)
+            
+        return text
+        
+    def to_string(self,indentlvl=2,file_content=False):
+        
+        if self.is_file():
+            return '\n'.join(['File("{}") Contents:'.format(self.name)]+self._content)
+        elif self.is_dir():
+            text = 'Folder("{}") \n'.format(self.name)
+            text += self._recurse_print(self.children,indentlvl=indentlvl,
+                                        file_content=file_content)
+            
+            text = text[0:-1] if text.endswith('\n') else text
+            return text
+        else:
+            return 'MockPath({})'.format(self.name)
+        
+    def __str__(self):
+        return self.__repr__()
+    def __repr__(self):
+        if not self.exists():
+            return 'MockVirtualPath("{}")'.format(self.name)
+        elif self.is_dir():
+            return 'MockFolder("{}")'.format(self.name)
+        elif self.is_file():
+            return 'MockFile("{}")'.format(self.name)
+        else:
+            return 'MockPath("{}")'.format(self.name)            
 
 def memory_usage():
     """return memory usage of python process in MB 
