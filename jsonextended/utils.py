@@ -1,6 +1,7 @@
 import os, inspect
 import re
-import contextlib   
+import contextlib 
+from functools import total_ordering  
 
 # python 2/3 compatibility
 try:
@@ -116,6 +117,7 @@ class _OpenWrite(object):
         for instr in lines:
             self.write(instr)
 
+@total_ordering 
 class MockPath(object):
     r"""a mock path, mimicking pathlib.Path, 
     supporting context open method for read/write
@@ -188,7 +190,7 @@ class MockPath(object):
 
     >>> new.mkdir()
     >>> list(dir_obj.iterdir())
-    [MockFolder("dir1"), MockFolder("dir2"), MockFile("test.txt"), MockFolder("dir3")]
+    [MockFolder("dir1"), MockFolder("dir2"), MockFolder("dir3"), MockFile("test.txt")]
         
     """
     def __init__(self, path='root', 
@@ -243,7 +245,7 @@ class MockPath(object):
             self._exists = True
 
     def iterdir(self):
-        for subobj in self.children:
+        for subobj in sorted(self.children):
             if subobj.exists():
                 yield subobj
         
@@ -262,9 +264,18 @@ class MockPath(object):
         else:
             raise ValueError('readwrite should contain r or w')
 
+    def __gt__(self,other):
+        if not hasattr(other, 'name'):
+            return NotImplemented
+        return len(self.name) > len(other.name)
+    def __eq__(self,other):
+        if not hasattr(other, 'name'):
+            return NotImplemented
+        return len(self.name) == len(other.name)
+        
     def _recurse_print(self, obj, text='',indent=0,indentlvl=2,file_content=False):
         indent += indentlvl
-        for subobj in obj:
+        for subobj in sorted(obj):
             if not subobj.exists():
                 continue
             if subobj.is_dir():            
