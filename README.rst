@@ -79,7 +79,7 @@ Take a directory structure, potentially containing multiple file types:
 
 
 Plugins can be defined for parsing each file type (see `Creating
-Plugins <#Creating-and-Loading-Plugins>`__ section):
+Plugins <#creating-and-loading-plugins>`__ section):
 
 .. code:: python
 
@@ -91,10 +91,10 @@ Plugins <#Creating-and-Loading-Plugins>`__ section):
 
 .. parsed-literal::
 
-    {'csv.basic': 'read *.csv delimited file with headers to {header:[column_values]}',
-     'csv.literal': 'read *.literal.csv delimited files with headers to {header:column_values}',
-     'json.basic': 'read *.json files using json.load',
-     'keypair': "read *.keypair, where each line should be; '<key> <pair>'"}
+    {'csv.basic': 'read \*.csv delimited file with headers to {header:[column_values]}',
+     'csv.literal': 'read \*.literal.csv delimited files with headers to {header:column_values}',
+     'json.basic': 'read \*.json files using json.load',
+     'keypair': "read \*.keypair, where each line should be; '<key> <pair>'"}
 
 
 
@@ -349,8 +349,8 @@ For example, a simple parser plugin would be:
 
     class ParserPlugin(object):
         plugin_name = 'example'
-        plugin_descript = 'a parser for *.example files, that outputs (line_number:line)'
-        file_regex = '*.example'
+        plugin_descript = 'a parser for \*.example files, that outputs (line_number:line)'
+        file_regex = '\*.example'
         def read_file(self, file_obj, **kwargs):
             out_dict = {}
             for i, line in enumerate(file_obj):
@@ -371,7 +371,7 @@ Plugins can be loaded as a class:
 
     {'decoders': {},
      'encoders': {},
-     'parsers': {'example': 'a parser for *.example files, that outputs (line_number:line)'}}
+     'parsers': {'example': 'a parser for \*.example files, that outputs (line_number:line)'}}
 
 
 
@@ -382,8 +382,8 @@ Or by directory (loading all .py files):
     fobj = utils.MockPath('example.py',is_file=True,content="""
     class ParserPlugin(object):
         plugin_name = 'example.other'
-        plugin_descript = 'a parser for *.example.other files, that outputs (line_number:line)'
-        file_regex = '*.example.other'
+        plugin_descript = 'a parser for \*.example.other files, that outputs (line_number:line)'
+        file_regex = '\*.example.other'
         def read_file(self, file_obj, **kwargs):
             out_dict = {}
             for i, line in enumerate(file_obj):
@@ -401,8 +401,8 @@ Or by directory (loading all .py files):
 
     {'decoders': {},
      'encoders': {},
-     'parsers': {'example': 'a parser for *.example files, that outputs (line_number:line)',
-      'example.other': 'a parser for *.example.other files, that outputs (line_number:line)'}}
+     'parsers': {'example': 'a parser for \*.example files, that outputs (line_number:line)',
+      'example.other': 'a parser for \*.example.other files, that outputs (line_number:line)'}}
 
 
 

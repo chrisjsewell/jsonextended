@@ -72,7 +72,7 @@ print(datadir.to_string(indentlvl=3,file_content=True))
             key4 val4
 
 
-Plugins can be defined for parsing each file type (see [Creating Plugins](#Creating-and-Loading-Plugins) section):
+Plugins can be defined for parsing each file type (see [Creating Plugins](#creating-and-loading-plugins) section):
 
 
 ```python
