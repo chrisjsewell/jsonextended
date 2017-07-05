@@ -1235,6 +1235,8 @@ class LazyLoad(object):
             items = [items]
         obj = self
         for item in items:
+            if not isinstance(obj, self.__class__):
+                raise KeyError('{} (reached leaf node)'.format(item))
             obj._expand()
             obj  = obj._itemmap[item]   
         return obj     

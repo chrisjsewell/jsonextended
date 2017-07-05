@@ -505,3 +505,89 @@ def load_memit():
 
     ip.register_magics(MemMagics)
 
+import os
+
+_ATTRIBUTES = dict(
+    list(zip([
+        'bold',
+        'dark',
+        '',
+        'underline',
+        'blink',
+        '',
+        'reverse',
+        'concealed'
+    ],
+        list(range(1, 9))
+    ))
+)
+del _ATTRIBUTES['']
+
+_HIGHLIGHTS = dict(
+    list(zip([
+        'on_grey',
+        'on_red',
+        'on_green',
+        'on_yellow',
+        'on_blue',
+        'on_magenta',
+        'on_cyan',
+        'on_white'
+    ],
+        list(range(40, 48))
+    ))
+)
+
+_COLORS = dict(
+    list(zip([
+        'grey',
+        'red',
+        'green',
+        'yellow',
+        'blue',
+        'magenta',
+        'cyan',
+        'white',
+    ],
+        list(range(30, 38))
+    ))
+)
+
+
+def colortxt(text, color=None, on_color=None, attrs=None):
+    """Colorize text.
+
+    Available text colors:
+        red, green, yellow, blue, magenta, cyan, white.
+
+    Available text highlights:
+        on_red, on_green, on_yellow, on_blue, on_magenta, on_cyan, on_white.
+
+    Available attributes:
+        bold, dark, underline, blink, reverse, concealed.
+
+    Examples
+    --------
+    >>> txt = colortxt('Hello, World!', 'red', 'on_grey', ['bold'])
+    >>> print(txt)
+    \x1b[1m\x1b[40m\x1b[31mHello, World!\x1b[0m
+
+    """
+    _RESET = '\033[0m'
+    __ISON = True
+    if __ISON and os.getenv('ANSI_COLORS_DISABLED') is None:
+        fmt_str = '\033[%dm%s'
+        if color is not None:
+            text = fmt_str % (_COLORS[color], text)
+
+        if on_color is not None:
+            text = fmt_str % (_HIGHLIGHTS[on_color], text)
+
+        if attrs is not None:
+            for attr in attrs:
+                text = fmt_str % (_ATTRIBUTES[attr], text)
+
+        text += _RESET
+    return text
+
+
