@@ -9,7 +9,7 @@ A module to extend the python json package functionality:
 
 - Treat a directory structure like a nested dictionary:
 
-   - **lightweight plugin system**: define bespoke classes for parsing different file extensions and encoding/decoding objects
+   - **lightweight plugin system**: define bespoke classes for **parsing** different file extensions and **encoding/decoding** objects
    
    - **lazy loading**: read files only when they are indexed into 
    

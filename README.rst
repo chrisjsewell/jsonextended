@@ -8,12 +8,15 @@ JSON Extended
     :target: https://travis-ci.org/chrisjsewell/jsonextended
 
 
+.. image:: https://coveralls.io/repos/github/chrisjsewell/jsonextended/badge.svg?branch=master
+   :target: https://coveralls.io/github/chrisjsewell/jsonextended?branch=master
+
 
 A module to extend the python json package functionality:
 
 -  Treat a directory structure like a nested dictionary:
 
-   -  **lightweight plugin system**: define bespoke classes for parsing different file extensions and encoding/decoding objects
+   -  **lightweight plugin system**: define bespoke classes for **parsing** different file extensions and **encoding/decoding** objects
 
    -  **lazy loading**: read files only when they are indexed into
 
@@ -27,7 +30,7 @@ A module to extend the python json package functionality:
 
    -  functions including; filter, merge, flatten, unflatten
 
-   -  output to directory structure (of n folder levels)
+   -  output to directory structure (of *n* folder levels)
 
 -  On-disk indexing option for large json files (using the ijson
    package)
