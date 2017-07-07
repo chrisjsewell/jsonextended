@@ -33,7 +33,7 @@ import warnings
 warnings.simplefilter('once',ImportWarning)
 
 # local imports
-from jsonextended.utils import natural_sort
+from jsonextended.utils import natural_sort, colortxt
 from jsonextended.plugins import encode, decode, parse, parser_available
 
 def is_dict_like(obj,attr=('keys','items')):
@@ -122,7 +122,7 @@ def _default_print_func(s):
 
 def pprint(d, lvlindent=2, initindent=0, delim=':',
                 max_width=80, depth=3, no_values=False,
-                align_vals=True, print_func=None):
+                align_vals=True, print_func=None,keycolor=None):
     """ print a nested dict in readable format
 
     Parameters
@@ -144,6 +144,8 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
         whether to align values for each level
     print_func : func or None
         function to print strings (print if None)
+    keycolor : None or str
+         if str, color keys by this color, allowed: red, green, yellow, blue, magenta, cyan, white
 
     Examples
     --------
@@ -206,6 +208,8 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     for key in natural_sort(d.keys()):
         value = d[key]
         key_str = decode_to_str(key)
+        if keycolor is not None:
+            key_str = colortxt(key_str,keycolor)
 
         if align_vals:
             key_str = '{0: <{1}} '.format(key_str+delim,key_width+len(delim))
@@ -222,7 +226,8 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                 print_func(' ' * initindent + key_str)
                 pprint(value, lvlindent, initindent+lvlindent,delim,
                             max_width,depth=max_depth-1 if not max_depth is None else None,
-                            no_values=no_values,align_vals=align_vals,print_func=print_func)
+                            no_values=no_values,align_vals=align_vals,
+                            print_func=print_func,keycolor=keycolor)
         else:
             val_string = decode_to_str(value) if not no_values else ''
             if not max_width is None:
@@ -1172,7 +1177,7 @@ class LazyLoad(object):
     
     def _next_level(self, obj):
         """get object for next level of tab """
-        if hasattr(obj, 'items'):
+        if is_dict_like(obj):
             child = LazyLoad(obj, self._ignore_prefixes,parent=self)
             return child
         try:
@@ -1195,11 +1200,11 @@ class LazyLoad(object):
             return
         
         obj = self._obj
-        if hasattr(obj, 'items'):
+        if is_dict_like(obj):
             self._itemmap = {key:self._next_level(val) for key,val in obj.items()}
         
         elif isinstance(obj, basestring):
-            obj = Path(obj)
+            obj = pathlib.Path(obj)
         try:
             if obj.is_file():
                 new_obj = parse(obj,**self._parser_kwargs)

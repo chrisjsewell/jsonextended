@@ -304,24 +304,31 @@ class MockPath(object):
             if not subobj.exists():
                 continue
             if subobj.is_dir():            
-                text += ' '*indent + 'Folder("{}") \n'.format(subobj.name)
+                text += ' '*indent + '{0}("{1}") \n'.format(self._folderstr, subobj.name)
                 text += self._recurse_print(subobj.children,
                                 indent=indent,file_content=file_content)
             else:
                 if file_content:
                     sep = '\n'+' '*(indent+1)
-                    text += ' '*indent + sep.join(['File("{}") Contents:'.format(subobj.name)]+subobj._content) + '\n'
+                    text += ' '*indent + sep.join(['{0}("{1}") Contents:'.format(self._filestr,subobj.name)]+subobj._content) + '\n'
                 else:
-                    text += ' '*indent + 'File("{}") \n'.format(subobj.name)
+                    text += ' '*indent + '{0}("{1}") \n'.format(self._filestr,subobj.name)
             
         return text
         
-    def to_string(self,indentlvl=2,file_content=False):
+    def to_string(self,indentlvl=2,file_content=False,color=False):
         """convert to string """
+        if color:
+            self._folderstr = colortxt('Folder','green')
+            self._filestr = colortxt('File','blue')
+        else:
+            self._folderstr = 'Folder'
+            self._filestr = 'File'
+        
         if self.is_file():
-            return '\n'.join(['File("{}") Contents:'.format(self.name)]+self._content)
+            return '\n'.join(['{0}("{1}") Contents:'.format(self._filestr,self.name)]+self._content)
         elif self.is_dir():
-            text = 'Folder("{}") \n'.format(self.name)
+            text = '{0}("{1}") \n'.format(self._folderstr,self.name)
             text += self._recurse_print(self.children,indentlvl=indentlvl,
                                         file_content=file_content)
             
