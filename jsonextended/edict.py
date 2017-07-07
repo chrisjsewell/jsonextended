@@ -1227,7 +1227,7 @@ class LazyLoad(object):
      
     def __dir__(self):
         self._expand()
-        return ['keys','items','values','to_dict'] + [name for name in self._tabmap]
+        return ['keys','items','values','to_dict','to_df'] + [name for name in self._tabmap]
     
     def __getattr__(self,attr):
         self._expand()
@@ -1283,7 +1283,7 @@ class LazyLoad(object):
             pass
         val = re.sub('[^0-9a-zA-Z]+', '_', str(val))
         val = 's'+val if val.startswith('_') else val
-        val = val+'_key' if val in ['keys','items','values','to_dict'] else val
+        val = val+'_key' if val in ['keys','items','values','to_dict','to_df'] else val
         return val
 
     def keys(self):
@@ -1313,3 +1313,7 @@ class LazyLoad(object):
     def to_dict(self):
         """ return D.to_dict -> D (fully loaded) as nested dict """
         return self._recurse_children(self)
+    def to_df(self, **kwargs):
+        """ return D.to_df -> D as pandas.DataFrame """
+        import pandas as pd
+        pd.DataFrame(self._recurse_children(self), **kwargs)
