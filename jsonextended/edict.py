@@ -1316,4 +1316,4 @@ class LazyLoad(object):
     def to_df(self, **kwargs):
         """ return D.to_df -> D as pandas.DataFrame """
         import pandas as pd
-        pd.DataFrame(self._recurse_children(self), **kwargs)
+        return pd.DataFrame(self._recurse_children(self), **kwargs)
