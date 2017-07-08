@@ -30,6 +30,13 @@ A module to extend the python json package functionality:
 -  Units schema concept to apply and convert physical units (using the
    pint package)
 
+## Contents
+
+- [Basic Example](#basic-example)
+- [Installation](#installation)
+- [Creating and Loading Plugins](#creating-and-loading-plugins)
+    - [Interface specifications](#interface-specifications)
+- [Extended Examples](#extended-examples)
 
 ## Basic Example
 
@@ -373,7 +380,7 @@ plugins.view_plugins()
 
 For a more complex example of a parser, see `jsonextended.complex_parsers`
 
-### Interface details
+### Interface specifications
 
 - Parsers:
 
