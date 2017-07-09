@@ -9,11 +9,11 @@ A module to extend the python json package functionality:
 
 - Treat a directory structure like a nested dictionary:
 
-   - **lightweight plugin system**: define bespoke classes for **parsing** different file extensions and **encoding/decoding** objects
+   - **lightweight plugin system**: define bespoke classes for **parsing** different file extensions (in-the-box: .json, .csv, .hdf5) and **encoding/decoding** objects
    
    - **lazy loading**: read files only when they are indexed into 
    
-   - **tab completion**: index as tabs for quick exploration of directory
+   - **tab completion**: index as tabs for quick exploration of data
    
 -  Manipulation of nested dictionaries:
 
@@ -91,7 +91,8 @@ plugins.view_plugins('parsers')
 
 
     {'csv.basic': 'read *.csv delimited file with headers to {header:[column_values]}',
-     'csv.literal': 'read *.literal.csv delimited files with headers to {header:column_values}',
+     'csv.literal': 'read *.literal.csv delimited files with headers to {header:column_values}, with number strings converted to int/float',
+     'hdf5.read': 'read *.hdf5 (in read mode) files using h5py',
      'json.basic': 'read *.json files using json.load',
      'keypair': "read *.keypair, where each line should be; '<key> <pair>'"}
 

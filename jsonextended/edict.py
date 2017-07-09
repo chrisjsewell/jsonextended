@@ -37,7 +37,14 @@ from jsonextended.utils import natural_sort, colortxt
 from jsonextended.plugins import encode, decode, parse, parser_available
 
 def is_dict_like(obj,attr=('keys','items')):
-    """test if object dict like"""
+    """test if object is dict like"""
+    for a in attr:
+        if not hasattr(obj, a):
+           return False
+    return True 
+
+def is_path_like(obj,attr=('name','is_file', 'is_dir', 'iterdir')):
+    """test if object is pathlib.Path like"""
     for a in attr:
         if not hasattr(obj, a):
            return False
@@ -1086,6 +1093,9 @@ class LazyLoad(object):
         if True, load subdirectories
     parent : obj
          the parent object of this instance
+    key_paths : bool
+        indicates if the keys of the object can be resolved as file/folder paths
+        (to ensure strings do not get unintentionally treated as paths)
     parser_kwargs : keywords or dict 
         additional keywords for parser plugins read_file method
         
@@ -1162,12 +1172,13 @@ class LazyLoad(object):
     """
     def __init__(self, obj, 
                  ignore_prefixes=('.','_'), recursive=True,
-                 parent=None, 
+                 parent=None, key_paths=True,
                  **parser_kwargs): 
         """ initialise
         """
         self._obj = obj
         self._ignore_prefixes = ignore_prefixes
+        self._key_paths = key_paths
         self._parser_kwargs = parser_kwargs
         if 'object_hook' not in parser_kwargs:
             self._parser_kwargs['object_hook']=decode
@@ -1178,19 +1189,20 @@ class LazyLoad(object):
     def _next_level(self, obj):
         """get object for next level of tab """
         if is_dict_like(obj):
-            child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+            child = LazyLoad(obj, self._ignore_prefixes,parent=self, 
+                                  key_paths=False)
             return child
-        try:
+        if is_path_like(obj):
             if not obj.name.startswith(self._ignore_prefixes):
                 if parser_available(obj):
-                    child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+                    child = LazyLoad(obj, self._ignore_prefixes,parent=self,
+                                          key_paths=False)
                     return child
                 elif obj.is_dir():
-                    child = LazyLoad(obj, self._ignore_prefixes,parent=self)
+                    child = LazyLoad(obj, self._ignore_prefixes,parent=self,
+                                          key_paths=self._key_paths)
                     return child
-        except AttributeError:
-            pass            
-            
+                                
         return obj
     
     def _expand(self):
@@ -1203,9 +1215,10 @@ class LazyLoad(object):
         if is_dict_like(obj):
             self._itemmap = {key:self._next_level(val) for key,val in obj.items()}
         
-        elif isinstance(obj, basestring):
+        elif isinstance(obj, basestring) and self._key_paths:
             obj = pathlib.Path(obj)
-        try:
+
+        if is_path_like(obj):
             if obj.is_file():
                 new_obj = parse(obj,**self._parser_kwargs)
                 self._itemmap = {key:self._next_level(val) for key,val in new_obj.items()}
@@ -1218,8 +1231,6 @@ class LazyLoad(object):
                         elif subpath.is_dir() and self._recurse:
                             new_obj[subpath.name] = self._next_level(subpath)
                 self._itemmap = new_obj
-        except AttributeError:
-            pass
         
         if self._itemmap is None:
             raise ValueError('not an expandable object: {}'.format(obj))

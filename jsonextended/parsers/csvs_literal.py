@@ -22,7 +22,7 @@ class CSVLiteral_Parser(object):
     """
     
     plugin_name = 'csv.literal'
-    plugin_descript = "read *.literal.csv delimited files with headers to {header:column_values}" 
+    plugin_descript = "read *.literal.csv delimited files with headers to {header:column_values}, with number strings converted to int/float" 
     ", s.t. values are converted to their python type"
     file_regex = '*.literal.csv'
     

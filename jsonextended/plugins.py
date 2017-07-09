@@ -293,7 +293,8 @@ def load_builtin_plugins(category=None, overwrite=False):
                   'pint.Quantity': 'encode/decode pint.Quantity object',
                   'python.set': 'decode/encode python set'},
      'parsers': {'csv.basic': 'read *.csv delimited file with headers to {header:[column_values]}',
-                 'csv.literal': 'read *.literal.csv delimited files with headers to {header:column_values}',
+                 'csv.literal': 'read *.literal.csv delimited files with headers to {header:column_values}, with number strings converted to int/float',
+                 'hdf5.read': 'read *.hdf5 (in read mode) files using h5py',
                  'json.basic': 'read *.json files using json.load',
                  'keypair': "read *.keypair, where each line should be; '<key> <pair>'"}}
 
@@ -404,7 +405,7 @@ def parser_available(fpath):
     elif hasattr(fpath, 'readline') and hasattr(fpath, 'name'):
         fname = fpath.name
     else:
-        raise ValueError('fpath should be a str or file_like object: {}'.format(rfile))
+        raise ValueError('fpath should be a str or file_like object: {}'.format(fpath))
     
     for parser in get_plugins('parsers').values():
         if fnmatch(fname,parser.file_regex):
@@ -467,7 +468,7 @@ def parse(fpath, **kwargs):
     elif hasattr(fpath, 'readline') and hasattr(fpath, 'name'):
         fname = fpath.name
     else:
-        raise ValueError('fpath should be a str or file_like object: {}'.format(rfile))
+        raise ValueError('fpath should be a str or file_like object: {}'.format(fpath))
     
     parser_dict = {plugin.file_regex:plugin for plugin in get_plugins('parsers').values()}
     

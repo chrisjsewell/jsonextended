@@ -16,11 +16,11 @@ A module to extend the python json package functionality:
 
 -  Treat a directory structure like a nested dictionary:
 
-   -  **lightweight plugin system**: define bespoke classes for **parsing** different file extensions and **encoding/decoding** objects
+   -  **lightweight plugin system**: define bespoke classes for **parsing** different file extensions (in-the-box: .json, .csv, .hdf5) and **encoding/decoding** objects
 
    -  **lazy loading**: read files only when they are indexed into
 
-   -  **tab completion**: index as tabs for quick exploration of directory
+   -  **tab completion**: index as tabs for quick exploration of data
 
 -  Manipulation of nested dictionaries:
 
@@ -37,6 +37,19 @@ A module to extend the python json package functionality:
 
 -  Units schema concept to apply and convert physical units (using the
    pint package)
+
+Contents
+--------
+
+- Basic Example
+
+- Installation
+
+- Creating and Loading Plugins
+
+    - Interface specifications
+	
+- Extended Examples
 
 Basic Example
 -------------
