@@ -49,5 +49,5 @@ with io.open('README.rst') as readme:
         keywords='json, units, parser, python',
         zip_safe=True,
         packages = find_packages(),
-        package_data={'': ['*.json', '*.data']},
+        package_data={'': ['*.json', '*.crystal.out','*.csv','*.keypair','*.data']},
     )
