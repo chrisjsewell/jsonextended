@@ -41,15 +41,15 @@ A module to extend the python json package functionality:
 Contents
 --------
 
-- Basic Example
+-  Basic Example
 
-- Installation
+-  Installation
 
-- Creating and Loading Plugins
+-  Creating and Loading Plugins
 
-    - Interface specifications
+   -  Interface specifications
 	
-- Extended Examples
+-  Extended Examples
 
 Basic Example
 -------------
