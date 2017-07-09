@@ -278,7 +278,7 @@ json.dumps(dct,default=plugins.encode)
 jsonextended has no import dependancies, on Python 3.x and only `pathlib2` on 2.7 but,
 for full functionallity, it is advised to install the following packages:
 
-    conda install -c conda-forge ijson numpy pint 
+    conda install -c conda-forge ijson numpy pint  h5py pandas
 
 
 ## Creating and Loading Plugins

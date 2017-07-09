@@ -318,7 +318,7 @@ install the following packages:
 
 ::
 
-    conda install -c conda-forge ijson numpy pint 
+    conda install -c conda-forge ijson numpy pint h5py pandas 
 
 Creating and Loading Plugins
 ----------------------------

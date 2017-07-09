@@ -1238,7 +1238,7 @@ class LazyLoad(object):
      
     def __dir__(self):
         self._expand()
-        return ['keys','items','values','to_dict','to_df'] + [name for name in self._tabmap]
+        return ['keys','items','values','to_dict','to_df','to_obj'] + [name for name in self._tabmap]
     
     def __getattr__(self,attr):
         self._expand()
@@ -1293,8 +1293,8 @@ class LazyLoad(object):
         except:
             pass
         val = re.sub('[^0-9a-zA-Z]+', '_', str(val))
-        val = 's'+val if val.startswith('_') else val
-        val = val+'_key' if val in ['keys','items','values','to_dict','to_df'] else val
+        val = 'u'+val if val.startswith('_') else val
+        val = val+'_key' if val in ['keys','items','values','to_dict','to_df','to_obj'] else val
         return val
 
     def keys(self):
@@ -1321,10 +1321,13 @@ class LazyLoad(object):
         else:
             return {root[key] if key in root else key: self._recurse_children(value,root) for key, value in obj.items()}
     
+    def to_obj(self):
+        """ D.to_obj -> the internal object of D """
+        return self._obj
     def to_dict(self):
-        """ return D.to_dict -> D (fully loaded) as nested dict """
+        """ D.to_dict -> D (fully loaded) as nested dict """
         return self._recurse_children(self)
     def to_df(self, **kwargs):
-        """ return D.to_df -> D as pandas.DataFrame """
+        """ D.to_df -> D as pandas.DataFrame """
         import pandas as pd
         return pd.DataFrame(self._recurse_children(self), **kwargs)
