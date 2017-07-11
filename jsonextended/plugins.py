@@ -5,6 +5,7 @@ import os, glob, inspect
 import imp
 import uuid
 from fnmatch import fnmatch
+import warnings
 
 #py 2/3 compatibility
 try:
@@ -15,6 +16,16 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+try:
+    from importlib.machinery import SourceFileLoader
+    from types import ModuleType
+    def load_source(modname, fname):
+        loader = SourceFileLoader(modname, fname)
+        mod = ModuleType(loader.name)
+        loader.exec_module(mod)
+        return mod
+except ImportError as err:
+    load_source = lambda modname, fname: imp.load_source(modname, fname)
 
 from jsonextended.utils import get_module_path, class_to_str
 
@@ -248,12 +259,17 @@ def load_plugins_dir(path, category=None, overwrite=False):
             if hasattr(pypath,'resolve'):
                 # Make the path absolute, resolving any symlinks
                 pypath = pypath.resolve()
-            # for MockPaths
-            if hasattr(pypath,'maketemp'):
-                with pypath.maketemp() as f:
-                    module = imp.load_source(mod_name,f.name)
-            else:
-                module = imp.load_source(mod_name,str(pypath))
+
+            with warnings.catch_warnings(record=True) as w:
+                warnings.filterwarnings("ignore",category=ImportWarning)                
+
+                # for MockPaths
+                if hasattr(pypath,'maketemp'):
+                    with pypath.maketemp() as f:
+                        module = load_source(mod_name,f.name)
+                else:
+                    module = load_source(mod_name,str(pypath))
+                    
         except Exception as err:
             load_errors.append(( str(pypath),'Load Error: {}'.format(err) ))
             continue
