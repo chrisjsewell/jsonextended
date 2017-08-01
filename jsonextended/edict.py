@@ -127,9 +127,21 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
 def _default_print_func(s):
     print(s)
 
+def _strip_ansi(source):
+    """
+    Remove ANSI escape codes from text.
+    Parameters
+    ----------
+    source : str
+        Source to remove the ANSI from
+    """
+    ansi_re = re.compile('\x1b\\[(.*?)([@-~])')
+    return ansi_re.sub('', source)
+
 def pprint(d, lvlindent=2, initindent=0, delim=':',
-                max_width=80, depth=3, no_values=False,
-                align_vals=True, print_func=None,keycolor=None):
+           max_width=80, depth=3, no_values=False,
+           align_vals=True, print_func=None,
+           keycolor=None, compress_lists=None):
     """ print a nested dict in readable format
 
     Parameters
@@ -152,7 +164,11 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     print_func : func or None
         function to print strings (print if None)
     keycolor : None or str
-         if str, color keys by this color, allowed: red, green, yellow, blue, magenta, cyan, white
+         if str, color keys by this color, 
+         allowed: red, green, yellow, blue, magenta, cyan, white
+    compress_lists : int
+         compress lists/tuples longer than this,
+          e.g. [1,1,1,1,1,1] -> [1, 1,..., 1]
 
     Examples
     --------
@@ -178,6 +194,9 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     >>> pprint(d,depth=2)
     a: 
       b: {...}
+    >>> pprint({'a':[1,1,1,1,1,1,1,1]},
+    ...        compress_lists=3)
+    a: [1, 1, 1, ...(x5)]
 
     """
     if print_func is None:
@@ -190,8 +209,16 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     def decode_to_str(obj):
         val_string = obj
         if isinstance(obj, list):
+            if compress_lists is not None:
+                if len(obj) > compress_lists:
+                    diff = str(len(obj) - compress_lists)
+                    obj = obj[:compress_lists] + ['...(x{})'.format(diff)]
             val_string = '['+', '.join([decode_to_str(o) for o in obj])+']'
         elif isinstance(obj, tuple):
+            if compress_lists is not None:
+                if len(obj) > compress_lists:
+                    diff = str(len(obj) - compress_lists)
+                    obj = list(obj[:compress_lists]) + ['...(x{})'.format(diff)]
             val_string = '('+', '.join([decode_to_str(o) for o in obj])+')'
         else:
             try:
@@ -234,18 +261,27 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                 pprint(value, lvlindent, initindent+lvlindent,delim,
                             max_width,depth=max_depth-1 if not max_depth is None else None,
                             no_values=no_values,align_vals=align_vals,
-                            print_func=print_func,keycolor=keycolor)
+                            print_func=print_func,keycolor=keycolor,
+                            compress_lists=compress_lists)
         else:
-            val_string = decode_to_str(value) if not no_values else ''
-            if not max_width is None:
-                if len(' ' * initindent + key_str)+1 > max_width:
-                    raise Exception('cannot fit keys and data within set max_width')
-                # divide into chuncks and join by same indentation
-                val_indent = ' ' * (initindent + len(key_str))
-                n = max_width - len(val_indent)
-                val_string = val_indent.join([s + ' \n' for s in textwrap.wrap(val_string,n)])[:-2]
+            val_string_all = decode_to_str(value) if not no_values else ''
+            if keycolor is not None:
+                key_length = len(_strip_ansi(key_str))
+            else:
+                key_length = len(key_str)
+            for i, val_string in enumerate(val_string_all.split('\n')):            
+                if not max_width is None:
+                    if len(' ' * initindent + key_str)+1 > max_width:
+                        raise Exception('cannot fit keys and data within set max_width')
+                    # divide into chuncks and join by same indentation
+                    val_indent = ' ' * (initindent + key_length)
+                    n = max_width - len(val_indent)
+                    val_string = val_indent.join([s + ' \n' for s in textwrap.wrap(val_string,n)])[:-2]
 
-            print_func(' ' * initindent + key_str + val_string)
+                if i==0:
+                    print_func(' ' * initindent + key_str + val_string)
+                else:
+                    print_func(' ' * initindent + ' '*key_length + val_string)
 
 def extract(d,path=None):
     """ extract section of dictionary
@@ -637,6 +673,39 @@ def filter_values(d,vals=None):
                 if not dic[key]:
                     del dic[key]
             elif dic[key] not in vals:
+                del dic[key]
+
+    d = copy.deepcopy(d)
+    fltr(d)
+    return d
+
+def filter_keyvals(d,vals=None):
+    """ filters leaf nodes key:value pairs of nested dictionary
+
+    Parameters
+    ----------
+    d : dict
+    vals : list of tuples
+        (key,value) to filter by
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> d = {1:{6:'a'},3:{7:'a'},2:{6:"b"},4:{5:{6:'a'}}}
+    >>> pprint(filter_keyvals(d,[(6,'a')]))
+    {1: {6: 'a'}, 4: {5: {6: 'a'}}}
+
+    """
+    vals = [] if vals is None else vals
+
+    def fltr(dic):
+        for key in list(dic.keys()):
+            if is_dict_like(dic[key]):
+                fltr(dic[key])
+                if not dic[key]:
+                    del dic[key]
+            elif (key,dic[key]) not in vals:
                 del dic[key]
 
     d = copy.deepcopy(d)
@@ -1244,7 +1313,8 @@ class LazyLoad(object):
         self._expand()
         if attr in self._tabmap:
             return self._tabmap[attr]
-        return super(LazyLoad,self).__getattr__(attr)
+        #return super(LazyLoad,self).__getattr__(attr)
+        raise AttributeError(attr)
         
     def __getitem__(self, items):
         if not isinstance(items,list):

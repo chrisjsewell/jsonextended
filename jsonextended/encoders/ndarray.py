@@ -4,6 +4,12 @@ https://stackoverflow.com/questions/27909658/json-encoder-and-decoder-for-comple
 
 import numpy as np
 
+try:
+	from functools import reduce
+except ImportError:
+	pass
+import operator
+
 class Encode_NDArray(object):
     """
     
@@ -29,7 +35,12 @@ class Encode_NDArray(object):
     dict_signature = ['_numpy_ndarray_']
 
     def to_str(self, obj):
-        return ' '.join(str(obj).split())
+        elements = reduce(operator.mul, obj.shape, 1)
+        if elements > 10:
+            return 'np.array({0}, min={1:.2E}, max={2:.2E})'.format(
+            obj.shape,obj.min(),obj.max())
+        else:
+            return ' '.join(str(obj).split())
 
     def to_json(self, obj):
         return {'_numpy_ndarray_':{'value':obj.tolist(),'dtype':str(obj.dtype)}}

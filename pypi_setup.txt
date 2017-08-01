@@ -16,7 +16,7 @@ create ~/.pypirc
 
 register testpypi package
 
-	python setup.py register -r https://testpypi.python.org/pypi
+	python setup.py register -r https://test.pypi.org/legacy/
 
 1. register pypi package
 

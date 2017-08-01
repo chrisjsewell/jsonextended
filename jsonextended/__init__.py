@@ -91,7 +91,7 @@ optimised:
 
 """
 
-__version__ = '0.3.5'
+__version__ = '0.3.6'
 
 from jsonextended import ejson, units, utils, edict, plugins
 
