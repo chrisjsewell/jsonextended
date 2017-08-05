@@ -141,12 +141,14 @@ def _strip_ansi(source):
 def pprint(d, lvlindent=2, initindent=0, delim=':',
            max_width=80, depth=3, no_values=False,
            align_vals=True, print_func=None,
-           keycolor=None, compress_lists=None):
+           keycolor=None, compress_lists=None,
+           round_floats=None, _dlist=False):
     """ print a nested dict in readable format
+        (- denotes an element in a list of dictionaries)
 
     Parameters
     ----------
-    d : dict
+    d : obj
     lvlindent : int
         additional indentation spaces for each level
     initindent : int
@@ -169,6 +171,8 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     compress_lists : int
          compress lists/tuples longer than this,
           e.g. [1,1,1,1,1,1] -> [1, 1,..., 1]
+    round_floats : int
+         significant figures for floats  
 
     Examples
     --------
@@ -203,8 +207,11 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
         print_func = _default_print_func
 
     if not is_dict_like(d):
-        print_func('{}'.format(d))
-        return
+        d = {'':d}
+        #print_func('{}'.format(d))
+        #return
+        
+    extra = lvlindent if _dlist else 0
 
     def decode_to_str(obj):
         val_string = obj
@@ -220,6 +227,9 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                     diff = str(len(obj) - compress_lists)
                     obj = list(obj[:compress_lists]) + ['...(x{})'.format(diff)]
             val_string = '('+', '.join([decode_to_str(o) for o in obj])+')'
+        elif isinstance(obj, float) and round_floats is not None:
+            round_str = '{0:.' + str(round_floats-1) + 'E}'
+            val_string = str(float(round_str.format(obj)))
         else:
             try:
                 val_string = encode(obj, outtype='str')
@@ -239,9 +249,15 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                 key_width = max(key_width, len(key_str))
 
     max_depth = depth
-    for key in natural_sort(d.keys()):
+    for i, key in enumerate(natural_sort(d.keys())):
         value = d[key]
-        key_str = decode_to_str(key)
+        if _dlist and i==0:
+            key_str = '- ' + decode_to_str(key)
+        elif _dlist:
+            key_str = '  ' + decode_to_str(key)
+        else:
+            key_str = decode_to_str(key)
+        
         if keycolor is not None:
             key_str = colortxt(key_str,keycolor)
 
@@ -251,37 +267,56 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
             key_str = '{0}{1} '.format(key_str,delim)
 
         depth = max_depth if not max_depth is None else 2
+        if keycolor is not None:
+            key_length = len(_strip_ansi(key_str))
+        else:
+            key_length = len(key_str)
+        key_line = ' ' * initindent + key_str
+        new_line = ' ' * initindent + ' '*key_length
+
         if depth <= 0:
-            pass
-        elif is_dict_like(value):
+            continue
+        if is_dict_like(value):
             if depth <= 1:
                 print_func(' ' * initindent + key_str + '{...}')
             else:
                 print_func(' ' * initindent + key_str)
-                pprint(value, lvlindent, initindent+lvlindent,delim,
+                pprint(value, lvlindent, initindent+lvlindent+extra,delim,
                             max_width,depth=max_depth-1 if not max_depth is None else None,
                             no_values=no_values,align_vals=align_vals,
                             print_func=print_func,keycolor=keycolor,
-                            compress_lists=compress_lists)
-        else:
-            val_string_all = decode_to_str(value) if not no_values else ''
-            if keycolor is not None:
-                key_length = len(_strip_ansi(key_str))
-            else:
-                key_length = len(key_str)
-            for i, val_string in enumerate(val_string_all.split('\n')):            
-                if not max_width is None:
-                    if len(' ' * initindent + key_str)+1 > max_width:
-                        raise Exception('cannot fit keys and data within set max_width')
-                    # divide into chuncks and join by same indentation
-                    val_indent = ' ' * (initindent + key_length)
-                    n = max_width - len(val_indent)
-                    val_string = val_indent.join([s + ' \n' for s in textwrap.wrap(val_string,n)])[:-2]
+                            compress_lists=compress_lists,round_floats=round_floats)
+            continue
+            
+        if isinstance(value,list):
+            if all([is_dict_like(o) for o in value]) and value:
+                if depth <= 1:
+                    print_func(key_line + '[...]')  
+                    continue     
+                print_func(key_line)            
+                for obj in value:
+                    pprint(obj, lvlindent, initindent+lvlindent+extra,delim,
+                        max_width,depth=max_depth-1 if not max_depth is None else None,
+                        no_values=no_values,align_vals=align_vals,
+                        print_func=print_func,keycolor=keycolor,
+                        compress_lists=compress_lists,
+                        round_floats=round_floats,_dlist=True)
+                continue
+        
+        val_string_all = decode_to_str(value) if not no_values else ''        
+        for i, val_string in enumerate(val_string_all.split('\n')):            
+            if not max_width is None:
+                if len(key_line)+1 > max_width:
+                    raise Exception('cannot fit keys and data within set max_width')
+                # divide into chuncks and join by same indentation
+                val_indent = ' ' * (initindent + key_length)
+                n = max_width - len(val_indent)
+                val_string = val_indent.join([s + ' \n' for s in textwrap.wrap(val_string,n)])[:-2]
 
-                if i==0:
-                    print_func(' ' * initindent + key_str + val_string)
-                else:
-                    print_func(' ' * initindent + ' '*key_length + val_string)
+            if i==0:
+                print_func(key_line + val_string)
+            else:
+                print_func(new_line + val_string)
 
 def extract(d,path=None):
     """ extract section of dictionary

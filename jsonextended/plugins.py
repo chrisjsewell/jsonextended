@@ -104,9 +104,13 @@ def view_plugins(category=None):
     """
     dct = _all_plugins
     if not category is None:
+        if category=='parsers':
+             return {name:{"descript":klass.plugin_descript,"regex":klass.file_regex} 
+             for name,klass in _all_plugins[category].items()}
         return {name:klass.plugin_descript for name,klass in _all_plugins[category].items()}
     else:
-        return {cat:{name:klass.plugin_descript for name,klass in plugins.items()} for cat,plugins in _all_plugins.items()}
+        return {cat:{name:klass.plugin_descript
+        for name,klass in plugins.items()} for cat,plugins in _all_plugins.items()}
                         
 def get_plugins(category):
     """ get plugins for category """
@@ -311,8 +315,10 @@ def load_builtin_plugins(category=None, overwrite=False):
      'parsers': {'csv.basic': 'read *.csv delimited file with headers to {header:[column_values]}',
                  'csv.literal': 'read *.literal.csv delimited files with headers to {header:column_values}, with number strings converted to int/float',
                  'hdf5.read': 'read *.hdf5 (in read mode) files using h5py',
+                 'ipynb': 'read Jupyter Notebooks',
                  'json.basic': 'read *.json files using json.load',
                  'keypair': "read *.keypair, where each line should be; '<key> <pair>'"}}
+
 
     >>> unload_all_plugins()    
 
