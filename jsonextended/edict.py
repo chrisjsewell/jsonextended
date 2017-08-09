@@ -664,6 +664,37 @@ def remove_keys(d, keys=None):
             new_dic[new_key] = value
         return unflatten(new_dic)
 
+def remove_keyvals(d, keyvals=None):
+    """ remove paths with at least one branch leading to certain (key,value) pairs from dict
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> d = {1:{"b":"A"},"a":{"b":"B","c":"D"},"b":{"a":"B"}}
+    >>> pprint(remove_keyvals(d,[("b","B")]))
+    {1: {'b': 'A'}, 'b': {'a': 'B'}}
+
+    """
+    keyvals = [] if keyvals is None else keyvals
+
+    if not hasattr(d, 'items'):
+        return d
+    
+    flatd = flatten(d)
+    def is_in(a,b):
+        try:
+            return a in b
+        except:
+            return False
+
+    
+    prune = [k[0] for k,v in flatd.items() if is_in((k[-1],v),keyvals)]
+    flatd = {k:v for k,v in flatd.items() if not is_in(k[0],prune)}
+    
+    return unflatten(flatd)
+
+
 def remove_paths(d, keys=None):
     """ remove paths containing certain keys from dict
 
@@ -700,19 +731,31 @@ def filter_values(d,vals=None):
 
     """
     vals = [] if vals is None else vals
+    
+    flatd = flatten(d)
+    def is_in(a,b):
+        try:
+            return a in b
+        except:
+            return False
 
-    def fltr(dic):
-        for key in list(dic.keys()):
-            if is_dict_like(dic[key]):
-                fltr(dic[key])
-                if not dic[key]:
-                    del dic[key]
-            elif dic[key] not in vals:
-                del dic[key]
-
-    d = copy.deepcopy(d)
-    fltr(d)
-    return d
+    flatd = {k:v for k,v in flatd.items() if is_in(v,vals)}
+    return unflatten(flatd)
+    
+    # vals = [] if vals is None else vals
+    #
+    # def fltr(dic):
+    #     for key in list(dic.keys()):
+    #         if is_dict_like(dic[key]):
+    #             fltr(dic[key])
+    #             if not dic[key]:
+    #                 del dic[key]
+    #         elif dic[key] not in vals:
+    #             del dic[key]
+    #
+    # d = copy.deepcopy(d)
+    # fltr(d)
+    # return d
 
 def filter_keyvals(d,vals=None):
     """ filters leaf nodes key:value pairs of nested dictionary
@@ -733,26 +776,69 @@ def filter_keyvals(d,vals=None):
 
     """
     vals = [] if vals is None else vals
+    
+    flatd = flatten(d)
+    def is_in(a,b):
+        try:
+            return a in b
+        except:
+            return False
 
-    def fltr(dic):
-        for key in list(dic.keys()):
-            if is_dict_like(dic[key]):
-                fltr(dic[key])
-                if not dic[key]:
-                    del dic[key]
-            elif (key,dic[key]) not in vals:
-                del dic[key]
+    flatd = {k:v for k,v in flatd.items() if is_in((k[-1],v),vals)}
+    return unflatten(flatd)
+    
 
-    d = copy.deepcopy(d)
-    fltr(d)
-    return d
+    # def fltr(dic):
+    #     for key in list(dic.keys()):
+    #         if is_dict_like(dic[key]):
+    #             fltr(dic[key])
+    #             if not dic[key]:
+    #                 del dic[key]
+    #         elif (key,dic[key]) not in vals:
+    #             del dic[key]
+    #
+    # d = copy.deepcopy(d)
+    # fltr(d)
+    # return d
+
+# def _filter_key_recurse(d, keys, use_wildcards):
+#     if is_dict_like(d):
+#         retVal = {}
+#         for key in d:
+#             if use_wildcards and isinstance(key, basestring):
+#                 if any([fnmatch(key,k) for k in keys]):
+#                     retVal[key] = d[key]
+#                 elif isinstance(d[key], list) or is_dict_like(d[key]):
+#                     child = _filter_key_recurse(d[key], keys, use_wildcards)
+#                     if child:
+#                         retVal[key] = child
+#             elif key in keys:
+#                 retVal[key] = d[key]
+#             elif isinstance(d[key], list) or is_dict_like(d[key]):
+#                 child = _filter_key_recurse(d[key], keys, use_wildcards)
+#                 if child:
+#                     retVal[key] = child
+#         if retVal:
+#              return retVal
+#         else:
+#              return {}
+#     elif isinstance(d, list):
+#         retVal = []
+#         for entry in d:
+#             child = _filter_key_recurse(entry, keys, use_wildcards)
+#             if child:
+#                 retVal.append(child)
+#         if retVal:
+#             return retVal
+#         else:
+#             return []
 
 def filter_keys(d, keys, use_wildcards=False):
     """ filter dict by certain keys
 
     Parameters
     ----------
-    d : dict
+    dic : dict
     keys: list
     use_wildcards : bool
         if true, can use * (matches everything) and ? (matches any single character)
@@ -771,36 +857,34 @@ def filter_keys(d, keys, use_wildcards=False):
     {1: {'axxxx': 'A'}}
 
     """
-    if is_dict_like(d):
-        retVal = {}
-        for key in d:
-            if use_wildcards and isinstance(key, basestring):
-                if any([fnmatch(key,k) for k in keys]):
-                    retVal[key] = copy.deepcopy(d[key])
-                elif isinstance(d[key], list) or is_dict_like(d[key]):
-                    child = filter_keys(d[key], keys, use_wildcards)
-                    if child:
-                        retVal[key] = child
-            elif key in keys:
-                retVal[key] = copy.deepcopy(d[key])
-            elif isinstance(d[key], list) or is_dict_like(d[key]):
-                child = filter_keys(d[key], keys, use_wildcards)
-                if child:
-                    retVal[key] = child
-        if retVal:
-             return retVal
+    flatd = flatten(d)
+    def is_in(a,bs):
+        if use_wildcards:
+            for b in bs:
+                try:
+                    if a==b:
+                        return True
+                    if fnmatch(b,a):
+                        return True  
+                except:
+                    pass
+            return False
         else:
-             return {}
-    elif isinstance(d, list):
-        retVal = []
-        for entry in d:
-            child = filter_keys(entry, keys, use_wildcards)
-            if child:
-                retVal.append(child)
-        if retVal:
-            return retVal
-        else:
-            return []
+            try:
+                return a in bs
+            except:
+                return False
+
+    flatd = {paths:v for paths,v in flatd.items() if any([is_in(k,paths) for k in keys])}
+    return unflatten(flatd)
+    
+    
+    # new_dic = _filter_key_recurse(d, keys, use_wildcards)
+    # if deepcopy:
+    #     return copy.deepcopy(new_dic)
+    # else:
+        # return copy.copy(new_dic)
+    
 
 def filter_paths(d, paths):
     """ filter dict by certain paths containing key sets
@@ -875,8 +959,7 @@ def combine_lists(d, combine,
     >>> d = {'path_key':{'x':[1,2],'y':[3,4],'a':1}}
     >>> new_d = combine_lists(d,['x','y'])
     >>> pprint(new_d)
-    {'path_key': {'a': 1,
-                  'combined': {'1': {'x': 1, 'y': 3}, '2': {'x': 2, 'y': 4}}}}
+    {'path_key': {'a': 1, 'combined': [{'x': 1, 'y': 3}, {'x': 2, 'y': 4}]}}
     
     >>> combine_lists(d,['x','a'])
     Traceback (most recent call last):
@@ -896,7 +979,8 @@ def combine_lists(d, combine,
     new_d = {}
     for key, value in flattened.items():
         if set(combine).issubset(value.keys()):
-            combine_d = {}
+            #combine_d = {}
+            combine_d = []
             sub_d = {}
             length = None
             for subkey, subvalue in value.items(): 
@@ -908,17 +992,22 @@ def combine_lists(d, combine,
                         if len(subvalue)!=length:
                             raise ValueError('lists at the following path '
                                              'do not have the same size {0}'.format(key))
-
+                    if length is None:
+                        combine_d = [{subkey:v} for v in subvalue]
+                    else:
+                        for item, val in zip(combine_d,subvalue):
+                            item[subkey] = val
+                         
                     length = len(subvalue)
-                    new_combine = {str(k+1):{subkey:v} for k,v in enumerate(subvalue)}
-                    combine_d = merge([combine_d,new_combine])
+                    #new_combine = {k:{subkey:v} for k,v in enumerate(subvalue)}
+                    #combine_d = merge([combine_d,new_combine])
                 else:
-                    sub_d[subkey] = subvalue
+                    sub_d[subkey] = subvalue                
                 try:
                     new_d[key] = merge([sub_d,{combine_key:combine_d}])
                 except ValueError as err:
                     raise ValueError('combined data key: '
-                                     '{0}, already exists at this level for {1}'.format(combine_key,key))
+                                     '{0}, already exists at this level for {1}'.format(combine_key,key))            
         else:
             new_d[key] = value
     

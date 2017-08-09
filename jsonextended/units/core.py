@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -- coding: utf-8 --
 
+from fnmatch import fnmatch
+
 # make units optional when importing jsonextended
 try:
     import numpy as np
@@ -17,7 +19,8 @@ except ImportError:
 from jsonextended.edict import flatten, flatten2d, unflatten, merge
 
 def apply_unitschema(data, uschema, as_quantity=True,
-                    raise_outerr=False, convert_base=False):
+                    raise_outerr=False, convert_base=False,
+                    use_wildcards=False):
     """ apply the unit schema to the data 
     
     Parameters
@@ -31,6 +34,8 @@ def apply_unitschema(data, uschema, as_quantity=True,
         raise error if a unit cannot be found in the outschema
     convert_to_base : bool
         rescale units to base units
+    use_wildcards : bool
+        if true, can use * (matches everything) and ? (matches any single character)
     
     Examples
     --------
@@ -78,7 +83,16 @@ def apply_unitschema(data, uschema, as_quantity=True,
     for dkey, dvalue in data_flat.items():
         converted = False
         for ukey in uschema_keys:
-            if ukey == dkey[-len(ukey):]:
+            
+            if not len(ukey)==len(dkey[-len(ukey):]):
+                continue
+            
+            if use_wildcards:
+                match = all([fnmatch(d,u) for u,d in zip(ukey,dkey[-len(ukey):])])
+            else:
+                match = ukey == dkey[-len(ukey):]
+            
+            if match:
                 # handle the fact that it return an numpy object type if list of floats
                 if isinstance(dvalue,(list,tuple)):
                     dvalue = np.array(dvalue)
