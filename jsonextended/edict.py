@@ -937,6 +937,41 @@ def rename_keys(d,keymap=None):
     else:
         return {keymap[key] if key in keymap else key: rename_keys(value,keymap) for key, value in d.items()}
 
+def apply(d, leaf_key, func, new_name=None, **kwargs):
+    """ apply a function to all values with a certain leaf (terminal) key
+    
+    Parameters
+    ----------
+    d : dict
+    leaf_key : any
+        value of leaf key
+    func : func
+        function to apply
+    new_name : any
+        if not None, rename leaf_key
+    kwargs : dict
+        keywords to parse to function
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> d = {'a':1,'b':1}
+    >>> func = lambda x: x+1
+    >>> pprint(apply(d,'a',func))
+    {'a': 2, 'b': 1}
+    >>> pprint(apply(d,'a',func,new_name='c'))
+    {'b': 1, 'c': 2}
+    
+    """
+    flatd = flatten(d)
+    flatd = {k:(func(v, **kwargs) if k[-1]==leaf_key else v) for k,v in flatd.items()}
+    if new_name is not None:
+        flatd = {(tuple(list(k[:-1])+[new_name]) if k[-1]==leaf_key else k):v for k,v in flatd.items()}
+    
+    return unflatten(flatd)
+    
+    
 def combine_lists(d, combine, 
                  combine_key='combined',check_length=True):
     """combine key:list pairs into dicts for each item in the lists
