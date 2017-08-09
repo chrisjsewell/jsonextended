@@ -944,13 +944,13 @@ def apply(d, leaf_key, func, new_name=None, **kwargs):
     ----------
     d : dict
     leaf_key : any
-        value of leaf key
+        name of leaf key
     func : func
         function to apply
     new_name : any
         if not None, rename leaf_key
     kwargs : dict
-        keywords to parse to function
+        additional keywords to parse to function
 
     Examples
     --------
@@ -970,19 +970,83 @@ def apply(d, leaf_key, func, new_name=None, **kwargs):
         flatd = {(tuple(list(k[:-1])+[new_name]) if k[-1]==leaf_key else k):v for k,v in flatd.items()}
     
     return unflatten(flatd)
-    
-    
-def combine_lists(d, combine, 
-                 combine_key='combined',check_length=True):
-    """combine key:list pairs into dicts for each item in the lists
+
+def combine_apply(d, leaf_keys, func, new_name, 
+                  flatten_dict=True,
+                  remove_lkeys=True,overwrite=False, 
+                  **kwargs):
+    """ combine values with certain leaf (terminal) keys by a function
     
     Parameters
     ----------
     d : dict
-    combine : list
-        keys to combine
-    combine_key : str
-        top level key for combined items
+    leaf_keys : list
+        names of leaf keys
+    func : func
+        function to apply, 
+        must take at least len(leaf_keys) arguments
+    new_name : any
+        new key name
+    flatten_dict : bool
+        flatten the dict for combining
+    remove_lkeys: bool
+        whether to remove leaf_keys
+    overwrite: bool
+        whether to overwrite any existing new_name key
+    kwargs : dict
+        additional keywords to parse to function
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+    >>> d = {'a':1,'b':2}
+    >>> func = lambda x,y: x+y
+    >>> pprint(combine_apply(d,['a','b'],func,'c'))
+    {'c': 3}
+    >>> pprint(combine_apply(d,['a','b'],func,'c',remove_lkeys=False))
+    {'a': 1, 'b': 2, 'c': 3}
+
+    >>> d = {1:{'a':1,'b':2},2:{'a':4,'b':5},3:{'a':1}}
+    >>> pprint(combine_apply(d,['a','b'],func,'c'))
+    {1: {'c': 3}, 2: {'c': 9}, 3: {'a': 1}}
+    
+    
+    """
+    if flatten_dict:
+        flatd = flatten2d(d)
+    else:
+        flatd = unflatten(d,key_as_tuple=False,delim='*@#$')
+        
+    for dic in flatd.values():
+        if not is_dict_like(dic):
+            continue
+        if all([k in list(dic.keys()) for k in leaf_keys]):
+            if remove_lkeys:
+                vals = [dic.pop(k) for k in leaf_keys]
+            else:
+                vals = [dic[k] for k in leaf_keys]
+            if new_name in dic and not overwrite:
+                raise ValueError('{} already in sub-dict'.format(new_name))
+            dic[new_name] = func(*vals,**kwargs)
+    
+    if flatten_dict:
+        return unflatten(flatd)
+    else:
+        return flatd
+    
+    
+def split_lists(d, split_keys, 
+                 new_name='split',check_length=True):
+    """split_lists key:list pairs into dicts for each item in the lists
+    
+    Parameters
+    ----------
+    d : dict
+    split_keys : list
+        keys to split
+    new_name : str
+        top level key for split items
     check_length : bool
         if true, raise error if any lists are of a different length
         
@@ -992,17 +1056,17 @@ def combine_lists(d, combine,
     >>> from pprint import pprint
 
     >>> d = {'path_key':{'x':[1,2],'y':[3,4],'a':1}}
-    >>> new_d = combine_lists(d,['x','y'])
+    >>> new_d = split_lists(d,['x','y'])
     >>> pprint(new_d)
-    {'path_key': {'a': 1, 'combined': [{'x': 1, 'y': 3}, {'x': 2, 'y': 4}]}}
+    {'path_key': {'a': 1, 'split': [{'x': 1, 'y': 3}, {'x': 2, 'y': 4}]}}
     
-    >>> combine_lists(d,['x','a'])
+    >>> split_lists(d,['x','a'])
     Traceback (most recent call last):
     ...
     ValueError: "a" data at the following path is not a list ('path_key',)
 
     >>> d2 = {'path_key':{'x':[1,7],'y':[3,4,5]}}
-    >>> combine_lists(d2,['x','y'])
+    >>> split_lists(d2,['x','y'])
     Traceback (most recent call last):
     ...
     ValueError: lists at the following path do not have the same size ('path_key',)
@@ -1013,13 +1077,13 @@ def combine_lists(d, combine,
 
     new_d = {}
     for key, value in flattened.items():
-        if set(combine).issubset(value.keys()):
+        if set(split_keys).issubset(value.keys()):
             #combine_d = {}
             combine_d = []
             sub_d = {}
             length = None
             for subkey, subvalue in value.items(): 
-                if subkey in combine:
+                if subkey in split_keys:
                     if not isinstance(subvalue,list):
                         raise ValueError('"{0}" data at the following path is not a list {1}'.format(subkey,key))
 
@@ -1039,14 +1103,50 @@ def combine_lists(d, combine,
                 else:
                     sub_d[subkey] = subvalue                
                 try:
-                    new_d[key] = merge([sub_d,{combine_key:combine_d}])
+                    new_d[key] = merge([sub_d,{new_name:combine_d}])
                 except ValueError as err:
-                    raise ValueError('combined data key: '
-                                     '{0}, already exists at this level for {1}'.format(combine_key,key))            
+                    raise ValueError('split data key: '
+                                     '{0}, already exists at this level for {1}'.format(new_name,key))            
         else:
             new_d[key] = value
     
     return unflatten(new_d)
+
+def combine_lists(d,keys=None):
+    """ combine lists of dicts 
+    
+    d : dict
+    keys : list
+        keys to combine (all if None)
+    
+    Example
+    -------
+    >>> d = {'path_key': {'a': 1, 'split': [{'x': 1, 'y': 3}, {'x': 2, 'y': 4}]}}
+    >>> combine_lists(d,['split'])
+    {'path_key': {'a': 1, 'split': {'y': [3, 4], 'x': [1, 2]}}}
+    
+    """
+    flattened = flatten(d)
+    for key, value in list(flattened.items()): 
+        if not keys is None:
+            try:
+                if not key[-1] in keys:
+                    continue
+            except:
+                continue
+        if not isinstance(value,list):
+            continue
+        if not all([is_dict_like(d) for d in value]):
+            continue
+        newd = {}
+        for subdic in value:
+            for subk,subv in subdic.items():
+                if subk not in newd:
+                    newd[subk] = []
+                newd[subk].append(subv)
+        flattened[key] = newd
+    
+    return unflatten(flattened)
 
 def to_json(dct, jfile, overwrite=False, dirlevel=0,
                  sort_keys=True, indent=2, 
