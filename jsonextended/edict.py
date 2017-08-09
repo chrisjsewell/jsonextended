@@ -1121,9 +1121,10 @@ def combine_lists(d,keys=None):
     
     Example
     -------
+    >>> from pprint import pprint
     >>> d = {'path_key': {'a': 1, 'split': [{'x': 1, 'y': 3}, {'x': 2, 'y': 4}]}}
-    >>> combine_lists(d,['split'])
-    {'path_key': {'a': 1, 'split': {'y': [3, 4], 'x': [1, 2]}}}
+    >>> pprint(combine_lists(d,['split']))
+    {'path_key': {'a': 1, 'split': {'x': [1, 2], 'y': [3, 4]}}}
     
     """
     flattened = flatten(d)
