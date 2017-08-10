@@ -459,7 +459,8 @@ def _recreate_lists(d,prefix):
         return d
 
     if all([_startswith(k,prefix) for k in d.keys()]):
-        return [d[k] for k in sorted(list(d.keys()),key=lambda x: int(x.replace(prefix,'')))]
+        return [_recreate_lists(d[k],prefix) if is_dict_like(d[k]) else d[k]
+               for k in sorted(list(d.keys()),key=lambda x: int(x.replace(prefix,'')))]
     
     return {k:_recreate_lists(v,prefix) for k,v in d.items()}
 
@@ -496,6 +497,9 @@ def unflatten(d, key_as_tuple=True,delim='.',
     {'a': [{'b': 2}, {'a': 1}]}
 
     """
+    if not d:
+        return d
+        
     d = copy.deepcopy(d)
     
     if key_as_tuple:
@@ -695,8 +699,13 @@ def flatten2d(d,key_as_tuple=True,delim='.',
     """
     return flattennd(d,1,key_as_tuple,delim,list_of_dicts=list_of_dicts)
 
-def remove_keys(d, keys=None):
+def remove_keys(d, keys=None, list_of_dicts=False):
     """ remove certain keys from nested dict, retaining preceeding paths
+
+    Parameters
+    ----------
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -708,19 +717,25 @@ def remove_keys(d, keys=None):
 
     """
     keys = [] if keys is None else keys
+    list_of_dicts = '__list__' if list_of_dicts else None
 
     if not hasattr(d, 'items'):
         return d
     else:
-        dic = flatten(d)
+        dic = flatten(d,list_of_dicts=list_of_dicts)
         new_dic = {}
         for key,value in dic.items():
             new_key = tuple([i for i in key if i not in keys])
             new_dic[new_key] = value
-        return unflatten(new_dic)
+        return unflatten(new_dic,list_of_dicts=list_of_dicts)
 
-def remove_keyvals(d, keyvals=None):
+def remove_keyvals(d, keyvals=None, list_of_dicts=False):
     """ remove paths with at least one branch leading to certain (key,value) pairs from dict
+
+    Parameters
+    ----------
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -729,14 +744,22 @@ def remove_keyvals(d, keyvals=None):
     >>> d = {1:{"b":"A"},"a":{"b":"B","c":"D"},"b":{"a":"B"}}
     >>> pprint(remove_keyvals(d,[("b","B")]))
     {1: {'b': 'A'}, 'b': {'a': 'B'}}
+    
+    >>> d2 = {'a':[{'b':1,'c':1},{'b':1,'c':2}]}
+    >>> pprint(remove_keyvals(d2,[("b",1)]))
+    {'a': [{'b': 1, 'c': 1}, {'b': 1, 'c': 2}]}
 
+    >>> pprint(remove_keyvals(d2,[("b",1)],list_of_dicts=True))
+    {}
+    
     """
     keyvals = [] if keyvals is None else keyvals
+    list_of_dicts = '__list__' if list_of_dicts else None
 
     if not hasattr(d, 'items'):
         return d
     
-    flatd = flatten(d)
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
     def is_in(a,b):
         try:
             return a in b
@@ -747,11 +770,18 @@ def remove_keyvals(d, keyvals=None):
     prune = [k[0] for k,v in flatd.items() if is_in((k[-1],v),keyvals)]
     flatd = {k:v for k,v in flatd.items() if not is_in(k[0],prune)}
     
-    return unflatten(flatd)
+    return unflatten(flatd,list_of_dicts=list_of_dicts)
 
 
-def remove_paths(d, keys=None):
+def remove_paths(d, keys=None, list_of_dicts=False):
     """ remove paths containing certain keys from dict
+
+    Parameters
+    ----------
+    keys : list
+        list of keys to find and remove path
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -759,16 +789,33 @@ def remove_paths(d, keys=None):
     >>> from pprint import pprint
     >>> d = {1:{"a":"A"},2:{"b":"B"},4:{5:{6:'a',7:'b'}}}
     >>> pprint(remove_paths(d,[6,'a']))
-    {1: {}, 2: {'b': 'B'}, 4: {5: {7: 'b'}}}
+    {2: {'b': 'B'}, 4: {5: {7: 'b'}}}
+
+    >>> d2 = {'a':[{'b':1,'c':{'b':3}},{'b':1,'c':2}]}
+    >>> pprint(remove_paths(d2,["b"],list_of_dicts=False))
+    {'a': [{'b': 1, 'c': {'b': 3}}, {'b': 1, 'c': 2}]}
+
+    >>> pprint(remove_paths(d2,["b"],list_of_dicts=True))
+    {'a': [{'c': 2}]}
 
     """
     keys = [] if keys is None else keys
-    if not hasattr(d, 'items'):
-        return d
-    else:
-        return {key: remove_paths(value,keys) for key, value in d.items() if key not in keys}
+    list_of_dicts = '__list__' if list_of_dicts else None
 
-def filter_values(d,vals=None):
+    def contains(path):
+        for k in keys:
+            if k in path:
+                return True
+        return False
+
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
+    
+    flatd = {path:v for path,v in flatd.items() if not contains(path)}
+    
+    return unflatten(flatd,list_of_dicts=list_of_dicts)
+        #return {key: remove_paths(value,keys) for key, value in d.items() if key not in keys}
+
+def filter_values(d,vals=None,list_of_dicts=False):
     """ filters leaf nodes of nested dictionary
 
     Parameters
@@ -776,6 +823,8 @@ def filter_values(d,vals=None):
     d : dict
     vals : list
         values to filter by
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -786,8 +835,9 @@ def filter_values(d,vals=None):
 
     """
     vals = [] if vals is None else vals
+    list_of_dicts = '__list__' if list_of_dicts else None
     
-    flatd = flatten(d)
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
     def is_in(a,b):
         try:
             return a in b
@@ -795,24 +845,9 @@ def filter_values(d,vals=None):
             return False
 
     flatd = {k:v for k,v in flatd.items() if is_in(v,vals)}
-    return unflatten(flatd)
-    
-    # vals = [] if vals is None else vals
-    #
-    # def fltr(dic):
-    #     for key in list(dic.keys()):
-    #         if is_dict_like(dic[key]):
-    #             fltr(dic[key])
-    #             if not dic[key]:
-    #                 del dic[key]
-    #         elif dic[key] not in vals:
-    #             del dic[key]
-    #
-    # d = copy.deepcopy(d)
-    # fltr(d)
-    # return d
+    return unflatten(flatd,list_of_dicts=list_of_dicts)
 
-def filter_keyvals(d,vals=None):
+def filter_keyvals(d,vals=None,list_of_dicts=False):
     """ filters leaf nodes key:value pairs of nested dictionary
 
     Parameters
@@ -820,6 +855,8 @@ def filter_keyvals(d,vals=None):
     d : dict
     vals : list of tuples
         (key,value) to filter by
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -831,8 +868,9 @@ def filter_keyvals(d,vals=None):
 
     """
     vals = [] if vals is None else vals
+    list_of_dicts = '__list__' if list_of_dicts else None
     
-    flatd = flatten(d)
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
     def is_in(a,b):
         try:
             return a in b
@@ -840,55 +878,10 @@ def filter_keyvals(d,vals=None):
             return False
 
     flatd = {k:v for k,v in flatd.items() if is_in((k[-1],v),vals)}
-    return unflatten(flatd)
+    return unflatten(flatd,list_of_dicts=list_of_dicts)
     
-
-    # def fltr(dic):
-    #     for key in list(dic.keys()):
-    #         if is_dict_like(dic[key]):
-    #             fltr(dic[key])
-    #             if not dic[key]:
-    #                 del dic[key]
-    #         elif (key,dic[key]) not in vals:
-    #             del dic[key]
-    #
-    # d = copy.deepcopy(d)
-    # fltr(d)
-    # return d
-
-# def _filter_key_recurse(d, keys, use_wildcards):
-#     if is_dict_like(d):
-#         retVal = {}
-#         for key in d:
-#             if use_wildcards and isinstance(key, basestring):
-#                 if any([fnmatch(key,k) for k in keys]):
-#                     retVal[key] = d[key]
-#                 elif isinstance(d[key], list) or is_dict_like(d[key]):
-#                     child = _filter_key_recurse(d[key], keys, use_wildcards)
-#                     if child:
-#                         retVal[key] = child
-#             elif key in keys:
-#                 retVal[key] = d[key]
-#             elif isinstance(d[key], list) or is_dict_like(d[key]):
-#                 child = _filter_key_recurse(d[key], keys, use_wildcards)
-#                 if child:
-#                     retVal[key] = child
-#         if retVal:
-#              return retVal
-#         else:
-#              return {}
-#     elif isinstance(d, list):
-#         retVal = []
-#         for entry in d:
-#             child = _filter_key_recurse(entry, keys, use_wildcards)
-#             if child:
-#                 retVal.append(child)
-#         if retVal:
-#             return retVal
-#         else:
-#             return []
-
-def filter_keys(d, keys, use_wildcards=False):
+def filter_keys(d, keys, use_wildcards=False,
+                list_of_dicts=False):
     """ filter dict by certain keys
 
     Parameters
@@ -897,6 +890,8 @@ def filter_keys(d, keys, use_wildcards=False):
     keys: list
     use_wildcards : bool
         if true, can use * (matches everything) and ? (matches any single character)
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -912,7 +907,8 @@ def filter_keys(d, keys, use_wildcards=False):
     {1: {'axxxx': 'A'}}
 
     """
-    flatd = flatten(d)
+    list_of_dicts = '__list__' if list_of_dicts else None
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
     def is_in(a,bs):
         if use_wildcards:
             for b in bs:
@@ -931,23 +927,17 @@ def filter_keys(d, keys, use_wildcards=False):
                 return False
 
     flatd = {paths:v for paths,v in flatd.items() if any([is_in(k,paths) for k in keys])}
-    return unflatten(flatd)
-    
-    
-    # new_dic = _filter_key_recurse(d, keys, use_wildcards)
-    # if deepcopy:
-    #     return copy.deepcopy(new_dic)
-    # else:
-        # return copy.copy(new_dic)
-    
+    return unflatten(flatd,list_of_dicts=list_of_dicts)    
 
-def filter_paths(d, paths):
+def filter_paths(d, paths,list_of_dicts=False):
     """ filter dict by certain paths containing key sets
 
     Parameters
     ----------
     d : dict
-    paths : list
+    paths : list of tuples/strs
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -957,18 +947,27 @@ def filter_paths(d, paths):
     >>> filter_paths(d,[('c','d')])
     {'a': {'c': {'d': 2}}}
 
+    >>> d2 = {'a':[{'b':1,'c':3},{'b':1,'c':2}]}
+    >>> pprint(filter_paths(d2,["b"],list_of_dicts=False))
+    {}
+
+    >>> pprint(filter_paths(d2,["c"],list_of_dicts=True))
+    {'a': [{'c': 3}, {'c': 2}]}
+
     """
+    list_of_dicts = '__list__' if list_of_dicts else None
+
     all_keys = [x for y in paths if isinstance(y,tuple) for x in y]
     all_keys += [x for x in paths if not isinstance(x,tuple)]
     # faster to filter first I think
-    new_d = filter_keys(d,all_keys)
-    new_d = flatten(d)
+    new_d = filter_keys(d,all_keys,list_of_dicts=list_of_dicts)
+    new_d = flatten(d, list_of_dicts=list_of_dicts)
     for key in list(new_d.keys()):
         if not any([set(key).issuperset(path if isinstance(path,tuple) else [path]) for path in paths]):
             new_d.pop(key)
-    return unflatten(new_d)
+    return unflatten(new_d,list_of_dicts=list_of_dicts)
 
-def rename_keys(d,keymap=None):
+def rename_keys(d,keymap=None,list_of_dicts=False):
     """ rename keys in dict
 
     Parameters
@@ -976,6 +975,8 @@ def rename_keys(d,keymap=None):
     d : dict
     keymap : dict
         dictionary of key name mappings
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -986,13 +987,18 @@ def rename_keys(d,keymap=None):
     {'a': {'new_name': 1}}
 
     """
+    list_of_dicts = '__list__' if list_of_dicts else None
     keymap = {} if keymap is None else keymap
-    if not hasattr(d, 'items'):
-        return d
-    else:
-        return {keymap[key] if key in keymap else key: rename_keys(value,keymap) for key, value in d.items()}
 
-def apply(d, leaf_key, func, new_name=None, **kwargs):
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
+    
+    flatd = {tuple([keymap.get(k,k) for k in path]):v for path,v in flatd.items()}
+    
+    return unflatten(flatd,list_of_dicts=list_of_dicts)
+        #return {keymap[key] if key in keymap else key: rename_keys(value,keymap) for key, value in d.items()}
+
+def apply(d, leaf_key, func, new_name=None, 
+         list_of_dicts=False, **kwargs):
     """ apply a function to all values with a certain leaf (terminal) key
     
     Parameters
@@ -1004,6 +1010,8 @@ def apply(d, leaf_key, func, new_name=None, **kwargs):
         function to apply
     new_name : any
         if not None, rename leaf_key
+    list_of_dicts: bool
+        treat list of dicts as additional branches
     kwargs : dict
         additional keywords to parse to function
 
@@ -1019,12 +1027,13 @@ def apply(d, leaf_key, func, new_name=None, **kwargs):
     {'b': 1, 'c': 2}
     
     """
-    flatd = flatten(d)
+    list_of_dicts = '__list__' if list_of_dicts else None
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
     flatd = {k:(func(v, **kwargs) if k[-1]==leaf_key else v) for k,v in flatd.items()}
     if new_name is not None:
         flatd = {(tuple(list(k[:-1])+[new_name]) if k[-1]==leaf_key else k):v for k,v in flatd.items()}
     
-    return unflatten(flatd)
+    return unflatten(flatd,list_of_dicts=list_of_dicts)
 
 def combine_apply(d, leaf_keys, func, new_name, 
                   flatten_dict=True,
@@ -1043,7 +1052,8 @@ def combine_apply(d, leaf_keys, func, new_name,
     new_name : any
         new key name
     flatten_dict : bool
-        flatten the dict for combining
+        flatten the dict before combining,
+        set to False if func takes a dict as an input                  
     remove_lkeys: bool
         whether to remove leaf_keys
     overwrite: bool
@@ -1071,6 +1081,7 @@ def combine_apply(d, leaf_keys, func, new_name,
     if flatten_dict:
         flatd = flatten2d(d)
     else:
+        #TODO could do this better?
         flatd = unflatten(d,key_as_tuple=False,delim='*@#$')
         
     for dic in flatd.values():
