@@ -28,7 +28,7 @@ def get_in_units(value,units):
 
 def apply_unitschema(data, uschema, as_quantity=True,
                     raise_outerr=False, convert_base=False,
-                    use_wildcards=False):
+                    use_wildcards=False,list_of_dicts=False):
     """ apply the unit schema to the data 
     
     Parameters
@@ -44,6 +44,8 @@ def apply_unitschema(data, uschema, as_quantity=True,
         rescale units to base units
     use_wildcards : bool
         if true, can use * (matches everything) and ? (matches any single character)
+    list_of_dicts: bool
+        treat list of dicts as additional branches
     
     Examples
     --------
@@ -81,12 +83,13 @@ def apply_unitschema(data, uschema, as_quantity=True,
         _Quantity
     except NameError:
         raise ImportError('please install pint to use this module')
+    list_of_dicts = '__list__' if list_of_dicts else None
                     
     # flatten edict
     uschema_flat = flatten(uschema,key_as_tuple=True)
     # sorted by longest key size, to get best match first
     uschema_keys = sorted(uschema_flat, key=len, reverse=True)
-    data_flat = flatten(data,key_as_tuple=True)
+    data_flat = flatten(data,key_as_tuple=True,list_of_dicts=list_of_dicts)
 
     for dkey, dvalue in data_flat.items():
         converted = False
@@ -124,7 +127,7 @@ def apply_unitschema(data, uschema, as_quantity=True,
         if not converted and raise_outerr:
             raise KeyError('could not find units for {}'.format(dkey))
 
-    return unflatten(data_flat)
+    return unflatten(data_flat,list_of_dicts=list_of_dicts)
 
 def split_quantities(data,units='units',magnitude='magnitude',
                     list_of_dicts=False):

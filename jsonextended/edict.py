@@ -847,7 +847,9 @@ def filter_values(d,vals=None,list_of_dicts=False):
     flatd = {k:v for k,v in flatd.items() if is_in(v,vals)}
     return unflatten(flatd,list_of_dicts=list_of_dicts)
 
-def filter_keyvals(d,vals=None,list_of_dicts=False):
+def filter_keyvals(d,vals=None,
+                  keep_siblings=False,
+                  list_of_dicts=False):
     """ filters leaf nodes key:value pairs of nested dictionary
 
     Parameters
@@ -855,6 +857,8 @@ def filter_keyvals(d,vals=None,list_of_dicts=False):
     d : dict
     vals : list of tuples
         (key,value) to filter by
+    keep_siblings : bool
+        keep all sibling paths
     list_of_dicts: bool
         treat list of dicts as additional branches
 
@@ -862,9 +866,17 @@ def filter_keyvals(d,vals=None,list_of_dicts=False):
     --------
 
     >>> from pprint import pprint
+
     >>> d = {1:{6:'a'},3:{7:'a'},2:{6:"b"},4:{5:{6:'a'}}}
     >>> pprint(filter_keyvals(d,[(6,'a')]))
     {1: {6: 'a'}, 4: {5: {6: 'a'}}}
+
+    >>> d2 = {'a':{'b':1,'c':2}, 'd':3}
+    >>> pprint(filter_keyvals(d2,[('b',1)],keep_siblings=False))
+    {'a': {'b': 1}}
+
+    >>> pprint(filter_keyvals(d2,[('b',1)],keep_siblings=True))
+    {'a': {'b': 1, 'c': 2}}
 
     """
     vals = [] if vals is None else vals
@@ -877,8 +889,18 @@ def filter_keyvals(d,vals=None,list_of_dicts=False):
         except:
             return False
 
-    flatd = {k:v for k,v in flatd.items() if is_in((k[-1],v),vals)}
-    return unflatten(flatd,list_of_dicts=list_of_dicts)
+    if not keep_siblings:
+        newd = {k:v for k,v in flatd.items() if is_in((k[-1],v),vals)}
+    else:
+        prune = [tuple(k[:-1]) for k,v in flatd.items() if is_in((k[-1],v),vals)]
+        newd = {}
+        for k,v in flatd.items():
+            for p in prune:
+                if tuple(k[:len(p)]) == p:
+                    newd[k] = v
+                    break
+    
+    return unflatten(newd,list_of_dicts=list_of_dicts)
     
 def filter_keys(d, keys, use_wildcards=False,
                 list_of_dicts=False):
