@@ -606,7 +606,7 @@ def merge(dicts,overwrite=False,append=False):
 def flattennd(d,levels=0,key_as_tuple=True,delim='.',
              list_of_dicts=None):
     """ get nested dict as {key:dict,...},
-    where key is tuple/string of all-nlevels of nested keys
+    where key is tuple/string of all-n levels of nested keys
 
     Parameters
     ----------
@@ -1108,7 +1108,7 @@ def apply(d, leaf_key, func, new_name=None,
     return unflatten(flatd,list_of_dicts=list_of_dicts)
 
 def combine_apply(d, leaf_keys, func, new_name, 
-                  flatten_dict=True,
+                  unflatten_level=1,
                   remove_lkeys=True,overwrite=False, 
                   **kwargs):
     """ combine values with certain leaf (terminal) keys by a function
@@ -1123,9 +1123,9 @@ def combine_apply(d, leaf_keys, func, new_name,
         must take at least len(leaf_keys) arguments
     new_name : any
         new key name
-    flatten_dict : bool
-        flatten the dict before combining,
-        set to False if func takes a dict as an input                  
+    unflatten_level : int or None
+        the number of levels to leave unflattened before combining,
+        for instance if you need dicts as inputs (None means all)               
     remove_lkeys: bool
         whether to remove leaf_keys
     overwrite: bool
@@ -1147,14 +1147,19 @@ def combine_apply(d, leaf_keys, func, new_name,
     >>> d = {1:{'a':1,'b':2},2:{'a':4,'b':5},3:{'a':1}}
     >>> pprint(combine_apply(d,['a','b'],func,'c'))
     {1: {'c': 3}, 2: {'c': 9}, 3: {'a': 1}}
-    
+                  
+    >>> func2 = lambda x: list(x.keys())
+    >>> d2 = {'d':{'a':{'b':1,'c':2}}}
+    >>> pprint(combine_apply(d2,['a'],func2,'a',unflatten_level=2))                  
+    {'d': {'a': ['c', 'b']}}
     
     """
-    if flatten_dict:
-        flatd = flatten2d(d)
+    if unflatten_level is not None:
+        flatd = flattennd(d,levels=unflatten_level)
     else:
         #TODO could do this better?
         flatd = unflatten(d,key_as_tuple=False,delim='*@#$')
+    
         
     for dic in flatd.values():
         if not is_dict_like(dic):
@@ -1168,7 +1173,7 @@ def combine_apply(d, leaf_keys, func, new_name,
                 raise ValueError('{} already in sub-dict'.format(new_name))
             dic[new_name] = func(*vals,**kwargs)
     
-    if flatten_dict:
+    if unflatten_level is not None:
         return unflatten(flatd)
     else:
         return flatd
@@ -1287,7 +1292,7 @@ def combine_lists(d,keys=None):
     
     return unflatten(flattened,list_of_dicts=None)
 
-def list_to_dict(lst, key=None):
+def list_to_dict(lst, key=None,remove_key=True):
     """ convert a list of dicts to a dict with root keys
     
     Parameters
@@ -1296,6 +1301,8 @@ def list_to_dict(lst, key=None):
     key : any
         a key contained by all of the dicts 
         if None use index number string
+    remove_key : bool
+        remove key from dicts in list
 
     Examples
     --------
@@ -1318,7 +1325,10 @@ def list_to_dict(lst, key=None):
         if key is None:
             new_dict[str(i)] = d
         else:
-            k = d.pop(key)
+            if remove_key:
+                k = d.pop(key)
+            else:
+                k = d[key]
             new_dict[k] = d
     
     return new_dict
