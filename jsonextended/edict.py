@@ -1148,10 +1148,10 @@ def combine_apply(d, leaf_keys, func, new_name,
     >>> pprint(combine_apply(d,['a','b'],func,'c'))
     {1: {'c': 3}, 2: {'c': 9}, 3: {'a': 1}}
                   
-    >>> func2 = lambda x: list(x.keys())
+    >>> func2 = lambda x: sorted(list(x.keys()))
     >>> d2 = {'d':{'a':{'b':1,'c':2}}}
     >>> pprint(combine_apply(d2,['a'],func2,'a',unflatten_level=2))                  
-    {'d': {'a': ['c', 'b']}}
+    {'d': {'a': ['b', 'c']}}
     
     """
     if unflatten_level is not None:
