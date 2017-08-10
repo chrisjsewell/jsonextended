@@ -43,6 +43,12 @@ def is_dict_like(obj,attr=('keys','items')):
            return False
     return True 
 
+def is_list_of_dict_like(obj,attr=('keys','items')):
+    try:
+        return all([is_dict_like(i,attr) for i in obj])
+    except:
+        return False
+
 def is_path_like(obj,attr=('name','is_file', 'is_dir', 'iterdir')):
     """test if object is pathlib.Path like"""
     for a in attr:
@@ -383,16 +389,19 @@ def indexes(dic, keys=None):
         new = new[key]
     return new
 
-def flatten(d,key_as_tuple=True,sep='.'):
+def flatten(d,key_as_tuple=True,sep='.',
+            list_of_dicts=None):
     """ get nested dict as {key:val,...}, where key is tuple/string of all nested keys
 
     Parameters
     ----------
-    d : dict
+    d : obj
     key_as_tuple : bool
         whether keys are list of nested keys or delimited string of nested keys
     sep : str
         if key_as_tuple=False, delimiter for keys
+    list_of_dicts: str or None
+        if not None, flatten lists of dicts using this prefix
 
     Examples
     --------
@@ -406,17 +415,32 @@ def flatten(d,key_as_tuple=True,sep='.'):
     >>> d = {1:{"a":"A"},2:{"b":"B"}}
     >>> pprint(flatten(d,key_as_tuple=False))
     {'1.a': 'A', '2.b': 'B'}
+            
+    >>> d = [{'a':1},{'b':2}]
+    >>> pprint(flatten(d,list_of_dicts='__list__'))
+    {('__list__0', 'a'): 1, ('__list__1', 'b'): 2}
 
     """
     def expand(key, value):
         if is_dict_like(value):
             if key_as_tuple:
-                return [ (key + k, v) for k, v in flatten(value,key_as_tuple).items() ]
+                return [ (key + k, v) for k, v in flatten(value,key_as_tuple,sep,list_of_dicts).items() ]
             else:
-                return [ (str(key) + sep + k, v) for k, v in flatten(value,key_as_tuple).items() ]
+                return [ (str(key) + sep + k, v) for k, v in flatten(value,key_as_tuple,sep,list_of_dicts).items() ]
+        elif is_list_of_dict_like(value) and list_of_dicts is not None:
+            value = {'{0}{1}'.format(list_of_dicts,i):v for i,v in enumerate(value)}
+            if key_as_tuple:
+                return [ (key + k, v) for k, v in flatten(value,key_as_tuple,sep,list_of_dicts).items() ]
+            else:
+                return [ (str(key) + sep + k, v) for k, v in flatten(value,key_as_tuple,sep,list_of_dicts).items() ]            
         else:
             return [ (key, value) ]
 
+    if is_list_of_dict_like(d) and list_of_dicts is not None:
+        d = {'{0}{1}'.format(list_of_dicts,i):v for i,v in enumerate(d)}
+    elif not is_dict_like(d):
+        raise TypeError('d is not dict like')
+                
     if key_as_tuple:
         items = [ item for k, v in d.items() for item in expand((k,), v) ]
     else:
@@ -424,7 +448,23 @@ def flatten(d,key_as_tuple=True,sep='.'):
 
     return dict(items)
 
-def unflatten(d, key_as_tuple=True,delim='.'):
+def _startswith(k,prefix):
+    if not hasattr(k,'startswith'):
+        return False
+    else:
+        return k.startswith(prefix)
+
+def _recreate_lists(d,prefix):
+    if not is_dict_like(d):
+        return d
+
+    if all([_startswith(k,prefix) for k in d.keys()]):
+        return [d[k] for k in sorted(list(d.keys()),key=lambda x: int(x.replace(prefix,'')))]
+    
+    return {k:_recreate_lists(v,prefix) for k,v in d.items()}
+
+def unflatten(d, key_as_tuple=True,delim='.',
+             list_of_dicts=None):
     """ unlatten dictionary
     with keys as tuples or delimited strings
 
@@ -435,6 +475,8 @@ def unflatten(d, key_as_tuple=True,delim='.'):
         if true, keys are tuples, else, keys are delimited strings
     delim : str
         if keys are strings, then split by delim
+    list_of_dicts: str or None
+        if key starts with this treat as a list
 
     Examples
     --------
@@ -448,6 +490,10 @@ def unflatten(d, key_as_tuple=True,delim='.'):
     >>> d2 = {'a.b':1,'a.c':2}
     >>> pprint(unflatten(d2,key_as_tuple=False))
     {'a': {'b': 1, 'c': 2}}
+             
+    >>> d3 = {('a','__list__1', 'a'): 1, ('a','__list__0', 'b'): 2}
+    >>> pprint(unflatten(d3,list_of_dicts='__list__'))
+    {'a': [{'b': 2}, {'a': 1}]}
 
     """
     d = copy.deepcopy(d)
@@ -474,6 +520,9 @@ def unflatten(d, key_as_tuple=True,delim='.'):
                 d[part] = {}
             d = d[part]
         d[parts[-1]] = value
+
+    if list_of_dicts is not None:
+        result = _recreate_lists(result,list_of_dicts)
 
     return result
 
@@ -547,7 +596,8 @@ def merge(dicts,overwrite=False,append=False):
 
     return outdict
 
-def flattennd(d,levels=0,key_as_tuple=True,delim='.'):
+def flattennd(d,levels=0,key_as_tuple=True,delim='.',
+             list_of_dicts=None):
     """ get nested dict as {key:dict,...},
     where key is tuple/string of all-nlevels of nested keys
 
@@ -560,6 +610,8 @@ def flattennd(d,levels=0,key_as_tuple=True,delim='.'):
         whether keys are list of nested keys or delimited string of nested keys
     delim : str
         if key_as_tuple=False, delimiter for keys
+    list_of_dicts: str or None
+        if not None, flatten lists of dicts using this prefix
 
     Examples
     --------
@@ -593,7 +645,7 @@ def flattennd(d,levels=0,key_as_tuple=True,delim='.'):
         raise ValueError('unflattened levels must be greater than 0')
 
     new_d = {}
-    flattened = flatten(d,True,delim)
+    flattened = flatten(d,True,delim,list_of_dicts=list_of_dicts)
     if levels == 0:
         return flattened
     
@@ -602,7 +654,7 @@ def flattennd(d,levels=0,key_as_tuple=True,delim='.'):
         new_levels = key[-(levels):]
 
         val_dict = {new_levels:value}
-        val_dict = unflatten(val_dict,True,delim)
+        val_dict = unflatten(val_dict,True,delim,list_of_dicts=list_of_dicts)
 
         if not new_key in new_d:
             new_d[new_key] = val_dict
@@ -611,7 +663,8 @@ def flattennd(d,levels=0,key_as_tuple=True,delim='.'):
 
     return new_d
 
-def flatten2d(d,key_as_tuple=True,delim='.'):
+def flatten2d(d,key_as_tuple=True,delim='.',
+             list_of_dicts=None):
     """ get nested dict as {key:dict,...},
     where key is tuple/string of all-1 nested keys
     
@@ -624,6 +677,8 @@ def flatten2d(d,key_as_tuple=True,delim='.'):
         whether keys are list of nested keys or delimited string of nested keys
     delim : str
         if key_as_tuple=False, delimiter for keys
+    list_of_dicts: str or None
+        if not None, flatten lists of dicts using this prefix
 
     Examples
     --------
@@ -638,7 +693,7 @@ def flatten2d(d,key_as_tuple=True,delim='.'):
     {'1,2': {4: 'D'}, '1,2,3': {'b': 'B', 'c': 'C'}}
 
     """
-    return flattennd(d,1,key_as_tuple,delim)
+    return flattennd(d,1,key_as_tuple,delim,list_of_dicts=list_of_dicts)
 
 def remove_keys(d, keys=None):
     """ remove certain keys from nested dict, retaining preceeding paths
@@ -1127,7 +1182,7 @@ def combine_lists(d,keys=None):
     {'path_key': {'a': 1, 'split': {'x': [1, 2], 'y': [3, 4]}}}
     
     """
-    flattened = flatten(d)
+    flattened = flatten(d,list_of_dicts=None)
     for key, value in list(flattened.items()): 
         if not keys is None:
             try:
@@ -1147,7 +1202,43 @@ def combine_lists(d,keys=None):
                 newd[subk].append(subv)
         flattened[key] = newd
     
-    return unflatten(flattened)
+    return unflatten(flattened,list_of_dicts=None)
+
+def list_to_dict(lst, key=None):
+    """ convert a list of dicts to a dict with root keys
+    
+    Parameters
+    ----------
+    lst : list of dicts
+    key : any
+        a key contained by all of the dicts 
+        if None use index number string
+
+    Examples
+    --------
+    >>> from pprint import pprint
+    >>> lst = [{'name':'f','b':1},{'name':'g','c':2}]
+    >>> pprint(list_to_dict(lst))
+    {'0': {'b': 1, 'name': 'f'}, '1': {'c': 2, 'name': 'g'}}
+
+    >>> pprint(list_to_dict(lst,'name'))
+    {'f': {'b': 1}, 'g': {'c': 2}}
+     
+    """
+    
+    assert all([is_dict_like(d) for d in lst])
+    if key is not None:
+        assert all([key in d for d in lst])
+    new_dict = {}
+    for i, d in enumerate(lst):
+        d = unflatten(flatten(d))
+        if key is None:
+            new_dict[str(i)] = d
+        else:
+            k = d.pop(key)
+            new_dict[k] = d
+    
+    return new_dict
 
 def to_json(dct, jfile, overwrite=False, dirlevel=0,
                  sort_keys=True, indent=2, 

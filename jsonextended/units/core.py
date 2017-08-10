@@ -159,7 +159,8 @@ def split_quantities(data,units='units',magnitude='magnitude'):
                                  magnitude:val.magnitude}
     return unflatten(data_flatten)
 
-def combine_quantities(data,units='units',magnitude='magnitude'):
+def combine_quantities(data,units='units',magnitude='magnitude',
+                      list_of_dicts=None):
     """ combine <unit,magnitude> pairs into pint.Quantity objects 
 
     Parameters
@@ -169,6 +170,8 @@ def combine_quantities(data,units='units',magnitude='magnitude'):
         name of units key
     magnitude : str
         name of magnitude key
+    list_of_dicts: str or None
+        if not None, flatten lists of dicts using this prefix        
         
     Examples
     --------
@@ -194,7 +197,7 @@ def combine_quantities(data,units='units',magnitude='magnitude'):
     except NameError:
         raise ImportError('please install pint to use this module')
 
-    data_flatten2d = flatten2d(data)
+    data_flatten2d = flatten2d(data,list_of_dicts=list_of_dicts)
     new_dict = {}
     for key, val in list(data_flatten2d.items()):
         if units in val and magnitude in val:
@@ -202,8 +205,8 @@ def combine_quantities(data,units='units',magnitude='magnitude'):
             if not val:
                 data_flatten2d.pop(key)
             new_dict[key] = quantity
-    olddict = unflatten(data_flatten2d)
-    new_dict = unflatten(new_dict)
+    olddict = unflatten(data_flatten2d,list_of_dicts=list_of_dicts)
+    new_dict = unflatten(new_dict,list_of_dicts=list_of_dicts)
     return merge([olddict,new_dict])
 
 if __name__ == '__main__':
