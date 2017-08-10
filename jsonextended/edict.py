@@ -1550,7 +1550,10 @@ class LazyLoad(object):
         if is_path_like(obj):
             if obj.is_file():
                 new_obj = parse(obj,**self._parser_kwargs)
-                self._itemmap = {key:self._next_level(val) for key,val in new_obj.items()}
+                if is_dict_like(new_obj):
+                    self._itemmap = {key:self._next_level(val) for key,val in new_obj.items()}
+                else:
+                    self._itemmap = {'non_dict':new_obj}
             if obj.is_dir():
                 new_obj = {}
                 for subpath in obj.iterdir():
