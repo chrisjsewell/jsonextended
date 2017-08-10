@@ -5,7 +5,7 @@
 
 """
 # internal packages
-import os, sys
+import os, sys, warnings
 import copy
 import uuid
 import json
@@ -500,7 +500,10 @@ def unflatten(d, key_as_tuple=True,delim='.',
     if not d:
         return d
         
-    d = copy.deepcopy(d)
+    try:
+        d = copy.deepcopy(d)
+    except:
+        warnings.warn('error in deepcopy, so using references to input dict')
     
     if key_as_tuple:
         result = d.pop(()) if () in d else {}
@@ -699,11 +702,14 @@ def flatten2d(d,key_as_tuple=True,delim='.',
     """
     return flattennd(d,1,key_as_tuple,delim,list_of_dicts=list_of_dicts)
 
-def remove_keys(d, keys=None, list_of_dicts=False):
+def remove_keys(d, keys=None, use_wildcards=True,
+                list_of_dicts=False):
     """ remove certain keys from nested dict, retaining preceeding paths
 
     Parameters
     ----------
+    use_wildcards : bool
+        if true, can use * (matches everything) and ? (matches any single character)
     list_of_dicts: bool
         treat list of dicts as additional branches
 
@@ -714,10 +720,32 @@ def remove_keys(d, keys=None, list_of_dicts=False):
     >>> d = {1:{"a":"A"},"a":{"b":"B"}}
     >>> pprint(remove_keys(d,['a']))
     {1: 'A', 'b': 'B'}
+                
+    >>> pprint(remove_keys({'abc':1},['a*'],use_wildcards=False))
+    {'abc': 1}
+    >>> pprint(remove_keys({'abc':1},['a*'],use_wildcards=True))
+    {}
 
     """
     keys = [] if keys is None else keys
     list_of_dicts = '__list__' if list_of_dicts else None
+
+    def is_in(a,bs):
+        if use_wildcards:
+            for b in bs:
+                try:
+                    if a==b:
+                        return True
+                    if fnmatch(a,b):
+                        return True  
+                except:
+                    pass
+            return False
+        else:
+            try:
+                return a in bs
+            except:
+                return False
 
     if not hasattr(d, 'items'):
         return d
@@ -725,7 +753,14 @@ def remove_keys(d, keys=None, list_of_dicts=False):
         dic = flatten(d,list_of_dicts=list_of_dicts)
         new_dic = {}
         for key,value in dic.items():
-            new_key = tuple([i for i in key if i not in keys])
+            new_key = tuple([i for i in key if not is_in(i,keys)])
+            if not new_key:
+                continue
+            try:
+                if new_key[-1].startswith(list_of_dicts):
+                    continue
+            except:
+                pass
             new_dic[new_key] = value
         return unflatten(new_dic,list_of_dicts=list_of_dicts)
 
@@ -848,6 +883,7 @@ def filter_values(d,vals=None,list_of_dicts=False):
     return unflatten(flatd,list_of_dicts=list_of_dicts)
 
 def filter_keyvals(d,vals=None,
+                  error=None,
                   keep_siblings=False,
                   list_of_dicts=False):
     """ filters leaf nodes key:value pairs of nested dictionary
@@ -857,6 +893,8 @@ def filter_keyvals(d,vals=None,
     d : dict
     vals : list of tuples
         (key,value) to filter by
+    error : float
+        allow values in range [val-error,val+error]
     keep_siblings : bool
         keep all sibling paths
     list_of_dicts: bool
@@ -877,22 +915,34 @@ def filter_keyvals(d,vals=None,
 
     >>> pprint(filter_keyvals(d2,[('b',1)],keep_siblings=True))
     {'a': {'b': 1, 'c': 2}}
+                  
+    >>> pprint(filter_keyvals({'a':1},[('a',0.98)],error=0.01))
+    {}
+    >>> pprint(filter_keyvals({'a':1},[('a',0.98)],error=0.1))
+    {'a': 1}
 
     """
-    vals = [] if vals is None else vals
+    vals = {} if vals is None else dict(vals)
     list_of_dicts = '__list__' if list_of_dicts else None
     
     flatd = flatten(d,list_of_dicts=list_of_dicts)
-    def is_in(a,b):
+    def is_in(k,v,vmap):
         try:
-            return a in b
+            if not k in vmap:
+                return False
+            if v == vmap[k]:
+                return True
+            if error is not None:
+                if vmap[k] > v-error and  vmap[k] < v+error:
+                    return True
         except:
             return False
+        return False
 
     if not keep_siblings:
-        newd = {k:v for k,v in flatd.items() if is_in((k[-1],v),vals)}
+        newd = {k:v for k,v in flatd.items() if is_in(k[-1],v,vals)}
     else:
-        prune = [tuple(k[:-1]) for k,v in flatd.items() if is_in((k[-1],v),vals)]
+        prune = [tuple(k[:-1]) for k,v in flatd.items() if is_in(k[-1],v,vals)]
         newd = {}
         for k,v in flatd.items():
             for p in prune:
