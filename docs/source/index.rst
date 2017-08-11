@@ -12,25 +12,27 @@ A module to extend the python json package functionality:
 
 -  Treat a directory structure like a nested dictionary
 
--  **Lightweight plugin system**: define bespoke classes for **parsing**
+-  **Lightweight plugin system**: define bespoke classes for parsing
    different file extensions (in-the-box: .json, .csv, .hdf5) and
-   **encoding/decoding** objects
+   encoding/decoding objects.
 
 -  **Lazy Loading**: read files only when they are indexed into
 
 -  **Tab Completion**: index as tabs for quick exploration of data
 
--  Manipulation of nested structures, including; filter, merge, flatten, unflatten
+-  **Manipulation of nested structures**, including; filter, merge, flatten, unflatten
 
--  Enhanced pretty printer
+-  **Enhanced pretty printer**
 
--  Output to directory structure (of n folder levels)
+-  **Output to directory structure** (of n folder levels)
 
--  On-disk indexing option for large json files (using the ijson
+-  **On-disk indexing** option for large json files (using the ijson
    package)
 
--  Units schema concept to apply and convert physical quantities (using the
+-  **Units schema** concept to apply and convert physical quantities (using the
    pint package) 
+   
+- All functions are thoroughly documented with tested examples.
 
 .. toctree::
    :maxdepth: 2
