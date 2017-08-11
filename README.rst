@@ -3,6 +3,7 @@ JSON Extended
 =============
 
 **Project**: https://github.com/chrisjsewell/jsonextended
+**Documentation**: https://jsonextended.readthedocs.io
 
 .. image:: https://travis-ci.org/chrisjsewell/jsonextended.svg?branch=master
     :target: https://travis-ci.org/chrisjsewell/jsonextended
