@@ -25,8 +25,8 @@ import jsonextended
 # create releases page
 import urllib
 import json
-git_history = urllib.request.urlopen('https://api.github.com/repos/chrisjsewell/jsonextended/releases')
-git_history_json = json.load(git_history)
+git_history = urllib.request.urlopen('https://api.github.com/repos/chrisjsewell/jsonextended/releases').read().decode('utf-8')
+git_history_json = json.loads(git_history)
 with open('releases.rst', 'w') as f:
 	f.write('Releases\n')
 	f.write('---------\n')
