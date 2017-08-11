@@ -42,6 +42,7 @@ A module to extend the python json package functionality:
 
    readme
    functions_summary
+   releases
    api/jsonextended
 
 Indices and tables

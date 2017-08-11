@@ -22,6 +22,24 @@ import sys
 sys.path.insert(0, os.path.abspath('../..'))
 import jsonextended
 
+# create releases page
+import urllib
+import json
+git_history = urllib.request.urlopen('https://api.github.com/repos/chrisjsewell/jsonextended/releases')
+git_history_json = json.load(git_history)
+with open('releases.rst', 'w') as f:
+	f.write('Releases\n')
+	f.write('---------\n')
+	f.write('\n')
+	for r in git_history_json:
+		f.write(' '.join([r['tag_name'],'-',r['name'],'\n']))
+		f.write('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+		f.write('\n')
+		for line in r['body'].split('\n'):
+			f.write(' '.join([line, '\n']))
+		f.write('\n')
+
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
