@@ -9,7 +9,7 @@ JSON Parsing
    :classes:
    :nosignatures:    
 
-JSON Manipulation
+JSON/Dict Manipulation
 -----------------
 
 .. autofuncsummary:: jsonextended.edict
