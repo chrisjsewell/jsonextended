@@ -124,7 +124,7 @@ class MockPath(object):
     r"""a mock path, mimicking pathlib.Path, 
     supporting context open method for read/write
     
-    Properties
+    Parameters
     ----------
     path : str
         the path string

@@ -44,6 +44,7 @@ def is_dict_like(obj,attr=('keys','items')):
     return True 
 
 def is_list_of_dict_like(obj,attr=('keys','items')):
+    """test if object is a list only containing dict like items """
     try:
         return all([is_dict_like(i,attr) for i in obj])
     except:
@@ -391,7 +392,7 @@ def indexes(dic, keys=None):
 
 def flatten(d,key_as_tuple=True,sep='.',
             list_of_dicts=None):
-    """ get nested dict as {key:val,...}, where key is tuple/string of all nested keys
+    """ get nested dict as flat {key:val,...}, where key is tuple/string of all nested keys
 
     Parameters
     ----------
@@ -466,8 +467,7 @@ def _recreate_lists(d,prefix):
 
 def unflatten(d, key_as_tuple=True,delim='.',
              list_of_dicts=None):
-    """ unlatten dictionary
-    with keys as tuples or delimited strings
+    """ unflatten dictionary with keys as tuples or delimited strings
 
     Parameters
     ----------
@@ -605,8 +605,7 @@ def merge(dicts,overwrite=False,append=False):
 
 def flattennd(d,levels=0,key_as_tuple=True,delim='.',
              list_of_dicts=None):
-    """ get nested dict as {key:dict,...},
-    where key is tuple/string of all-n levels of nested keys
+    """ get nested dict as {key:dict,...}, where key is tuple/string of all-n levels of nested keys
 
     Parameters
     ----------
@@ -672,8 +671,7 @@ def flattennd(d,levels=0,key_as_tuple=True,delim='.',
 
 def flatten2d(d,key_as_tuple=True,delim='.',
              list_of_dicts=None):
-    """ get nested dict as {key:dict,...},
-    where key is tuple/string of all-1 nested keys
+    """ get nested dict as {key:dict,...}, where key is tuple/string of all-1 nested keys
     
     NB: is same as flattennd(d,1,key_as_tuple,delim)
 
@@ -704,7 +702,7 @@ def flatten2d(d,key_as_tuple=True,delim='.',
 
 def remove_keys(d, keys=None, use_wildcards=True,
                 list_of_dicts=False):
-    """ remove certain keys from nested dict, retaining preceeding paths
+    """remove certain keys from nested dict, retaining preceeding paths
 
     Parameters
     ----------
@@ -765,7 +763,7 @@ def remove_keys(d, keys=None, use_wildcards=True,
         return unflatten(new_dic,list_of_dicts=list_of_dicts)
 
 def remove_keyvals(d, keyvals=None, list_of_dicts=False):
-    """ remove paths with at least one branch leading to certain (key,value) pairs from dict
+    """remove paths with at least one branch leading to certain (key,value) pairs from dict
 
     Parameters
     ----------
@@ -1596,7 +1594,7 @@ class LazyLoad(object):
     (works with all edict functions)
     supplies tab completion of keys
     
-    Properties
+    Parameters
     ----------
     obj : dict, string, file_like
         object 

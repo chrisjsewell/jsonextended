@@ -49,7 +49,7 @@ _all_plugins = {name:{} for name in _plugins_interface}
 def view_interfaces(category=None):
     """ return a view of the plugin minimal class attribute interface(s)
     
-    Properties
+    Parameters
     ----------
     category : None or str
         if str, apply for single plugin category
@@ -72,7 +72,7 @@ def view_interfaces(category=None):
 def view_plugins(category=None):
     """ return a view of the loaded plugin names and descriptions
     
-    Properties
+    Parameters
     ----------
     category : None or str
         if str, apply for single plugin category
@@ -119,7 +119,7 @@ def get_plugins(category):
 def unload_all_plugins(category=None):
     """ clear all plugins
 
-    Properties
+    Parameters
     ----------
     category : None or str
         if str, apply for single plugin category
@@ -157,7 +157,7 @@ def unload_all_plugins(category=None):
 def unload_plugin(name,category):
     """ remove single plugin 
     
-    Properties
+    Parameters
     ----------
     name : str
         plugin name
@@ -193,7 +193,7 @@ def unload_plugin(name,category):
 def load_plugin_classes(classes, category=None, overwrite=False):
     """ load plugins from class objects    
 
-    Properties
+    Parameters
     ----------
     category : None or str
         if str, apply for single plugin category
@@ -240,7 +240,7 @@ def load_plugin_classes(classes, category=None, overwrite=False):
 def load_plugins_dir(path, category=None, overwrite=False):
     """ load plugins from a directory   
     
-    Properties
+    Parameters
     ----------
     path : str or path-like
     category : None or str
@@ -287,7 +287,7 @@ def load_plugins_dir(path, category=None, overwrite=False):
 def load_builtin_plugins(category=None, overwrite=False):
     """load plugins from builtin directories
     
-    Properties
+    Parameters
     ----------
     category : None or str
         if str, apply for single plugin category
@@ -333,7 +333,7 @@ def load_builtin_plugins(category=None, overwrite=False):
 def encode(obj, outtype='json', raise_error=False):
     """ encode objects, via encoder plugins, to new types
     
-    Properties
+    Parameters
     ----------
     outtype: str
         use encoder method to_<outtype> to encode
@@ -372,7 +372,7 @@ def encode(obj, outtype='json', raise_error=False):
 def decode(dct, intype='json', raise_error=False):
     """ decode dict objects, via decoder plugins, to new type
     
-    Properties
+    Parameters
     ----------
     intype: str
         use decoder method from_<intype> to encode
@@ -439,7 +439,7 @@ def parse(fpath, **kwargs):
     """ parse file contents, via parser plugins, to dict like object
     NB: the longest file regex will be used from plugins
     
-    Properties
+    Parameters
     ----------
     fpath : file_like
          string, object with 'open' and 'name' attributes, or 
