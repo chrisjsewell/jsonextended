@@ -38,8 +38,8 @@ A module to extend the python json package functionality:
 
    readme
    functions_summary
-   releases
    api/jsonextended
+   releases
 
 Indices and tables
 ==================
