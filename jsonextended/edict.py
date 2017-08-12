@@ -498,7 +498,7 @@ def unflatten(d, key_as_tuple=True,delim='.',
     >>> pprint(unflatten(d3,list_of_dicts='__list__'))
     {'a': [{'b': 2}, {'a': 1}]}
              
-    >>> unflatten({('b','a'):1,('b',):2})
+    >>> unflatten({('a','b','c'):1,('a','b'):2})
     Traceback (most recent call last):
     ...
     KeyError: 'attempting to overwrite key "b" with value 2'
