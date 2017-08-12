@@ -497,6 +497,12 @@ def unflatten(d, key_as_tuple=True,delim='.',
     >>> d3 = {('a','__list__1', 'a'): 1, ('a','__list__0', 'b'): 2}
     >>> pprint(unflatten(d3,list_of_dicts='__list__'))
     {'a': [{'b': 2}, {'a': 1}]}
+             
+    >>> unflatten({('b','a'):1,('b',):2})
+    Traceback (most recent call last):
+    ...
+    KeyError: 'attempting to overwrite key "b" with value 2'
+    
 
     """
     if not d:
@@ -528,6 +534,8 @@ def unflatten(d, key_as_tuple=True,delim='.',
             if part not in d:
                 d[part] = {}
             d = d[part]
+        if parts[-1] in d:
+            raise KeyError('attempting to overwrite key "{0}" with value {1}'.format(parts[-1],value))
         d[parts[-1]] = value
 
     if list_of_dicts is not None:
@@ -1069,6 +1077,58 @@ def rename_keys(d,keymap=None,list_of_dicts=False):
     return unflatten(flatd,list_of_dicts=list_of_dicts)
         #return {keymap[key] if key in keymap else key: rename_keys(value,keymap) for key, value in d.items()}
 
+
+def split_key(d,key,new_keys,before=True,list_of_dicts=False):
+    """ split an existing key(s) into multiple levels
+    
+    Parameters
+    ----------
+    d : dict_like
+    key: any
+        existing key value
+    new_keys: list of values
+        new levels to add
+    before: bool
+        add level before existing key (else after)
+    list_of_dicts: bool
+        treat list of dicts as additional branches
+    
+    Examples
+    --------
+    >>> from pprint import pprint
+    >>> d = {'a':1,'b':2}
+    >>> pprint(split_key(d,'a',['c','d']))
+    {'b': 2, 'c': {'d': {'a': 1}}}
+    
+    >>> pprint(split_key(d,'a',['c','d'],before=False))
+    {'a': {'c': {'d': 1}}, 'b': 2}
+    
+    >>> d2 = [{'a':1},{'a':2},{'a':3}]
+    >>> pprint(split_key(d2,'a',['b'],list_of_dicts=True))
+    [{'b': {'a': 1}}, {'b': {'a': 2}}, {'b': {'a': 3}}]
+
+    """
+    list_of_dicts = '__list__' if list_of_dicts else None
+    flatd = flatten(d,list_of_dicts=list_of_dicts)
+        
+    newd = {}
+    for path,v in flatd.items():
+        if key in path:
+            newk = []
+            for k in path:
+                if k == key:
+                    if before:
+                        newk = newk + new_keys + [k]
+                    else:
+                        newk = newk + [k] + new_keys
+                else:
+                    newk.append(k)
+            newd[tuple(newk)] = v
+        else:
+            newd[path] = v
+        
+    return unflatten(newd,list_of_dicts=list_of_dicts)
+    
 def apply(d, leaf_key, func, new_name=None, 
          list_of_dicts=False, **kwargs):
     """ apply a function to all values with a certain leaf (terminal) key
@@ -1609,8 +1669,11 @@ class LazyLoad(object):
     key_paths : bool
         indicates if the keys of the object can be resolved as file/folder paths
         (to ensure strings do not get unintentionally treated as paths)
+    list_of_dicts: bool
+        treat list of dicts as additional branches
     parser_kwargs : keywords or dict 
-        additional keywords for parser plugins read_file method
+        additional keywords for parser plugins read_file method,
+        (loaded decoder plugins are parsed by default)
         
     
     Examples
@@ -1675,17 +1738,23 @@ class LazyLoad(object):
     >>> lazydict
     {file1.keypair:..}
     
+    >>> lazydict = LazyLoad([{'a':{'b':{'c':1}}},{'a':2}],
+    ...                     list_of_dicts=True)
+    >>> lazydict.i0.a.b.c
+    1
+
     >>> LazyLoad([1,2,3])
     Traceback (most recent call last):
      ...
     ValueError: not an expandable object: [1, 2, 3]
-
+    
     >>> plugins.unload_all_plugins()    
     
     """
     def __init__(self, obj, 
                  ignore_prefixes=('.','_'), recursive=True,
                  parent=None, key_paths=True,
+                 list_of_dicts=False,
                  **parser_kwargs): 
         """ initialise
         """
@@ -1696,6 +1765,7 @@ class LazyLoad(object):
         if 'object_hook' not in parser_kwargs:
             self._parser_kwargs['object_hook']=decode
         self._recurse = recursive
+        self._list_of_dicts = list_of_dicts
         self._itemmap = None
         self._tabmap = None
     
@@ -1703,23 +1773,26 @@ class LazyLoad(object):
         """get object for next level of tab """
         if is_dict_like(obj):
             child = LazyLoad(obj, self._ignore_prefixes,parent=self, 
-                                  key_paths=False)
+                                  key_paths=False,
+                                  list_of_dicts=self._list_of_dicts)
             return child
         if is_path_like(obj):
             if not obj.name.startswith(self._ignore_prefixes):
                 if parser_available(obj):
                     child = LazyLoad(obj, self._ignore_prefixes,parent=self,
-                                          key_paths=False)
+                                          key_paths=False,
+                                          list_of_dicts=self._list_of_dicts)
                     return child
                 elif obj.is_dir():
                     child = LazyLoad(obj, self._ignore_prefixes,parent=self,
-                                          key_paths=self._key_paths)
+                                          key_paths=self._key_paths,
+                                          list_of_dicts=self._list_of_dicts)
                     return child
                                 
         return obj
     
     def _expand(self):
-        """ create item map for 
+        """ create item map for next level of data structure
         """
         if self._itemmap is not None:
             return
@@ -1727,6 +1800,9 @@ class LazyLoad(object):
         obj = self._obj
         if is_dict_like(obj):
             self._itemmap = {key:self._next_level(val) for key,val in obj.items()}
+            
+        elif is_list_of_dict_like(obj) and self._list_of_dicts:
+            self._itemmap = {i:self._next_level(val) for i,val in enumerate(obj)}
         
         elif isinstance(obj, basestring) and self._key_paths:
             obj = pathlib.Path(obj)
@@ -1839,12 +1915,12 @@ class LazyLoad(object):
             return {root[key] if key in root else key: self._recurse_children(value,root) for key, value in obj.items()}
     
     def to_obj(self):
-        """ D.to_obj -> the internal object of D """
+        """ return the internal object """
         return self._obj
     def to_dict(self):
-        """ D.to_dict -> D (fully loaded) as nested dict """
+        """ return the (fully loaded) structure as a nested dictionary """
         return self._recurse_children(self)
     def to_df(self, **kwargs):
-        """ D.to_df -> D as pandas.DataFrame """
+        """ return the (fully loaded) structure as a pandas.DataFrame """
         import pandas as pd
         return pd.DataFrame(self._recurse_children(self), **kwargs)
