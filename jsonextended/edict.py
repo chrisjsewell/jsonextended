@@ -45,6 +45,8 @@ def is_dict_like(obj,attr=('keys','items')):
 
 def is_list_of_dict_like(obj,attr=('keys','items')):
     """test if object is a list only containing dict like items """
+    if not obj:
+        return False
     try:
         return all([is_dict_like(i,attr) for i in obj])
     except:
