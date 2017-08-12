@@ -469,7 +469,7 @@ def _recreate_lists(d,prefix):
 
 def unflatten(d, key_as_tuple=True,delim='.',
              list_of_dicts=None):
-    """ unflatten dictionary with keys as tuples or delimited strings
+    r""" unflatten dictionary with keys as tuples or delimited strings
 
     Parameters
     ----------
@@ -501,8 +501,8 @@ def unflatten(d, key_as_tuple=True,delim='.',
     >>> unflatten({('a','b','c'):1,('a','b'):2})
     Traceback (most recent call last):
     ...
-    KeyError: 'attempting to overwrite key "b" with value 2'
-    
+    KeyError: 'attempting to overwrite value of key "b" with; 2 which already has value; {\'c\': 1}'
+
 
     """
     if not d:
@@ -535,7 +535,11 @@ def unflatten(d, key_as_tuple=True,delim='.',
                 d[part] = {}
             d = d[part]
         if parts[-1] in d:
-            raise KeyError('attempting to overwrite key "{0}" with value {1}'.format(parts[-1],value))
+            try:
+                value = merge([d[parts[-1]],value])
+            except:
+                raise KeyError(
+            'attempting to overwrite value of key "{0}" with; {1} which already has value; {2}'.format(parts[-1],value,d[parts[-1]]))
         d[parts[-1]] = value
 
     if list_of_dicts is not None:
