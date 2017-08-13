@@ -553,7 +553,7 @@ def unflatten(d, key_as_tuple=True, delim='.',
                 d[part] = {}
             d = d[part]
         if not is_dict_like(d):
-            v1, v2 = sorted([str(value), str({parts[-1], d})])
+            v1, v2 = sorted([str(d), str({parts[-1]: value})])
             raise KeyError("child conflict for path: {0}; {1} and {2}".format(parts[:-1], v1, v2))
         elif parts[-1] in d:
             try:
