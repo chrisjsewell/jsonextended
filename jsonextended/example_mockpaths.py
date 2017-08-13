@@ -15,20 +15,20 @@ MockFile("file1.literal.csv")
 MockFile("file1.keypair")
 
 >>> print(directory1.to_string(indentlvl=3,file_content=False))
-Folder("dir1") 
-   File("file1.json") 
-   Folder("subdir1") 
-     File("file1.csv") 
-     File("file1.literal.csv") 
-   Folder("subdir2") 
-     Folder("subsubdir21") 
-       File("file1.keypair") 
+Folder("dir1")
+   File("file1.json")
+   Folder("subdir1")
+     File("file1.csv")
+     File("file1.literal.csv")
+   Folder("subdir2")
+     Folder("subsubdir21")
+       File("file1.keypair")
 
 >>> print(directory1.to_string(indentlvl=3,file_content=True))
-Folder("dir1") 
+Folder("dir1")
    File("file1.json") Contents:
     {"key2": {"key3": 4, "key4": 5}, "key1": [1, 2, 3]}
-   Folder("subdir1") 
+   Folder("subdir1")
      File("file1.csv") Contents:
        # a csv file
       header1,header2,header3
@@ -41,8 +41,8 @@ Folder("dir1")
       1,1.1,string1
       2,2.2,string2
       3,3.3,string3
-   Folder("subdir2") 
-     Folder("subsubdir21") 
+   Folder("subdir2")
+     Folder("subsubdir21")
        File("file1.keypair") Contents:
          # a key-pair file
         key1 val1

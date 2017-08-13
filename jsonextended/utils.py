@@ -18,14 +18,14 @@ except ImportError:
 
 
 def class_to_str(obj):
-    """ get class string from object 
-    
+    """ get class string from object
+
     Examples
     --------
-    
+
     >>> class_to_str(list).split('.')[1]
     'list'
-       
+
     """
     mod_str = obj.__module__
     name_str = obj.__name__
@@ -60,7 +60,7 @@ def get_data_path(data, module, check_exists=True):
     """return a directory path to data within a module
 
     data : str or list of str
-        file name or list of sub-directories and file name (e.g. ['lammps','data.txt'])   
+        file name or list of sub-directories and file name (e.g. ['lammps','data.txt'])
     """
     basepath = os.path.dirname(os.path.abspath(inspect.getfile(module)))
 
@@ -87,17 +87,17 @@ def _natural_keys(text):
 
 
 def natural_sort(iterable):
-    """human order sorting of number strings 
+    """human order sorting of number strings
 
     Examples
     --------
-    
+
     >>> sorted(['011','1', '21'])
     ['011', '1', '21']
-    
+
     >>> natural_sort(['011','1', '21'])
     ['1', '011', '21']
-    
+
     """
     return sorted(iterable, key=_natural_keys)
 
@@ -137,9 +137,9 @@ class _OpenWrite(object):
 
 @total_ordering
 class MockPath(object):
-    r"""a mock path, mimicking pathlib.Path, 
+    r"""a mock path, mimicking pathlib.Path,
     supporting context open method for read/write
-    
+
     Parameters
     ----------
     path : str
@@ -178,12 +178,12 @@ class MockPath(object):
     File("test.txt") Contents:
     newline1
     newline2
-    
+
     >>> with file_obj.maketemp() as temp:
     ...     with open(temp.name) as f:
     ...         print(f.readline().strip())
     newline1
-    
+
     >>> dir_obj = MockPath(
     ...   structure=[{'dir1':[{'subdir':[]},file_obj]},{'dir2':[file_obj]},file_obj]
     ... )
@@ -196,17 +196,17 @@ class MockPath(object):
     >>> dir_obj.is_dir()
     True
     >>> print(dir_obj.to_string())
-    Folder("root") 
-      Folder("dir1") 
-        Folder("subdir") 
-        File("test.txt") 
-      Folder("dir2") 
-        File("test.txt") 
-      File("test.txt") 
+    Folder("root")
+      Folder("dir1")
+        Folder("subdir")
+        File("test.txt")
+      Folder("dir2")
+        File("test.txt")
+      File("test.txt")
 
     >>> list(dir_obj.iterdir())
     [MockFolder("dir1"), MockFolder("dir2"), MockFile("test.txt")]
-    
+
     >>> new = dir_obj.joinpath('dir3')
     >>> list(dir_obj.iterdir())
     [MockFolder("dir1"), MockFolder("dir2"), MockFile("test.txt")]
@@ -214,7 +214,7 @@ class MockPath(object):
     >>> new.mkdir()
     >>> list(dir_obj.iterdir())
     [MockFolder("dir1"), MockFolder("dir2"), MockFolder("dir3"), MockFile("test.txt")]
-        
+
     """
 
     def __init__(self, path='root',
@@ -325,7 +325,7 @@ class MockPath(object):
             if not subobj.exists():
                 continue
             if subobj.is_dir():
-                text += ' ' * indent + '{0}("{1}") \n'.format(self._folderstr, subobj.name)
+                text += ' ' * indent + '{0}("{1}")\n'.format(self._folderstr, subobj.name)
                 text += self._recurse_print(subobj.children,
                                             indent=indent, file_content=file_content)
             else:
@@ -334,7 +334,7 @@ class MockPath(object):
                     text += ' ' * indent + sep.join(
                         ['{0}("{1}") Contents:'.format(self._filestr, subobj.name)] + subobj._content) + '\n'
                 else:
-                    text += ' ' * indent + '{0}("{1}") \n'.format(self._filestr, subobj.name)
+                    text += ' ' * indent + '{0}("{1}")\n'.format(self._filestr, subobj.name)
 
         return text
 
@@ -350,7 +350,7 @@ class MockPath(object):
         if self.is_file():
             return '\n'.join(['{0}("{1}") Contents:'.format(self._filestr, self.name)] + self._content)
         elif self.is_dir():
-            text = '{0}("{1}") \n'.format(self._folderstr, self.name)
+            text = '{0}("{1}")\n'.format(self._folderstr, self.name)
             text += self._recurse_print(self.children, indentlvl=indentlvl,
                                         file_content=file_content)
 
@@ -374,14 +374,14 @@ class MockPath(object):
 
 
 def memory_usage():
-    """return memory usage of python process in MB 
-    
+    """return memory usage of python process in MB
+
     from http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
     psutil is quicker
-    
+
     >>> isinstance(memory_usage(),float)
     True
-    
+
     """
     try:
         import psutil, os
@@ -394,11 +394,11 @@ def memory_usage():
 
 
 def _memory_usage_ps():
-    """return memory usage of python process in MB 
-    
+    """return memory usage of python process in MB
+
     >>> isinstance(_memory_usage_ps(),float)
     True
-    
+
     """
     import subprocess, os
     out = subprocess.Popen(['ps', 'v', '-p', str(os.getpid())],
@@ -409,11 +409,11 @@ def _memory_usage_ps():
 
 
 def load_memit():
-    """load memory usage ipython magic, 
+    """load memory usage ipython magic,
     require memory_profiler package to be installed
-    
+
     to get usage: %memit?
-    
+
     Author: Vlad Niculae <vlad@vene.ro>
     Makes use of memory_profiler from Fabian Pedregosa
     available at https://github.com/fabianp/memory_profiler

@@ -2,7 +2,6 @@
 # -- coding: utf-8 --
 
 ## TODO see below
-# deal with dictionaries in lists?
 # output json with arrays all on one line
 #      doesn't seem an easy way
 #      could use this: https://stackoverflow.com/a/13252112, but wrap lists with NoIndent first
@@ -11,7 +10,6 @@
 # have a look at:
 #    mergers: https://pypi.python.org/pypi/jsonmerge, https://pypi.python.org/pypi/json-merger/0.2.5
 
-# NB: uses lots of recursion, might not be good for very large levels of nesting
 # NB: examples use pprint to make sure keys are sorted
 # NB: using Decimal parsing my default
 
@@ -366,13 +364,13 @@ def to_dict(jfile, key_path=None, in_memory=True,
     >>> path = get_test_path()
     >>> jdict1 = to_dict(path)
     >>> pprint(jdict1,depth=2)
-    dir1: 
+    dir1:
       dir1_1: {...}
       file1: {...}
       file2: {...}
-    dir2: 
+    dir2:
       file1: {...}
-    dir3: 
+    dir3:
 
     >>> jdict2 = to_dict(path,['dir1','file1','initial'],in_memory=False)
     >>> pprint(jdict2,depth=1)

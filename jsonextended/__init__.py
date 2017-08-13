@@ -15,9 +15,9 @@
 -  viewing and manipulating the nested dictionaries:
 
    -  enhanced pretty printer
-   
+
    -  Javascript rendered, expandable tree in the Jupyter Notebook
-   
+
    -  filter, merge, flatten, unflatten functions
 
 -  Units schema concept to apply and convert physical units (using the
@@ -54,13 +54,13 @@ True
 
 >>> jdict1 = ejson.to_dict(path)
 >>> edict.pprint(jdict1,depth=2)
-dir1: 
+dir1:
   dir1_1: {...}
   file1: {...}
   file2: {...}
-dir2: 
+dir2:
   file1: {...}
-dir3: 
+dir3:
 
 
 >>> jdict2 = ejson.to_dict(path,['dir1','file1'])
@@ -72,15 +72,15 @@ units: {...}
 
 >>> filtered = edict.filter_keys(jdict2,['vol*'],use_wildcards=True)
 >>> edict.pprint(filtered)
-initial: 
-  crystallographic: 
+initial:
+  crystallographic:
     volume: 924.62752781
-  primitive: 
+  primitive:
     volume: 462.313764
-optimised: 
-  crystallographic: 
+optimised:
+  crystallographic:
     volume: 1063.98960509
-  primitive: 
+  primitive:
     volume: 531.994803
 
 >>> edict.pprint(edict.flatten(filtered))
@@ -97,8 +97,8 @@ from jsonextended import ejson, units, utils, edict, plugins
 
 
 def _run_nose_tests(doctests=True, verbose=True):
-    """ 
-    mimics nosetests --with-doctest -v --exe jsonextended 
+    """
+    mimics nosetests --with-doctest -v --exe jsonextended
     also use:
     pylint --output-format html jsonextended > jsonextended_pylint.html
     """

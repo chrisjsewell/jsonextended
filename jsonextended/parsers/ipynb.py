@@ -18,7 +18,7 @@ class NBParser(object):
     ...     data = NBParser().read_file(f)
     >>> pprint(data)
     cells: []
-    metadata: 
+    metadata:
 
     """
 

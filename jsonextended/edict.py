@@ -65,8 +65,8 @@ def is_path_like(obj, attr=('name', 'is_file', 'is_dir', 'iterdir')):
 
 
 def convert_type(d, intype, outtype, convert_list=True, in_place=True):
-    """ convert all values of one type to another 
-    
+    """ convert all values of one type to another
+
     Parameters
     ----------
     d : dict
@@ -76,16 +76,16 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
         whether to convert instances inside lists and tuples
     in_place : bool
         if True, applies conversions to original dict, else returns copy
-    
+
     Examples
     --------
-    
+
     >>> from pprint import pprint
-    
+
     >>> d = {'a':'1','b':'2'}
     >>> pprint(convert_type(d,str,float))
     {'a': 1.0, 'b': 2.0}
-    
+
     >>> d = {'a':['1','2']}
     >>> pprint(convert_type(d,str,float))
     {'a': [1.0, 2.0]}
@@ -140,7 +140,10 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
 
 
 def _default_print_func(s):
-    print(s)
+    if hasattr(s, 'rstrip'):
+        print(s.rstrip())
+    else:
+        print(s)
 
 
 def _strip_ansi(source):
@@ -183,37 +186,37 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
     print_func : func or None
         function to print strings (print if None)
     keycolor : None or str
-         if str, color keys by this color, 
+         if str, color keys by this color,
          allowed: red, green, yellow, blue, magenta, cyan, white
     compress_lists : int
          compress lists/tuples longer than this,
           e.g. [1,1,1,1,1,1] -> [1, 1,..., 1]
     round_floats : int
-         significant figures for floats  
+         significant figures for floats
 
     Examples
     --------
 
     >>> d = {'a':{'b':{'c':'Å','de':[4,5,[7,'x'],9]}}}
     >>> pprint(d,depth=None)
-    a: 
-      b: 
+    a:
+      b:
         c:  Å
         de: [4, 5, [7, x], 9]
     >>> pprint(d,max_width=17,depth=None)
-    a: 
-      b: 
+    a:
+      b:
         c:  Å
-        de: [4, 5, 
-            [7, x], 
+        de: [4, 5,
+            [7, x],
             9]
     >>> pprint(d,no_values=True,depth=None)
-    a: 
-      b: 
-        c:  
-        de: 
+    a:
+      b:
+        c:
+        de:
     >>> pprint(d,depth=2)
-    a: 
+    a:
       b: {...}
     >>> pprint({'a':[1,1,1,1,1,1,1,1]},
     ...        compress_lists=3)
@@ -252,7 +255,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                 val_string = encode(obj, outtype='str')
             except (TypeError, UnicodeError):
                 pass
-        # convert unicode to str (so no u'' prefix in python 2)         
+        # convert unicode to str (so no u'' prefix in python 2)
         try:
             return str(val_string)
         except:
@@ -328,7 +331,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                 # divide into chuncks and join by same indentation
                 val_indent = ' ' * (initindent + key_length)
                 n = max_width - len(val_indent)
-                val_string = val_indent.join([s + ' \n' for s in textwrap.wrap(val_string, n)])[:-2]
+                val_string = val_indent.join([s + '\n' for s in textwrap.wrap(val_string, n)])[:-1]
 
             if i == 0:
                 print_func(key_line + val_string)
@@ -429,7 +432,7 @@ def flatten(d, key_as_tuple=True, sep='.',
     >>> d = {1:{"a":"A"},2:{"b":"B"}}
     >>> pprint(flatten(d,key_as_tuple=False))
     {'1.a': 'A', '2.b': 'B'}
-            
+
     >>> d = [{'a':1},{'b':2}]
     >>> pprint(flatten(d,list_of_dicts='__list__'))
     {('__list__0', 'a'): 1, ('__list__1', 'b'): 2}
@@ -508,11 +511,11 @@ def unflatten(d, key_as_tuple=True, delim='.',
     >>> d2 = {'a.b':1,'a.c':2}
     >>> pprint(unflatten(d2,key_as_tuple=False))
     {'a': {'b': 1, 'c': 2}}
-             
+
     >>> d3 = {('a','__list__1', 'a'): 1, ('a','__list__0', 'b'): 2}
     >>> pprint(unflatten(d3,list_of_dicts='__list__'))
     {'a': [{'b': 2}, {'a': 1}]}
-             
+
     >>> unflatten({('a','b','c'):1,('a','b'):2})
     Traceback (most recent call last):
     ...
@@ -549,7 +552,11 @@ def unflatten(d, key_as_tuple=True, delim='.',
             if part not in d:
                 d[part] = {}
             d = d[part]
-        if parts[-1] in d:
+        if not is_dict_like(d):
+            raise KeyError(
+                'attempting to overwrite value of key "{0}" with; {1} which already has value; {2}'.format(
+                    parts[-1], value, d))
+        elif parts[-1] in d:
             try:
                 value = merge([d[parts[-1]], value])
             except:
@@ -668,7 +675,7 @@ def flattennd(d, levels=0, key_as_tuple=True, delim='.',
 
     >>> pprint(flattennd(d,3))
     {(): {1: {2: {4: 'D'}}}, (1,): {2: {3: {'b': 'B', 'c': 'C'}}}}
-    
+
     >>> pprint(flattennd(d,4))
     {(): {1: {2: {3: {'b': 'B', 'c': 'C'}, 4: 'D'}}}}
 
@@ -705,7 +712,7 @@ def flattennd(d, levels=0, key_as_tuple=True, delim='.',
 def flatten2d(d, key_as_tuple=True, delim='.',
               list_of_dicts=None):
     """ get nested dict as {key:dict,...}, where key is tuple/string of all-1 nested keys
-    
+
     NB: is same as flattennd(d,1,key_as_tuple,delim)
 
     Parameters
@@ -752,7 +759,7 @@ def remove_keys(d, keys=None, use_wildcards=True,
     >>> d = {1:{"a":"A"},"a":{"b":"B"}}
     >>> pprint(remove_keys(d,['a']))
     {1: 'A', 'b': 'B'}
-                
+
     >>> pprint(remove_keys({'abc':1},['a*'],use_wildcards=False))
     {'abc': 1}
     >>> pprint(remove_keys({'abc':1},['a*'],use_wildcards=True))
@@ -812,14 +819,14 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False):
     >>> d = {1:{"b":"A"},"a":{"b":"B","c":"D"},"b":{"a":"B"}}
     >>> pprint(remove_keyvals(d,[("b","B")]))
     {1: {'b': 'A'}, 'b': {'a': 'B'}}
-    
+
     >>> d2 = {'a':[{'b':1,'c':1},{'b':1,'c':2}]}
     >>> pprint(remove_keyvals(d2,[("b",1)]))
     {'a': [{'b': 1, 'c': 1}, {'b': 1, 'c': 2}]}
 
     >>> pprint(remove_keyvals(d2,[("b",1)],list_of_dicts=True))
     {}
-    
+
     """
     keyvals = [] if keyvals is None else keyvals
     list_of_dicts = '__list__' if list_of_dicts else None
@@ -951,7 +958,7 @@ def filter_keyvals(d, vals=None,
 
     >>> pprint(filter_keyvals(d2,[('b',1)],keep_siblings=True))
     {'a': {'b': 1, 'c': 2}}
-                  
+
     >>> pprint(filter_keyvals({'a':1},[('a',0.98)],error=0.01))
     {}
     >>> pprint(filter_keyvals({'a':1},[('a',0.98)],error=0.1))
@@ -1113,7 +1120,7 @@ def rename_keys(d, keymap=None, list_of_dicts=False):
 
 def split_key(d, key, new_keys, before=True, list_of_dicts=False):
     """ split an existing key(s) into multiple levels
-    
+
     Parameters
     ----------
     d : dict_like
@@ -1125,17 +1132,17 @@ def split_key(d, key, new_keys, before=True, list_of_dicts=False):
         add level before existing key (else after)
     list_of_dicts: bool
         treat list of dicts as additional branches
-    
+
     Examples
     --------
     >>> from pprint import pprint
     >>> d = {'a':1,'b':2}
     >>> pprint(split_key(d,'a',['c','d']))
     {'b': 2, 'c': {'d': {'a': 1}}}
-    
+
     >>> pprint(split_key(d,'a',['c','d'],before=False))
     {'a': {'c': {'d': 1}}, 'b': 2}
-    
+
     >>> d2 = [{'a':1},{'a':2},{'a':3}]
     >>> pprint(split_key(d2,'a',['b'],list_of_dicts=True))
     [{'b': {'a': 1}}, {'b': {'a': 2}}, {'b': {'a': 3}}]
@@ -1166,7 +1173,7 @@ def split_key(d, key, new_keys, before=True, list_of_dicts=False):
 def apply(d, leaf_key, func, new_name=None,
           list_of_dicts=False, **kwargs):
     """ apply a function to all values with a certain leaf (terminal) key
-    
+
     Parameters
     ----------
     d : dict
@@ -1191,7 +1198,7 @@ def apply(d, leaf_key, func, new_name=None,
     {'a': 2, 'b': 1}
     >>> pprint(apply(d,'a',func,new_name='c'))
     {'b': 1, 'c': 2}
-    
+
     """
     list_of_dicts = '__list__' if list_of_dicts else None
     flatd = flatten(d, list_of_dicts=list_of_dicts)
@@ -1207,20 +1214,20 @@ def combine_apply(d, leaf_keys, func, new_name,
                   remove_lkeys=True, overwrite=False,
                   **kwargs):
     """ combine values with certain leaf (terminal) keys by a function
-    
+
     Parameters
     ----------
     d : dict
     leaf_keys : list
         names of leaf keys
     func : func
-        function to apply, 
+        function to apply,
         must take at least len(leaf_keys) arguments
     new_name : any
         new key name
     unflatten_level : int or None
         the number of levels to leave unflattened before combining,
-        for instance if you need dicts as inputs (None means all)               
+        for instance if you need dicts as inputs (None means all)
     remove_lkeys: bool
         whether to remove leaf_keys
     overwrite: bool
@@ -1242,12 +1249,12 @@ def combine_apply(d, leaf_keys, func, new_name,
     >>> d = {1:{'a':1,'b':2},2:{'a':4,'b':5},3:{'a':1}}
     >>> pprint(combine_apply(d,['a','b'],func,'c'))
     {1: {'c': 3}, 2: {'c': 9}, 3: {'a': 1}}
-                  
+
     >>> func2 = lambda x: sorted(list(x.keys()))
     >>> d2 = {'d':{'a':{'b':1,'c':2}}}
-    >>> pprint(combine_apply(d2,['a'],func2,'a',unflatten_level=2))                  
+    >>> pprint(combine_apply(d2,['a'],func2,'a',unflatten_level=2))
     {'d': {'a': ['b', 'c']}}
-    
+
     """
     if unflatten_level is not None:
         flatd = flattennd(d, levels=unflatten_level)
@@ -1276,7 +1283,7 @@ def combine_apply(d, leaf_keys, func, new_name,
 def split_lists(d, split_keys,
                 new_name='split', check_length=True):
     """split_lists key:list pairs into dicts for each item in the lists
-    
+
     Parameters
     ----------
     d : dict
@@ -1286,7 +1293,7 @@ def split_lists(d, split_keys,
         top level key for split items
     check_length : bool
         if true, raise error if any lists are of a different length
-        
+
     Examples
     --------
 
@@ -1296,7 +1303,7 @@ def split_lists(d, split_keys,
     >>> new_d = split_lists(d,['x','y'])
     >>> pprint(new_d)
     {'path_key': {'a': 1, 'split': [{'x': 1, 'y': 3}, {'x': 2, 'y': 4}]}}
-    
+
     >>> split_lists(d,['x','a'])
     Traceback (most recent call last):
     ...
@@ -1351,19 +1358,19 @@ def split_lists(d, split_keys,
 
 
 def combine_lists(d, keys=None):
-    """ combine lists of dicts 
-    
+    """ combine lists of dicts
+
     d : dict
     keys : list
         keys to combine (all if None)
-    
+
     Example
     -------
     >>> from pprint import pprint
     >>> d = {'path_key': {'a': 1, 'split': [{'x': 1, 'y': 3}, {'x': 2, 'y': 4}]}}
     >>> pprint(combine_lists(d,['split']))
     {'path_key': {'a': 1, 'split': {'x': [1, 2], 'y': [3, 4]}}}
-    
+
     """
     flattened = flatten(d, list_of_dicts=None)
     for key, value in list(flattened.items()):
@@ -1390,12 +1397,12 @@ def combine_lists(d, keys=None):
 
 def list_to_dict(lst, key=None, remove_key=True):
     """ convert a list of dicts to a dict with root keys
-    
+
     Parameters
     ----------
     lst : list of dicts
     key : any
-        a key contained by all of the dicts 
+        a key contained by all of the dicts
         if None use index number string
     remove_key : bool
         remove key from dicts in list
@@ -1409,7 +1416,7 @@ def list_to_dict(lst, key=None, remove_key=True):
 
     >>> pprint(list_to_dict(lst,'name'))
     {'f': {'b': 1}, 'g': {'c': 2}}
-     
+
     """
 
     assert all([is_dict_like(d) for d in lst])
@@ -1466,27 +1473,27 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0,
         "b": 1
       }
     }
-                 
+
     >>> from jsonextended.utils import MockPath
     >>> folder_obj = MockPath()
     >>> dct = {'x':{'a':{'b':1},'c':{'d':3}}}
     >>> to_json(dct, folder_obj, dirlevel=0,indent=None)
     >>> print(folder_obj.to_string(file_content=True))
-    Folder("root") 
+    Folder("root")
       File("x.json") Contents:
        {"a": {"b": 1}, "c": {"d": 3}}
 
     >>> folder_obj = MockPath()
     >>> to_json(dct, folder_obj, dirlevel=1,indent=None)
     >>> print(folder_obj.to_string(file_content=True))
-    Folder("root") 
-      Folder("x") 
+    Folder("root")
+      Folder("x")
         File("a.json") Contents:
          {"b": 1}
         File("c.json") Contents:
          {"d": 3}
 
-                 
+
     """
     if hasattr(jfile, 'write'):
         json.dump(dct, jfile, sort_keys=sort_keys, indent=indent, default=encode)
@@ -1691,13 +1698,13 @@ class LazyLoad(object):
     """ lazy load a dict_like object or file structure as a pseudo dictionary
     (works with all edict functions)
     supplies tab completion of keys
-    
+
     Parameters
     ----------
     obj : dict, string, file_like
-        object 
+        object
     ignore_prefix : list of str
-        ignore files and folders beginning with these prefixes 
+        ignore files and folders beginning with these prefixes
     recursive : bool
         if True, load subdirectories
     parent : obj
@@ -1707,18 +1714,18 @@ class LazyLoad(object):
         (to ensure strings do not get unintentionally treated as paths)
     list_of_dicts: bool
         treat list of dicts as additional branches
-    parser_kwargs : keywords or dict 
+    parser_kwargs : keywords or dict
         additional keywords for parser plugins read_file method,
         (loaded decoder plugins are parsed by default)
-        
-    
+
+
     Examples
     --------
-    
+
     >>> from jsonextended import plugins
     >>> plugins.load_builtin_plugins()
     []
-    
+
     >>> l = LazyLoad({'a':{'b':2},3:4})
     >>> print(l)
     {3:..,a:..}
@@ -1730,37 +1737,37 @@ class LazyLoad(object):
     2
     >>> l.i3
     4
-    
+
     >>> from jsonextended.utils import get_test_path
     >>> from jsonextended.edict import pprint
-    
+
     >>> lazydict = LazyLoad(get_test_path())
     >>> pprint(lazydict,depth=2)
-    dir1: 
+    dir1:
       dir1_1: {...}
       file1.json: {...}
       file2.json: {...}
-    dir2: 
+    dir2:
       file1.csv: {...}
       file1.json: {...}
-    dir3: 
-    file1.keypair: 
+    dir3:
+    file1.keypair:
       key1: val1
       key2: val2
       key3: val3
-    
+
     >>> 'dir1' in lazydict
     True
-    
+
     >>> sorted(lazydict.keys())
     ['dir1', 'dir2', 'dir3', 'file1.keypair']
-    
+
     >>> sorted(lazydict.values())
     [{}, {key1:..,key2:..,key3:..}, {file1.csv:..,file1.json:..}, {dir1_1:..,file1.json:..,file2.json:..}]
-    
+
     >>> lazydict.dir1.file1_json
     {initial:..,meta:..,optimised:..,units:..}
-        
+
     >>> ldict = lazydict.dir1.file1_json.to_dict()
     >>> isinstance(ldict,dict)
     True
@@ -1769,11 +1776,11 @@ class LazyLoad(object):
     meta: {...}
     optimised: {...}
     units: {...}
-    
+
     >>> lazydict = LazyLoad(get_test_path(),recursive=False)
     >>> lazydict
     {file1.keypair:..}
-    
+
     >>> lazydict = LazyLoad([{'a':{'b':{'c':1}}},{'a':2}],
     ...                     list_of_dicts=True)
     >>> lazydict.i0.a.b.c
@@ -1783,9 +1790,9 @@ class LazyLoad(object):
     Traceback (most recent call last):
      ...
     ValueError: not an expandable object: [1, 2, 3]
-    
-    >>> plugins.unload_all_plugins()    
-    
+
+    >>> plugins.unload_all_plugins()
+
     """
 
     def __init__(self, obj,
@@ -1930,7 +1937,7 @@ class LazyLoad(object):
         return val
 
     def keys(self):
-        """ D.keys() -> iter of D's keys        
+        """ D.keys() -> iter of D's keys
         """
         return self.__iter__()
 
