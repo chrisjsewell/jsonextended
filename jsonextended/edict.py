@@ -554,13 +554,13 @@ def unflatten(d, key_as_tuple=True, delim='.',
             d = d[part]
         if not is_dict_like(d):
             v1, v2 = sorted([str(value), str(d)])
-            raise KeyError("child conflict for path: {0:s}; {1:s} and {2:s}".format(key, v1, v2))
+            raise KeyError("child conflict for path: {0:s}; {1} and {2}".format(key, v1, v2))
         elif parts[-1] in d:
             try:
                 value = merge([d[parts[-1]], value])
             except:
                 v1, v2 = sorted([str(value), str(d[parts[-1]])])
-                raise KeyError("child conflict for path: {0:s}; {1:s} and {2:s}".format(key, v1, v2))
+                raise KeyError("child conflict for path: {0:s}; {1} and {2}".format(key, v1, v2))
         d[parts[-1]] = value
 
     if list_of_dicts is not None:
