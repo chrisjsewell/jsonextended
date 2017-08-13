@@ -519,7 +519,7 @@ def unflatten(d, key_as_tuple=True, delim='.',
     >>> unflatten({('a','b','c'):1,('a','b'):2})
     Traceback (most recent call last):
     ...
-    KeyError: 'attempting to overwrite value of key "b" with; 2 which already has value; {\'c\': 1}'
+    KeyError: "child conflict for path: ('a', 'b'); 2 and {'c': 1}"
 
 
     """
@@ -553,16 +553,14 @@ def unflatten(d, key_as_tuple=True, delim='.',
                 d[part] = {}
             d = d[part]
         if not is_dict_like(d):
-            raise KeyError(
-                'attempting to overwrite value of key "{0}" with; {1} which already has value; {2}'.format(
-                    parts[-1], value, d))
+            v1, v2 = sorted([str(value), str(d)])
+            raise KeyError("child conflict for path: {0:s}; {1:s} and {2:s}".format(key, v1, v2))
         elif parts[-1] in d:
             try:
                 value = merge([d[parts[-1]], value])
             except:
-                raise KeyError(
-                    'attempting to overwrite value of key "{0}" with; {1} which already has value; {2}'.format(
-                        parts[-1], value, d[parts[-1]]))
+                v1, v2 = sorted([str(value), str(d[parts[-1]])])
+                raise KeyError("child conflict for path: {0:s}; {1:s} and {2:s}".format(key, v1, v2))
         d[parts[-1]] = value
 
     if list_of_dicts is not None:
