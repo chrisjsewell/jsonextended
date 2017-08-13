@@ -1,6 +1,7 @@
 
 [![Build Status](https://travis-ci.org/chrisjsewell/jsonextended.svg?branch=master)](https://travis-ci.org/chrisjsewell/jsonextended)
 [![Coverage Status](https://coveralls.io/repos/github/chrisjsewell/jsonextended/badge.svg?branch=master)](https://coveralls.io/github/chrisjsewell/jsonextended?branch=master)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/60ce582812a6431fa20c4074c517288c)](https://www.codacy.com/app/chrisj_sewell/jsonextended?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=chrisjsewell/jsonextended&amp;utm_campaign=Badge_Grade)
 [![Documentation Status](https://readthedocs.org/projects/jsonextended/badge/?version=latest)](http://jsonextended.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/jsonextended.svg)](https://pypi.python.org/pypi/jsonextended/)
 
@@ -11,19 +12,19 @@ A module to extend the python json package functionality:
 - Treat a directory structure like a nested dictionary:
 
    - **lightweight plugin system**: define bespoke classes for **parsing** different file extensions (in-the-box: .json, .csv, .hdf5) and **encoding/decoding** objects
-   
-   - **lazy loading**: read files only when they are indexed into 
-   
+
+   - **lazy loading**: read files only when they are indexed into
+
    - **tab completion**: index as tabs for quick exploration of data
-   
+
 -  Manipulation of nested dictionaries:
 
    -  enhanced pretty printer
-   
+
    -  Javascript rendered, expandable tree in the Jupyter Notebook
-   
+
    -  functions including; filter, merge, flatten, unflatten
-   
+
    -  output to directory structure (of n folder levels)
 
 -  On-disk indexing option for large json files (using the ijson package)
@@ -46,7 +47,7 @@ A module to extend the python json package functionality:
 from jsonextended import edict, plugins, example_mockpaths
 ```
 
-Take a directory structure, potentially containing multiple file types:  
+Take a directory structure, potentially containing multiple file types:
 
 
 ```python
@@ -54,10 +55,10 @@ datadir = example_mockpaths.directory1
 print(datadir.to_string(indentlvl=3,file_content=True))
 ```
 
-    Folder("dir1") 
+    Folder("dir1")
        File("file1.json") Contents:
         {"key2": {"key3": 4, "key4": 5}, "key1": [1, 2, 3]}
-       Folder("subdir1") 
+       Folder("subdir1")
          File("file1.csv") Contents:
            # a csv file
           header1,header2,header3
@@ -70,8 +71,8 @@ print(datadir.to_string(indentlvl=3,file_content=True))
           1,1.1,string1
           2,2.2,string2
           3,3.3,string3
-       Folder("subdir2") 
-         Folder("subsubdir21") 
+       Folder("subdir2")
+         Folder("subsubdir21")
            File("file1.keypair") Contents:
              # a key-pair file
             key1 val1
@@ -159,13 +160,13 @@ For pretty printing of the dictionary:
 edict.pprint(lazy,depth=2)
 ```
 
-    file1.json: 
+    file1.json:
       key1: [1, 2, 3]
       key2: {...}
-    subdir1: 
+    subdir1:
       file1.csv: {...}
       file1.literal.csv: {...}
-    subdir2: 
+    subdir2:
       subsubdir21: {...}
 
 
@@ -188,7 +189,7 @@ edict.flatten(lazy.subdir1)
 
 
 
-LazyLoad parses the `plugins.decode` function to parser plugin's `read_file` method (keyword 'object_hook'). Therefore, bespoke decoder plugins can be set up for specific dictionary key signatures:  
+LazyLoad parses the `plugins.decode` function to parser plugin's `read_file` method (keyword 'object_hook'). Therefore, bespoke decoder plugins can be set up for specific dictionary key signatures:
 
 
 ```python
@@ -241,7 +242,7 @@ dct
 
 
 
-This process can be reversed, using encoder plugins: 
+This process can be reversed, using encoder plugins:
 
 
 ```python
@@ -387,13 +388,13 @@ For a more complex example of a parser, see `jsonextended.complex_parsers`
 - Parsers:
 
     - *file_regex* attribute, a str denoting what files to apply it to. A file will be parsed by the longest regex it matches.
-    - *read_file* method, which takes an (open) file object and kwargs as parameters 
- 
+    - *read_file* method, which takes an (open) file object and kwargs as parameters
+
 - Decoders:
 
     - *dict_signature* attribute, a tuple denoting the keys which the dictionary must have, e.g. dict_signature=('a','b') decodes {'a':1,'b':2}
     - *from_...* method(s), which takes a dict object as parameter. The `plugins.decode` function will use the method denoted by the intype parameter, e.g. if intype='json', then *from_json* will be called.
-    
+
 - Encoders:
 
     - *objclass* attribute, the object class to apply the encoding to, e.g. objclass=decimal.Decimal encodes objects of that type
@@ -430,13 +431,13 @@ jdict1 = ejson.to_dict(path)
 edict.pprint(jdict1,depth=2)
 ```
 
-    dir1: 
+    dir1:
       dir1_1: {...}
       file1: {...}
       file2: {...}
-    dir2: 
+    dir2:
       file1: {...}
-    dir3: 
+    dir3:
 
 
 
@@ -466,15 +467,15 @@ filtered = edict.filter_keys(jdict2,['vol*'],use_wildcards=True)
 edict.pprint(filtered)
 ```
 
-    initial: 
-      crystallographic: 
+    initial:
+      crystallographic:
         volume: 924.62752781
-      primitive: 
+      primitive:
         volume: 462.313764
-    optimised: 
-      crystallographic: 
+    optimised:
+      crystallographic:
         volume: 1063.98960509
-      primitive: 
+      primitive:
         volume: 531.994803
 
 
@@ -498,15 +499,15 @@ withunits = apply_unitschema(filtered,{'volume':'angstrom^3'})
 edict.pprint(withunits)
 ```
 
-    initial: 
-      crystallographic: 
+    initial:
+      crystallographic:
         volume: 924.62752781 angstrom ** 3
-      primitive: 
+      primitive:
         volume: 462.313764 angstrom ** 3
-    optimised: 
-      crystallographic: 
+    optimised:
+      crystallographic:
         volume: 1063.98960509 angstrom ** 3
-      primitive: 
+      primitive:
         volume: 531.994803 angstrom ** 3
 
 
@@ -516,15 +517,15 @@ newunits = apply_unitschema(withunits,{'volume':'nm^3'})
 edict.pprint(newunits)
 ```
 
-    initial: 
-      crystallographic: 
+    initial:
+      crystallographic:
         volume: 0.92462752781 nanometer ** 3
-      primitive: 
+      primitive:
         volume: 0.462313764 nanometer ** 3
-    optimised: 
-      crystallographic: 
+    optimised:
+      crystallographic:
         volume: 1.06398960509 nanometer ** 3
-      primitive: 
+      primitive:
         volume: 0.531994803 nanometer ** 3
 
 
@@ -533,22 +534,22 @@ edict.pprint(newunits)
 edict.pprint(split_quantities(newunits),depth=4)
 ```
 
-    initial: 
-      crystallographic: 
-        volume: 
+    initial:
+      crystallographic:
+        volume:
           magnitude: 0.92462752781
           units:     nanometer ** 3
-      primitive: 
-        volume: 
+      primitive:
+        volume:
           magnitude: 0.462313764
           units:     nanometer ** 3
-    optimised: 
-      crystallographic: 
-        volume: 
+    optimised:
+      crystallographic:
+        volume:
           magnitude: 1.06398960509
           units:     nanometer ** 3
-      primitive: 
-        volume: 
+      primitive:
+        volume:
           magnitude: 0.531994803
           units:     nanometer ** 3
 
