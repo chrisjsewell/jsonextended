@@ -5,7 +5,7 @@ class CSV_Parser(object):
     Examples
     --------
     >>> from pprint import pprint
-    
+
     >>> from jsonextended.utils import MockPath
     >>> fileobj = MockPath(is_file=True,
     ... content='''# comment line
@@ -17,7 +17,7 @@ class CSV_Parser(object):
     ...     data = CSV_Parser().read_file(f)
     >>> pprint(data)
     {'head1': ['val1', 'val3'], 'head2': ['val2', 'val4']}
-    
+
     """
 
     plugin_name = 'csv.basic'

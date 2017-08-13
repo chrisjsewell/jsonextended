@@ -4,7 +4,7 @@ class KeyPair_Parser(object):
     """
     Examples
     --------
-    
+
     >>> from pprint import pprint
     >>> from jsonextended.utils import MockPath
     >>> fileobj = MockPath(is_file=True,
@@ -17,7 +17,7 @@ class KeyPair_Parser(object):
     ...     data = KeyPair_Parser().read_file(f)
     >>> pprint(data)
     {'key1': 'val1', 'key2': 'val2', 'key3': 'val3'}
-    
+
     """
 
     plugin_name = 'keypair'

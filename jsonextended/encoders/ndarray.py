@@ -13,21 +13,21 @@ import operator
 
 class Encode_NDArray(object):
     """
-    
+
     Examples
     --------
     >>> from pprint import pprint
     >>> import numpy as np
-    
+
     >>> Encode_NDArray().to_str(np.asarray([1,2,3]))
     '[1 2 3]'
-    
+
     >>> pprint(Encode_NDArray().to_json(np.asarray([1,2,3])))
     {'_numpy_ndarray_': {'dtype': 'int64', 'value': [1, 2, 3]}}
-    
+
     >>> Encode_NDArray().from_json({'_numpy_ndarray_': {'dtype': 'int64', 'value': [1, 2, 3]}})
     array([1, 2, 3])
-    
+
     """
 
     plugin_name = 'numpy.ndarray'

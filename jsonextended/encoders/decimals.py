@@ -6,7 +6,7 @@ from decimal import Decimal
 
 class Encode_Decimal(object):
     """
-    
+
     Examples
     --------
     >>> from decimal import Decimal
@@ -16,7 +16,7 @@ class Encode_Decimal(object):
     {'_python_Decimal_': '1.2345'}
     >>> Encode_Decimal().from_json({'_python_Decimal_': '1.2345'})
     Decimal('1.2345')
-    
+
     """
 
     plugin_name = 'decimal.Decimal'

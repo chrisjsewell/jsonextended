@@ -8,7 +8,7 @@ class JSON_Parser(object):
 
     Examples
     --------
-    
+
     >>> from jsonextended.utils import MockPath
     >>> fileobj = MockPath(is_file=True,
     ... content='{"key1":[1,2,3]}'
@@ -17,7 +17,7 @@ class JSON_Parser(object):
     ...     data = JSON_Parser().read_file(f)
     >>> list(data.values())
     [[1, 2, 3]]
-    
+
     """
 
     plugin_name = 'json.basic'

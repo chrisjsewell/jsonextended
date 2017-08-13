@@ -54,15 +54,15 @@ _all_plugins = {name: {} for name in _plugins_interface}
 
 def view_interfaces(category=None):
     """ return a view of the plugin minimal class attribute interface(s)
-    
+
     Parameters
     ----------
     category : None or str
         if str, apply for single plugin category
-    
+
     Examples
     --------
-    
+
     >>> from pprint import pprint
     >>> pprint(view_interfaces())
     {'decoders': ['plugin_name', 'plugin_descript', 'dict_signature'],
@@ -78,7 +78,7 @@ def view_interfaces(category=None):
 
 def view_plugins(category=None):
     """ return a view of the loaded plugin names and descriptions
-    
+
     Parameters
     ----------
     category : None or str
@@ -86,7 +86,7 @@ def view_plugins(category=None):
 
     Examples
     --------
-    
+
     >>> from pprint import pprint
     >>> pprint(view_plugins())
     {'decoders': {}, 'encoders': {}, 'parsers': {}}
@@ -107,7 +107,7 @@ def view_plugins(category=None):
     {'example': 'a decoder for dicts containing _example_ key'}
 
     >>> unload_all_plugins()
-    
+
     """
     dct = _all_plugins
     if not category is None:
@@ -132,10 +132,10 @@ def unload_all_plugins(category=None):
     ----------
     category : None or str
         if str, apply for single plugin category
-    
+
     Examples
     --------
-    
+
     >>> from pprint import pprint
     >>> pprint(view_plugins())
     {'decoders': {}, 'encoders': {}, 'parsers': {}}
@@ -165,8 +165,8 @@ def unload_all_plugins(category=None):
 
 
 def unload_plugin(name, category):
-    """ remove single plugin 
-    
+    """ remove single plugin
+
     Parameters
     ----------
     name : str
@@ -176,7 +176,7 @@ def unload_plugin(name, category):
 
     Examples
     --------
-    
+
     >>> from pprint import pprint
     >>> pprint(view_plugins())
     {'decoders': {}, 'encoders': {}, 'parsers': {}}
@@ -202,7 +202,7 @@ def unload_plugin(name, category):
 
 
 def load_plugin_classes(classes, category=None, overwrite=False):
-    """ load plugins from class objects    
+    """ load plugins from class objects
 
     Parameters
     ----------
@@ -213,7 +213,7 @@ def load_plugin_classes(classes, category=None, overwrite=False):
 
     Examples
     --------
-    
+
     >>> from pprint import pprint
     >>> pprint(view_plugins())
     {'decoders': {}, 'encoders': {}, 'parsers': {}}
@@ -250,8 +250,8 @@ def load_plugin_classes(classes, category=None, overwrite=False):
 
 
 def load_plugins_dir(path, category=None, overwrite=False):
-    """ load plugins from a directory   
-    
+    """ load plugins from a directory
+
     Parameters
     ----------
     path : str or path-like
@@ -259,7 +259,7 @@ def load_plugins_dir(path, category=None, overwrite=False):
         if str, apply for single plugin category
     overwrite : bool
         if True, allow existing plugins to be overwritten
- 
+
     """
     # get potential plugin python files
     if hasattr(path, 'glob'):
@@ -300,7 +300,7 @@ def load_plugins_dir(path, category=None, overwrite=False):
 
 def load_builtin_plugins(category=None, overwrite=False):
     """load plugins from builtin directories
-    
+
     Parameters
     ----------
     category : None or str
@@ -308,7 +308,7 @@ def load_builtin_plugins(category=None, overwrite=False):
 
     Examples
     --------
-    
+
     >>> from pprint import pprint
     >>> pprint(view_plugins())
     {'decoders': {}, 'encoders': {}, 'parsers': {}}
@@ -334,7 +334,7 @@ def load_builtin_plugins(category=None, overwrite=False):
                  'keypair': "read *.keypair, where each line should be; '<key> <pair>'"}}
 
 
-    >>> unload_all_plugins()    
+    >>> unload_all_plugins()
 
     """
     load_errors = []
@@ -347,31 +347,31 @@ def load_builtin_plugins(category=None, overwrite=False):
 
 def encode(obj, outtype='json', raise_error=False):
     """ encode objects, via encoder plugins, to new types
-    
+
     Parameters
     ----------
     outtype: str
         use encoder method to_<outtype> to encode
     raise_error : bool
-        if True, raise ValueError if no suitable plugin found 
-    
+        if True, raise ValueError if no suitable plugin found
+
     Examples
     --------
     >>> load_builtin_plugins('encoders')
     []
-    
+
     >>> from decimal import Decimal
     >>> encode(Decimal('1.3425345'))
     {'_python_Decimal_': '1.3425345'}
     >>> encode(Decimal('1.3425345'),outtype='str')
     '1.3425345'
-    
+
     >>> encode(set([1,2,3,4,4]))
     {'_python_set_': [1, 2, 3, 4]}
     >>> encode(set([1,2,3,4,4]),outtype='str')
     '{1, 2, 3, 4}'
-    
-    >>> unload_all_plugins()    
+
+    >>> unload_all_plugins()
 
     """
     for encoder in get_plugins('encoders').values():
@@ -387,14 +387,14 @@ def encode(obj, outtype='json', raise_error=False):
 
 def decode(dct, intype='json', raise_error=False):
     """ decode dict objects, via decoder plugins, to new type
-    
+
     Parameters
     ----------
     intype: str
         use decoder method from_<intype> to encode
     raise_error : bool
-        if True, raise ValueError if no suitable plugin found 
-    
+        if True, raise ValueError if no suitable plugin found
+
     Examples
     --------
     >>> load_builtin_plugins('decoders')
@@ -404,7 +404,7 @@ def decode(dct, intype='json', raise_error=False):
     >>> decode({'_python_Decimal_':'1.3425345'})
     Decimal('1.3425345')
 
-    >>> unload_all_plugins()    
+    >>> unload_all_plugins()
 
     """
     for decoder in get_plugins('decoders').values():
@@ -420,10 +420,10 @@ def decode(dct, intype='json', raise_error=False):
 
 def parser_available(fpath):
     """ test if parser plugin available for fpath
-    
+
     Examples
     --------
-    
+
     >>> load_builtin_plugins('parsers')
     []
     >>> test_file = StringIO('{"a":[1,2,3.4]}')
@@ -433,9 +433,9 @@ def parser_available(fpath):
     >>> test_file.name = 'test.other'
     >>> parser_available(test_file)
     False
-    
-    >>> unload_all_plugins()    
-    
+
+    >>> unload_all_plugins()
+
     """
     if isinstance(fpath, basestring):
         fname = fpath
@@ -456,18 +456,18 @@ def parser_available(fpath):
 def parse(fpath, **kwargs):
     """ parse file contents, via parser plugins, to dict like object
     NB: the longest file regex will be used from plugins
-    
+
     Parameters
     ----------
     fpath : file_like
-         string, object with 'open' and 'name' attributes, or 
+         string, object with 'open' and 'name' attributes, or
          object with 'readline' and 'name' attributes
     kwargs : keywords
         to pass to parser plugin
-    
+
     Examples
     --------
-    
+
     >>> load_builtin_plugins('parsers')
     []
 
@@ -475,17 +475,17 @@ def parse(fpath, **kwargs):
 
     >>> json_file = StringIO('{"a":[1,2,3.4]}')
     >>> json_file.name = 'test.json'
-    
+
     >>> dct = parse(json_file)
     >>> print(pformat(dct).replace("u'","'"))
     {'a': [1, 2, 3.4]}
-    
+
     >>> reset = json_file.seek(0)
     >>> from decimal import Decimal
     >>> dct = parse(json_file, parse_float=Decimal,other=1)
-    >>> print(pformat(dct).replace("u'","'"))    
+    >>> print(pformat(dct).replace("u'","'"))
     {'a': [1, 2, Decimal('3.4')]}
-    
+
     >>> class NewParser(object):
     ...     plugin_name = 'example'
     ...     plugin_descript = 'loads test.json files'
@@ -497,8 +497,8 @@ def parse(fpath, **kwargs):
     >>> reset = json_file.seek(0)
     >>> parse(json_file)
     {'example': 1}
-    
-    >>> unload_all_plugins()    
+
+    >>> unload_all_plugins()
 
     """
     if isinstance(fpath, basestring):

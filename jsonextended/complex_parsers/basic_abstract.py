@@ -260,7 +260,7 @@ class BasicParser(object):
 
     def _exit_file_section(self, level=1):
         """ exit file section
-        
+
         level : int
         """
         assert level > 0, 'level must be 1 or greater'
@@ -268,7 +268,7 @@ class BasicParser(object):
 
     def _enter_file_section(self, section, level=1):
         """ enter file section
-        
+
         section : str
         level : int
         """

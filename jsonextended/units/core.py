@@ -31,8 +31,8 @@ def get_in_units(value, units):
 def apply_unitschema(data, uschema, as_quantity=True,
                      raise_outerr=False, convert_base=False,
                      use_wildcards=False, list_of_dicts=False):
-    """ apply the unit schema to the data 
-    
+    """ apply the unit schema to the data
+
     Parameters
     ----------
     data : dict
@@ -48,11 +48,11 @@ def apply_unitschema(data, uschema, as_quantity=True,
         if true, can use * (matches everything) and ? (matches any single character)
     list_of_dicts: bool
         treat list of dicts as additional branches
-    
+
     Examples
     --------
     >>> from pprint import pprint
-    
+
     >>> data = {'energy':1,'x':[1,2],'other':{'y':[4,5]},'y':[4,5],'meta':None}
     >>> uschema =   {'energy':'eV','x':'nm','other':{'y':'m'},'y':'cm'}
     >>> data_units = apply_unitschema(data,uschema)
@@ -62,7 +62,7 @@ def apply_unitschema(data, uschema, as_quantity=True,
      'other': {'y': <Quantity([4 5], 'meter')>},
      'x': <Quantity([1 2], 'nanometer')>,
      'y': <Quantity([4 5], 'centimeter')>}
-     
+
     >>> newschema = {'energy':'kJ','other':{'y':'nm'},'y':'m'}
     >>> new_data = apply_unitschema(data_units,newschema)
     >>> pprint(new_data)
@@ -71,7 +71,7 @@ def apply_unitschema(data, uschema, as_quantity=True,
      'other': {'y': <Quantity([  4.00000000e+09   5.00000000e+09], 'nanometer')>},
      'x': <Quantity([1 2], 'nanometer')>,
      'y': <Quantity([ 0.04  0.05], 'meter')>}
-     
+
     >>> old_data = apply_unitschema(new_data,uschema,as_quantity=False)
     >>> pprint(old_data)
     {'energy': 1.0,
@@ -79,7 +79,7 @@ def apply_unitschema(data, uschema, as_quantity=True,
      'other': {'y': array([ 4.,  5.])},
      'x': array([1, 2]),
      'y': array([ 4.,  5.])}
-        
+
     """
     try:
         _Quantity
@@ -135,7 +135,7 @@ def apply_unitschema(data, uschema, as_quantity=True,
 def split_quantities(data, units='units', magnitude='magnitude',
                      list_of_dicts=False):
     """ split pint.Quantity objects into <unit,magnitude> pairs
-    
+
     Parameters
     ----------
     data : dict
@@ -145,7 +145,7 @@ def split_quantities(data, units='units', magnitude='magnitude',
         name for magnitude key
     list_of_dicts: bool
         treat list of dicts as additional branches
-        
+
     Examples
     --------
     >>> from pprint import pprint
@@ -167,7 +167,7 @@ def split_quantities(data, units='units', magnitude='magnitude',
      'other': {'y': {'magnitude': array([4, 5, 6]), 'units': 'nanometer'}},
      'x': {'magnitude': array([1, 2, 3]), 'units': 'nanometer'},
      'y': {'magnitude': array([ 8,  9, 10]), 'units': 'meter'}}
-    
+
     """
     try:
         _Quantity
@@ -184,7 +184,7 @@ def split_quantities(data, units='units', magnitude='magnitude',
 
 def combine_quantities(data, units='units', magnitude='magnitude',
                        list_of_dicts=False):
-    """ combine <unit,magnitude> pairs into pint.Quantity objects 
+    """ combine <unit,magnitude> pairs into pint.Quantity objects
 
     Parameters
     ----------
@@ -195,7 +195,7 @@ def combine_quantities(data, units='units', magnitude='magnitude',
         name of magnitude key
     list_of_dicts: bool
         treat list of dicts as additional branches
-        
+
     Examples
     --------
     >>> from pprint import pprint
@@ -213,7 +213,7 @@ def combine_quantities(data, units='units', magnitude='magnitude',
      'other': {'y': <Quantity([4 5 6], 'nanometer')>},
      'x': <Quantity([1 2 3], 'nanometer')>,
      'y': <Quantity([ 8  9 10], 'meter')>}
-    
+
     """
     try:
         _Quantity

@@ -13,15 +13,15 @@ class CrystalDFTParser(BasicParser):
         initial
         scf
            step
-               <number>        
+               <number>
         optimisation
            step
                <number>
         optimised
-    
+
     Examples
     --------
-    
+
     >>> from jsonextended import utils, _example_data_folder
     >>> datapath = utils.get_data_path('data.crystal.out',_example_data_folder)
     >>> parser = CrystalDFTParser()

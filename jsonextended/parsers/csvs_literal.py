@@ -7,7 +7,7 @@ class CSVLiteral_Parser(object):
     Examples
     --------
     >>> from pprint import pprint
-    
+
     >>> from jsonextended.utils import MockPath
     >>> fileobj = MockPath(is_file=True,
     ... content='''# comment line
@@ -19,7 +19,7 @@ class CSVLiteral_Parser(object):
     ...     data = CSVLiteral_Parser().read_file(f)
     >>> pprint(data)
     {'head1': [1.1, 2.2], 'head2': [3, '3.3']}
-    
+
     """
 
     plugin_name = 'csv.literal'
