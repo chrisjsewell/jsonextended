@@ -11,6 +11,7 @@ except ImportError:
 
 try:
     from pint import UnitRegistry
+
     ureg = UnitRegistry()
     from pint.quantity import _Quantity
 except ImportError:
@@ -18,17 +19,18 @@ except ImportError:
 
 from jsonextended.edict import flatten, flatten2d, unflatten, merge
 
-def get_in_units(value,units):
+
+def get_in_units(value, units):
     """get a value in the required units """
     try:
         return ureg.Quantity(value, units)
     except NameError:
         raise ImportError('please install pint to use this module')
-    
+
 
 def apply_unitschema(data, uschema, as_quantity=True,
-                    raise_outerr=False, convert_base=False,
-                    use_wildcards=False,list_of_dicts=False):
+                     raise_outerr=False, convert_base=False,
+                     use_wildcards=False, list_of_dicts=False):
     """ apply the unit schema to the data 
     
     Parameters
@@ -84,53 +86,54 @@ def apply_unitschema(data, uschema, as_quantity=True,
     except NameError:
         raise ImportError('please install pint to use this module')
     list_of_dicts = '__list__' if list_of_dicts else None
-                    
+
     # flatten edict
-    uschema_flat = flatten(uschema,key_as_tuple=True)
+    uschema_flat = flatten(uschema, key_as_tuple=True)
     # sorted by longest key size, to get best match first
     uschema_keys = sorted(uschema_flat, key=len, reverse=True)
-    data_flat = flatten(data,key_as_tuple=True,list_of_dicts=list_of_dicts)
+    data_flat = flatten(data, key_as_tuple=True, list_of_dicts=list_of_dicts)
 
     for dkey, dvalue in data_flat.items():
         converted = False
         for ukey in uschema_keys:
-            
-            if not len(ukey)==len(dkey[-len(ukey):]):
+
+            if not len(ukey) == len(dkey[-len(ukey):]):
                 continue
-            
+
             if use_wildcards:
-                match = all([fnmatch(d,u) for u,d in zip(ukey,dkey[-len(ukey):])])
+                match = all([fnmatch(d, u) for u, d in zip(ukey, dkey[-len(ukey):])])
             else:
                 match = ukey == dkey[-len(ukey):]
-            
+
             if match:
                 # handle the fact that it return an numpy object type if list of floats
-                if isinstance(dvalue,(list,tuple)):
+                if isinstance(dvalue, (list, tuple)):
                     dvalue = np.array(dvalue)
                     if dvalue.dtype == np.object:
                         dvalue = dvalue.astype(float)
-                        
-                if isinstance(dvalue,_Quantity):
+
+                if isinstance(dvalue, _Quantity):
                     quantity = dvalue.to(uschema_flat[ukey])
                 else:
-                    quantity = ureg.Quantity(dvalue,uschema_flat[ukey])
-                
+                    quantity = ureg.Quantity(dvalue, uschema_flat[ukey])
+
                 if convert_base:
                     quantity = quantity.to_base_units()
-                                    
+
                 if as_quantity:
                     data_flat[dkey] = quantity
                 else:
                     data_flat[dkey] = quantity.magnitude
                 break
-        
+
         if not converted and raise_outerr:
             raise KeyError('could not find units for {}'.format(dkey))
 
-    return unflatten(data_flat,list_of_dicts=list_of_dicts)
+    return unflatten(data_flat, list_of_dicts=list_of_dicts)
 
-def split_quantities(data,units='units',magnitude='magnitude',
-                    list_of_dicts=False):
+
+def split_quantities(data, units='units', magnitude='magnitude',
+                     list_of_dicts=False):
     """ split pint.Quantity objects into <unit,magnitude> pairs
     
     Parameters
@@ -171,15 +174,16 @@ def split_quantities(data,units='units',magnitude='magnitude',
     except NameError:
         raise ImportError('please install pint to use this module')
     list_of_dicts = '__list__' if list_of_dicts else None
-    data_flatten = flatten(data,list_of_dicts=list_of_dicts)
+    data_flatten = flatten(data, list_of_dicts=list_of_dicts)
     for key, val in data_flatten.items():
         if isinstance(val, _Quantity):
-            data_flatten[key] = {units:str(val.units),
-                                 magnitude:val.magnitude}
-    return unflatten(data_flatten,list_of_dicts=list_of_dicts)
+            data_flatten[key] = {units: str(val.units),
+                                 magnitude: val.magnitude}
+    return unflatten(data_flatten, list_of_dicts=list_of_dicts)
 
-def combine_quantities(data,units='units',magnitude='magnitude',
-                      list_of_dicts=False):
+
+def combine_quantities(data, units='units', magnitude='magnitude',
+                       list_of_dicts=False):
     """ combine <unit,magnitude> pairs into pint.Quantity objects 
 
     Parameters
@@ -210,26 +214,28 @@ def combine_quantities(data,units='units',magnitude='magnitude',
      'x': <Quantity([1 2 3], 'nanometer')>,
      'y': <Quantity([ 8  9 10], 'meter')>}
     
-    """    
+    """
     try:
         _Quantity
     except NameError:
         raise ImportError('please install pint to use this module')
     list_of_dicts = '__list__' if list_of_dicts else None
 
-    data_flatten2d = flatten2d(data,list_of_dicts=list_of_dicts)
+    data_flatten2d = flatten2d(data, list_of_dicts=list_of_dicts)
     new_dict = {}
     for key, val in list(data_flatten2d.items()):
         if units in val and magnitude in val:
-            quantity = ureg.Quantity(val.pop(magnitude),val.pop(units))
+            quantity = ureg.Quantity(val.pop(magnitude), val.pop(units))
             if not val:
                 data_flatten2d.pop(key)
             new_dict[key] = quantity
-    final_dict =  merge([data_flatten2d,new_dict])
-    #olddict = unflatten(data_flatten2d,list_of_dicts=list_of_dicts)
-    #new_dict = unflatten(new_dict,list_of_dicts=list_of_dicts)
-    return unflatten(final_dict,list_of_dicts=list_of_dicts)#merge([olddict,new_dict])
+    final_dict = merge([data_flatten2d, new_dict])
+    # olddict = unflatten(data_flatten2d,list_of_dicts=list_of_dicts)
+    # new_dict = unflatten(new_dict,list_of_dicts=list_of_dicts)
+    return unflatten(final_dict, list_of_dicts=list_of_dicts)  # merge([olddict,new_dict])
+
 
 if __name__ == '__main__':
     import doctest
+
     print(doctest.testmod())

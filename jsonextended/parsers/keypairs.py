@@ -19,15 +19,15 @@ class KeyPair_Parser(object):
     {'key1': 'val1', 'key2': 'val2', 'key3': 'val3'}
     
     """
-    
+
     plugin_name = 'keypair'
     plugin_descript = "read *.keypair, where each line should be; '<key> <pair>'"
     file_regex = '*.keypair'
-    
+
     def read_file(self, file_obj, **kwargs):
-        
-        comments = kwargs.get('comments','#')
-        delim = kwargs.get('keypair_delim',None)
+
+        comments = kwargs.get('comments', '#')
+        delim = kwargs.get('keypair_delim', None)
         keypair = {}
         for line in file_obj:
             if line.strip().startswith(comments):

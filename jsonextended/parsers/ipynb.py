@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 
+
 class NBParser(object):
     """
     Examples
@@ -20,11 +21,10 @@ class NBParser(object):
     metadata: 
 
     """
-    
+
     plugin_name = 'ipynb'
     plugin_descript = 'read Jupyter Notebooks'
     file_regex = '*.ipynb'
-    
+
     def read_file(self, file_obj, **kwargs):
-                
         return json.load(file_obj)

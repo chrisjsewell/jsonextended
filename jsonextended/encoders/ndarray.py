@@ -5,10 +5,11 @@ https://stackoverflow.com/questions/27909658/json-encoder-and-decoder-for-comple
 import numpy as np
 
 try:
-	from functools import reduce
+    from functools import reduce
 except ImportError:
-	pass
+    pass
 import operator
+
 
 class Encode_NDArray(object):
     """
@@ -38,14 +39,13 @@ class Encode_NDArray(object):
         elements = reduce(operator.mul, obj.shape, 1)
         if elements > 10:
             return 'np.array({0}, min={1:.2E}, max={2:.2E})'.format(
-            obj.shape,obj.min(),obj.max())
+                obj.shape, obj.min(), obj.max())
         else:
             return ' '.join(str(obj).split())
 
     def to_json(self, obj):
-        return {'_numpy_ndarray_':{'value':obj.tolist(),'dtype':str(obj.dtype)}}
-        
+        return {'_numpy_ndarray_': {'value': obj.tolist(), 'dtype': str(obj.dtype)}}
+
     def from_json(self, obj):
         return np.array(obj['_numpy_ndarray_']['value'],
                         dtype=obj['_numpy_ndarray_']['dtype'])
-        

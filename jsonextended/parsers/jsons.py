@@ -2,6 +2,7 @@
 
 import json
 
+
 class JSON_Parser(object):
     """
 
@@ -18,12 +19,11 @@ class JSON_Parser(object):
     [[1, 2, 3]]
     
     """
-    
+
     plugin_name = 'json.basic'
     plugin_descript = 'read *.json files using json.load'
     file_regex = '*.json'
-    
+
     def read_file(self, file_obj, **kwargs):
-        
-        return json.load(file_obj, object_hook=kwargs.get('object_hook',None), 
-                                   parse_float=kwargs.get('parse_float',None))
+        return json.load(file_obj, object_hook=kwargs.get('object_hook', None),
+                         parse_float=kwargs.get('parse_float', None))

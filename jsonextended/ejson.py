@@ -17,11 +17,8 @@
 
 # internal packages
 import json
-import re
-import os, sys
-import glob
+import os
 from decimal import Decimal
-import inspect
 
 # python 3 to 2 compatibility
 try:
@@ -39,27 +36,29 @@ except ImportError:
 
 # external packages
 import warnings
-warnings.simplefilter('once',ImportWarning)
+
+warnings.simplefilter('once', ImportWarning)
 try:
     import ijson
 except ImportError:
     pass
-    
+
 # local imports
 from jsonextended.edict import indexes, pprint, convert_type
-from jsonextended.plugins import encode, decode, parse, parser_available
+from jsonextended.plugins import decode
 
-def _get_keys(file_obj,key_path=None):
+
+def _get_keys(file_obj, key_path=None):
     key_path = [] if key_path is None else key_path
-    data = json.load(file_obj,object_hook=decode)
-    data = indexes(data,key_path)
-    if hasattr(data,'keys'):
-        return sorted([str(k) if isinstance(k,basestring) else k for k in data.keys()])
+    data = json.load(file_obj, object_hook=decode)
+    data = indexes(data, key_path)
+    if hasattr(data, 'keys'):
+        return sorted([str(k) if isinstance(k, basestring) else k for k in data.keys()])
     else:
         return []
 
-def _get_keys_ijson(file_obj,key_path=None):
 
+def _get_keys_ijson(file_obj, key_path=None):
     key_path = [] if key_path is None else key_path
     try:
         path_str = '.'.join(key_path)
@@ -68,13 +67,14 @@ def _get_keys_ijson(file_obj,key_path=None):
             if etype == 'map_key':
                 if prefix == path_str:
                     keys.append(value)
-        return sorted([str(k) if isinstance(k,basestring) else k for k in keys])
+        return sorted([str(k) if isinstance(k, basestring) else k for k in keys])
     except NameError:
         warnings.warn('ijson package not found in environment, \
-please install for on-disk key indexing',ImportWarning)
-        return _get_keys(file_obj,key_path)
+please install for on-disk key indexing', ImportWarning)
+        return _get_keys(file_obj, key_path)
 
-def _get_keys_folder(jdir,key_path=None,in_memory=True,ignore_prefix=('.','_')):
+
+def _get_keys_folder(jdir, key_path=None, in_memory=True, ignore_prefix=('.', '_')):
     """ get json keys from directory sturcture
 
     e.g.
@@ -95,7 +95,7 @@ def _get_keys_folder(jdir,key_path=None,in_memory=True,ignore_prefix=('.','_')):
         files/directories beginning with '.' are ignored
 
     """
-    if not hasattr(jdir,'iterdir'):
+    if not hasattr(jdir, 'iterdir'):
         raise ValueError('jdir is not a path object; {}'.format(jdir))
 
     key_path = [] if key_path is None else key_path
@@ -103,16 +103,16 @@ def _get_keys_folder(jdir,key_path=None,in_memory=True,ignore_prefix=('.','_')):
     keys = []
 
     key_found = False if key_path else True
-    search_key = key_path[0] if len(key_path)>0 else None
+    search_key = key_path[0] if len(key_path) > 0 else None
 
     for jsub in jdir.iterdir():
-        if jsub.is_file() and jsub.name[-5:]=='.json':
+        if jsub.is_file() and jsub.name[-5:] == '.json':
 
             name, ext = os.path.splitext(jsub.name)
             if name == search_key or not key_path:
                 key_found = True
                 if key_path:
-                    return jkeys(jsub,key_path[1:],in_memory,ignore_prefix)
+                    return jkeys(jsub, key_path[1:], in_memory, ignore_prefix)
                 else:
                     keys.append(name)
 
@@ -120,9 +120,10 @@ def _get_keys_folder(jdir,key_path=None,in_memory=True,ignore_prefix=('.','_')):
 
             key_found = True
             if jsub.name in keys:
-                raise IOError('directory has a sub-dir and file with same name: {1} and {1}.json in {0}'.format(jdir,jsub.name))
+                raise IOError(
+                    'directory has a sub-dir and file with same name: {1} and {1}.json in {0}'.format(jdir, jsub.name))
             if key_path:
-                return jkeys(jsub,key_path[1:],in_memory,ignore_prefix)
+                return jkeys(jsub, key_path[1:], in_memory, ignore_prefix)
             else:
                 keys.append(jsub.name)
 
@@ -131,7 +132,8 @@ def _get_keys_folder(jdir,key_path=None,in_memory=True,ignore_prefix=('.','_')):
 
     return keys
 
-def jkeys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
+
+def jkeys(jfile, key_path=None, in_memory=True, ignore_prefix=('.', '_')):
     """ get keys for initial json level, or at level after following key_path
 
     Parameters
@@ -180,11 +182,11 @@ def jkeys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
 
     def eval_file(file_obj):
         if not in_memory:
-            return _get_keys_ijson(file_obj,key_path)
+            return _get_keys_ijson(file_obj, key_path)
         else:
-            return _get_keys(file_obj,key_path)
+            return _get_keys(file_obj, key_path)
 
-    if isinstance(jfile,basestring):
+    if isinstance(jfile, basestring):
         if not os.path.exists(jfile):
             raise IOError('jfile does not exist: {}'.format(jfile))
         if os.path.isdir(jfile):
@@ -193,9 +195,9 @@ def jkeys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
         else:
             with open(jfile, 'r') as file_obj:
                 return eval_file(file_obj)
-    elif hasattr(jfile,'read'):
+    elif hasattr(jfile, 'read'):
         return eval_file(jfile)
-    elif hasattr(jfile,'iterdir'):
+    elif hasattr(jfile, 'iterdir'):
         if jfile.is_file():
             with jfile.open('r') as file_obj:
                 return eval_file(file_obj)
@@ -205,7 +207,7 @@ def jkeys(jfile,key_path=None,in_memory=True,ignore_prefix=('.','_')):
         raise ValueError('jfile should be a str, file_like or path_like object: {}'.format(jfile))
 
 
-def _file_with_keys(file_obj,key_path=None,parse_decimal=False):
+def _file_with_keys(file_obj, key_path=None, parse_decimal=False):
     """read json with keys
 
     Parameters
@@ -225,35 +227,38 @@ def _file_with_keys(file_obj,key_path=None,parse_decimal=False):
     key_path = [] if key_path is None else key_path
 
     try:
-        objs = ijson.items(file_obj,'.'.join(key_path))
+        objs = ijson.items(file_obj, '.'.join(key_path))
     except NameError:
         warnings.warn('ijson package not found in environment, \
-        please install for on-disk key indexing',ImportWarning)
-        data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
-        return indexes(data,key_path)
+        please install for on-disk key indexing', ImportWarning)
+        data = json.load(file_obj, parse_float=Decimal if parse_decimal else float, object_hook=decode)
+        return indexes(data, key_path)
     try:
-        data = next(objs)#.next()
+        data = next(objs)  # .next()
     except StopIteration:
         raise KeyError('key path not available in json: {}'.format(key_path))
 
     # by default ijson parses Decimal values
     if not parse_decimal:
         convert_type(data, Decimal, float, in_place=True)
-        
+
     datastr = json.dumps(data)
-    data = json.loads(datastr,object_hook=decode)
+    data = json.loads(datastr, object_hook=decode)
 
     return data
+
 
 # TODO this is a hack to get _folder_to_json to work if last key_path is at a leaf node, should improve
 class _Terminus(object):
     def __hash__(self):
         return 1
+
     def __eq__(self, other):
         return True
 
+
 def _folder_to_json(jdir, key_path=None, in_memory=True,
-                    ignore_prefix=('.','_'), dic={}, parse_decimal=False):
+                    ignore_prefix=('.', '_'), dic={}, parse_decimal=False):
     """ read in folder structure as json
 
     e.g.
@@ -273,12 +278,11 @@ def _folder_to_json(jdir, key_path=None, in_memory=True,
     """
     key_path = [] if key_path is None else key_path
 
-    if not hasattr(jdir,'iterdir'):
+    if not hasattr(jdir, 'iterdir'):
         raise ValueError('jdir is not a path object; {}'.format(jdir))
 
     key_found = False if key_path else True
-    search_key = key_path[0] if len(key_path)>0 else None
-
+    search_key = key_path[0] if len(key_path) > 0 else None
 
     for jsub in jdir.iterdir():
         if jsub.is_file() and jsub.name.endswith('.json'):
@@ -287,31 +291,33 @@ def _folder_to_json(jdir, key_path=None, in_memory=True,
             if name == search_key or not key_path:
                 key_found = True
                 if key_path:
-                    data = to_dict(jsub,key_path[1:],in_memory,ignore_prefix,parse_decimal)
-                    if isinstance(data,dict):
+                    data = to_dict(jsub, key_path[1:], in_memory, ignore_prefix, parse_decimal)
+                    if isinstance(data, dict):
                         dic.update(data)
                     else:
-                        dic.update({_Terminus():data})
+                        dic.update({_Terminus(): data})
                 else:
-                    dic[name] = to_dict(jsub,key_path[1:],in_memory,ignore_prefix,parse_decimal)
+                    dic[name] = to_dict(jsub, key_path[1:], in_memory, ignore_prefix, parse_decimal)
 
         elif jsub.is_dir() and not jsub.name.startswith(ignore_prefix) and (jsub.name == search_key or not key_path):
 
             key_found = True
             if jsub.name in dic.keys():
-                raise IOError('directory has a sub-dir and file with same name: {1} and {1}.json in {0}'.format(jdir,jsub.name))
+                raise IOError(
+                    'directory has a sub-dir and file with same name: {1} and {1}.json in {0}'.format(jdir, jsub.name))
             if key_path:
                 sub_d = dic
             else:
                 dic[jsub.name] = {}
                 sub_d = dic[jsub.name]
-            _folder_to_json(jsub,key_path[1:],in_memory,ignore_prefix,sub_d,parse_decimal)
+            _folder_to_json(jsub, key_path[1:], in_memory, ignore_prefix, sub_d, parse_decimal)
 
     if not key_found:
         raise KeyError('key not found: {0}'.format(search_key))
 
-def to_dict(jfile, key_path=None, in_memory=True ,
-                ignore_prefix=('.','_'), parse_decimal=False):
+
+def to_dict(jfile, key_path=None, in_memory=True,
+            ignore_prefix=('.', '_'), parse_decimal=False):
     """ input json to dict
 
     Parameters
@@ -373,52 +379,51 @@ def to_dict(jfile, key_path=None, in_memory=True ,
     crystallographic: {...}
     primitive: {...}
 
-    """        
+    """
     key_path = [] if key_path is None else key_path
 
-    if isinstance(jfile,basestring):
+    if isinstance(jfile, basestring):
         if not os.path.exists(jfile):
             raise IOError('jfile does not exist: {}'.format(jfile))
         if os.path.isdir(jfile):
             data = {}
             jpath = pathlib.Path(jfile)
-            _folder_to_json(jpath,key_path[:],in_memory,ignore_prefix,data,parse_decimal)
+            _folder_to_json(jpath, key_path[:], in_memory, ignore_prefix, data, parse_decimal)
             if isinstance(list(data.keys())[0], _Terminus):
                 data = data.values()[0]
         else:
             with open(jfile, 'r') as file_obj:
                 if key_path and not in_memory:
-                    data = _file_with_keys(file_obj,key_path,parse_decimal)
+                    data = _file_with_keys(file_obj, key_path, parse_decimal)
                 elif key_path:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
-                    data = indexes(data,key_path)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float, object_hook=decode)
+                    data = indexes(data, key_path)
                 else:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
-    elif hasattr(jfile,'read'):
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float, object_hook=decode)
+    elif hasattr(jfile, 'read'):
         if key_path and not in_memory:
-            data = _file_with_keys(jfile,key_path,parse_decimal)
+            data = _file_with_keys(jfile, key_path, parse_decimal)
         elif key_path:
-            data = json.load(jfile, parse_float=Decimal if parse_decimal else float,object_hook=decode)
-            data = indexes(data,key_path)
+            data = json.load(jfile, parse_float=Decimal if parse_decimal else float, object_hook=decode)
+            data = indexes(data, key_path)
         else:
-            data = json.load(jfile, parse_float=Decimal if parse_decimal else float,object_hook=decode)
-    elif hasattr(jfile,'iterdir'):
+            data = json.load(jfile, parse_float=Decimal if parse_decimal else float, object_hook=decode)
+    elif hasattr(jfile, 'iterdir'):
         if jfile.is_file():
             with jfile.open() as file_obj:
                 if key_path and not in_memory:
-                    data = _file_with_keys(file_obj,key_path,parse_decimal)
+                    data = _file_with_keys(file_obj, key_path, parse_decimal)
                 elif key_path:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
-                    data = indexes(data,key_path)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float, object_hook=decode)
+                    data = indexes(data, key_path)
                 else:
-                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float,object_hook=decode)
+                    data = json.load(file_obj, parse_float=Decimal if parse_decimal else float, object_hook=decode)
         else:
             data = {}
-            _folder_to_json(jfile,key_path[:],in_memory,ignore_prefix,data,parse_decimal)
+            _folder_to_json(jfile, key_path[:], in_memory, ignore_prefix, data, parse_decimal)
             if isinstance(list(data.keys())[0], _Terminus):
                 data = data.values()[0]
     else:
         raise ValueError('jfile should be a str, file_like or path_like object: {}'.format(jfile))
 
     return data
-        

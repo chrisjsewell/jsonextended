@@ -95,6 +95,7 @@ __version__ = '0.4.2'
 
 from jsonextended import ejson, units, utils, edict, plugins
 
+
 def _run_nose_tests(doctests=True, verbose=True):
     """ 
     mimics nosetests --with-doctest -v --exe jsonextended 
@@ -119,4 +120,3 @@ def _run_nose_tests(doctests=True, verbose=True):
         nose.run(argv=nose_argv)
     finally:
         os.chdir(initial_dir)
-

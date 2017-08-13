@@ -9,6 +9,7 @@ try:
 except NameError:
     basestring = str
 
+
 class BasicParser(object):
     """ a base class for parsing simulation data to json
 
@@ -58,10 +59,10 @@ class BasicParser(object):
     File("test.json") Contents:
     {"config": {"geometry": {"x": [1.0, 4.0], "y": [2.0, 5.0], "z": [3.0, 6.0]}}, "meta": {"name": "test simulation"}}
 
-    """  
-      
+    """
+
     _always_exit_section = True
-    
+
     def __init__(self):
         """ a class for parsing data to json format """
         self.reset()
@@ -79,6 +80,7 @@ class BasicParser(object):
 
     def __get_data(self):
         return self.__data.copy()
+
     data = property(__get_data)
 
     def add_dict(self, d, overwrite=False):
@@ -90,7 +92,7 @@ class BasicParser(object):
 
         """
         from jsonextended.edict import merge
-        self.__data = merge([self.__data,d],overwrite=overwrite)
+        self.__data = merge([self.__data, d], overwrite=overwrite)
 
     def add_json(self, jfile, overwrite=False,
                  key_path=[], in_memory=True, ignore_prefix=('.', '_')):
@@ -113,7 +115,7 @@ class BasicParser(object):
         from jsonextended.edict import merge
         from jsonextended.ejson import to_dict
         new_data = to_dict(jfile, key_path, in_memory, ignore_prefix)
-        self.__data = merge([self.__data,new_data],overwrite=overwrite)
+        self.__data = merge([self.__data, new_data], overwrite=overwrite)
 
     def output_json(self, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, **kwargs):
         """ output parsed data to json
@@ -135,10 +137,10 @@ class BasicParser(object):
         """
         from jsonextended.edict import to_json
         to_json(self.__data, jfile, overwrite=overwrite, dirlevel=dirlevel,
-                           sort_keys=sort_keys, indent=indent, **kwargs)
+                sort_keys=sort_keys, indent=indent, **kwargs)
 
-    def add_data(self,keys,values,init_keys=None,
-                dtype=None,merge=False):
+    def add_data(self, keys, values, init_keys=None,
+                 dtype=None, merge=False):
         """ add data item
 
         keys : str or list of strings
@@ -152,7 +154,7 @@ class BasicParser(object):
 
         """
         init_keys = [] if init_keys is None else init_keys
-        if not isinstance(init_keys,list):
+        if not isinstance(init_keys, list):
             raise ValueError('init_keys must be a list: {0}'.format(init_keys))
 
         init_keys = self.__init_file_keys + init_keys
@@ -162,23 +164,23 @@ class BasicParser(object):
             if not k in mdict:
                 mdict[k] = {}
             mdict = mdict[k]
-            if not isinstance(mdict,dict):
+            if not isinstance(mdict, dict):
                 raise ValueError('{0} already set as leaf'.format(k))
 
-        if not isinstance(keys,list):
+        if not isinstance(keys, list):
             keys = [keys]
             values = [values]
 
-        for k,v in zip(keys,values):
+        for k, v in zip(keys, values):
             if (k in mdict and merge and
-                isinstance(mdict[k],dict) and isinstance(v,dict)):
+                    isinstance(mdict[k], dict) and isinstance(v, dict)):
                 mdict[k].update(v)
             elif (k in mdict and merge and
-                isinstance(mdict[k],list) and isinstance(v,list)):
+                      isinstance(mdict[k], list) and isinstance(v, list)):
                 mdict[k] += v
             elif k in mdict:
                 raise IOError('data already contains keys; {0}'.format(
-                    init_keys+[k]))
+                    init_keys + [k]))
             else:
                 mdict[k] = dtype(v) if dtype is not None else v
 
@@ -197,20 +199,20 @@ class BasicParser(object):
 
         """
         init_keys = [] if init_keys is None else init_keys
-        
-        if isinstance(rfile,basestring):
-            with open(rfile,'r') as f:
-                return self._with_open_file(f,delim,init_section,init_keys,**kwargs)
+
+        if isinstance(rfile, basestring):
+            with open(rfile, 'r') as f:
+                return self._with_open_file(f, delim, init_section, init_keys, **kwargs)
         elif hasattr(rfile, 'open'):
             with rfile.open('r') as f:
-                return self._with_open_file(f,delim,init_section,init_keys,**kwargs)
-        elif not hasattr(rfile,'readline'):
+                return self._with_open_file(f, delim, init_section, init_keys, **kwargs)
+        elif not hasattr(rfile, 'readline'):
             raise ValueError('rfile should be a str or file_like object: {}'.format(rfile))
         else:
-            return self._with_open_file(rfile,delim,init_section,init_keys,**kwargs)
+            return self._with_open_file(rfile, delim, init_section, init_keys, **kwargs)
 
     def _with_open_file(self, f, delim=None,
-                  init_section=[], init_keys=None, **kwargs):
+                        init_section=[], init_keys=None, **kwargs):
         self.__file = f
         self.__file_line_number = 1
         self.__delim = delim
@@ -220,11 +222,11 @@ class BasicParser(object):
         try:
             self.__file_line = f.readline()
             while self.__file_line:
-                self.__file_line =self.__file_line.strip()
+                self.__file_line = self.__file_line.strip()
                 for func_name, func in self.__class__.__dict__.items():
-                    if func_name[0:6]=='_eval_':
+                    if func_name[0:6] == '_eval_':
                         # if returns True then line has been evaluated
-                        if func(self)==True:
+                        if func(self) == True:
                             break
                 self.__file_line = f.readline()
                 self.__file_line_number += 1
@@ -234,64 +236,67 @@ class BasicParser(object):
             self.__file = None
             self.__file_line_number = 0
             self.__delim = None
-        
+
         return self.data
 
     def __get_line(self):
         return self.__file_line
-    def __set_line(self,line):
-        assert isinstance(line,basestring), 'line must be a string: {}'.format(line)
-        self.__file_line = line
-    _line = property(__get_line,__set_line)
 
-    def _get_section(self,level=None):
+    def __set_line(self, line):
+        assert isinstance(line, basestring), 'line must be a string: {}'.format(line)
+        self.__file_line = line
+
+    _line = property(__get_line, __set_line)
+
+    def _get_section(self, level=None):
         if not self.__in_file_section:
             raise IOError('no file section available')
         if level is not None:
             if len(self.__in_file_section) < level - 1:
                 raise IOError('no file section available for level: {}'.format(level))
             else:
-                return self.__in_file_section[level-1]
+                return self.__in_file_section[level - 1]
         return self.__in_file_section[:]
 
-    def _exit_file_section(self,level=1):
+    def _exit_file_section(self, level=1):
         """ exit file section
         
         level : int
         """
         assert level > 0, 'level must be 1 or greater'
-        self.__in_file_section = self.__in_file_section[:level-1]        
-        
-    def _enter_file_section(self,section,level=1):
+        self.__in_file_section = self.__in_file_section[:level - 1]
+
+    def _enter_file_section(self, section, level=1):
         """ enter file section
         
         section : str
         level : int
         """
-        if not self._always_exit_section and level>len(self.__in_file_section):
-            raise IOError("attempting to enter '{0}' as level {1} but already in file section: {2} (line number: {3})".format(
-                section,level, self.__in_file_section,self.__file_line_number))                
+        if not self._always_exit_section and level > len(self.__in_file_section):
+            raise IOError(
+                "attempting to enter '{0}' as level {1} but already in file section: {2} (line number: {3})".format(
+                    section, level, self.__in_file_section, self.__file_line_number))
         elif level <= len(self.__in_file_section) + 1:
-            self.__in_file_section = self.__in_file_section[0:level-1] + [section]
+            self.__in_file_section = self.__in_file_section[0:level - 1] + [section]
         else:
-            raise IOError("attempting to set '{0}' as level {1} for current file section: {2} (line number: {3})".format(
-                section,level, self.__in_file_section,self.__file_line_number))
+            raise IOError(
+                "attempting to set '{0}' as level {1} for current file section: {2} (line number: {3})".format(
+                    section, level, self.__in_file_section, self.__file_line_number))
 
     def _in_section(self, section, *sections):
         """ test if in section(s) """
         if len(self.__in_file_section) < 1 + len(sections):
             return False
-        for i,s in enumerate([section]+list(sections)):
+        for i, s in enumerate([section] + list(sections)):
             if self.__in_file_section[i] != s:
                 return False
         return True
-            
-        
+
     def _skip_lines(self, i=1):
         """skip i lines of file """
         if self.__file is None:
             return ''
-        if hasattr(self.__file,'closed'):
+        if hasattr(self.__file, 'closed'):
             if self.__file.closed:
                 return ''
         for _ in range(i):
@@ -308,14 +313,14 @@ class BasicParser(object):
             {field_num:value,...}, field_num start at 1
 
         """
-        if isinstance(sig_dict,basestring):
+        if isinstance(sig_dict, basestring):
             f = sig_dict.split(self.__delim)
-            sig_dict = dict(zip(range(1,len(f)+1),f))
-        line_list =self.__file_line.split(self.__delim)
+            sig_dict = dict(zip(range(1, len(f) + 1), f))
+        line_list = self.__file_line.split(self.__delim)
         if len(line_list) < max(sig_dict.keys()):
             return False
         for field, value in sig_dict.items():
-            if line_list[field-1] != value:
+            if line_list[field - 1] != value:
                 return False
         return True
 
@@ -323,26 +328,26 @@ class BasicParser(object):
         """ get field from line, field_num start at 1
 
         """
-        if isinstance(field_nums,int):
+        if isinstance(field_nums, int):
             field_nums = [field_nums]
-        line_list =self.__file_line.split(self.__delim)
+        line_list = self.__file_line.split(self.__delim)
         if len(line_list) < max(field_nums):
-            raise IOError('line does not have {0} fields; {1}'.format(max(field_nums),self.__file_line))
-        vals = [line_list[n-1] for n in field_nums]
+            raise IOError('line does not have {0} fields; {1}'.format(max(field_nums), self.__file_line))
+        vals = [line_list[n - 1] for n in field_nums]
         if len(vals) == 1:
             return vals[0]
         else:
             return vals
 
-    def _get_fields_after(self,field_num, join=False):
+    def _get_fields_after(self, field_num, join=False):
         """ get all fields after field_num, field_num start at 1
 
         join : bool
             join fields together into single sting (by delimiter)
         """
-        line_list =self.__file_line.split(self.__delim)
+        line_list = self.__file_line.split(self.__delim)
         if len(line_list) < field_num:
-            raise IOError('line does not have {0} fields; {1}'.format(field_num,self.__file_line))
+            raise IOError('line does not have {0} fields; {1}'.format(field_num, self.__file_line))
 
         if join:
             delim = ' ' if self.__delim is None else self.__delim
@@ -350,36 +355,40 @@ class BasicParser(object):
         else:
             return line_list[field_num:]
 
-    def _str_map(self,sdict):
+    def _str_map(self, sdict):
         """ return function to convert strings to another value
 
         sdict : dict
             mapping of string value to new value
 
         """
+
         def func(val):
             if val in sdict:
                 return sdict[val]
             else:
                 raise ValueError('value not in {0}, as expected: {1}'.format(
-                                sdict.keys(),val))
+                    sdict.keys(), val))
+
         return func
 
-    def _table_todict(self,columns,dtypes,length=None):
+    def _table_todict(self, columns, dtypes, length=None):
         row = 1
-        cdict = dict([(c,[]) for c in columns])
-        line_split =self.__file_line.split(self.__delim)
+        cdict = dict([(c, []) for c in columns])
+        line_split = self.__file_line.split(self.__delim)
         while len(line_split) >= len(columns):
-            for v,k,dtype in zip(line_split,columns,dtypes):
+            for v, k, dtype in zip(line_split, columns, dtypes):
                 cdict[k].append(dtype(v))
             row += 1
             if length is not None:
                 if row > length:
                     break
             self._skip_lines()
-            line_split =self.__file_line.split(self.__delim)
+            line_split = self.__file_line.split(self.__delim)
         return cdict
+
 
 if __name__ == '__main__':
     import doctest
+
     print(doctest.testmod())
