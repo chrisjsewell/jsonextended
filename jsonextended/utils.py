@@ -118,6 +118,10 @@ class _OpenRead(object):
         self._current_indx += 1
         return line
 
+    def readlines(self):
+        self._current_indx = len(self._linelist) - 1
+        return self._linelist[:]
+
     def __iter__(self):
         for line in self._linelist:
             yield line

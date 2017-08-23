@@ -20,7 +20,7 @@ A module to extend the python json package functionality:
 
 -  **Tab Completion**: index as tabs for quick exploration of data
 
--  **Manipulation of nested structures**, including; filter, merge, flatten, unflatten
+-  **Manipulation of nested structures**, including; filter, merge, diff, flatten, unflatten
 
 -  **Enhanced pretty printer**
 

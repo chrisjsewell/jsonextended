@@ -30,7 +30,7 @@ A module to extend the python json package functionality:
 
    -  Javascript rendered, expandable tree in the Jupyter Notebook
 
-   -  functions including; filter, merge, flatten, unflatten
+   -  functions including; filter, merge, flatten, unflatten, diff
 
    -  output to directory structure (of *n* folder levels)
 

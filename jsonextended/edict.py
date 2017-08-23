@@ -38,6 +38,19 @@ from jsonextended.utils import natural_sort, colortxt
 from jsonextended.plugins import encode, decode, parse, parser_available
 
 
+def is_iter_non_string(obj):
+    """test if object is a list or tuple"""
+    if isinstance(obj, list) or isinstance(obj, tuple):
+        return True
+    return False
+
+    # TODO this breaks everything
+    # if hasattr(obj, '__iter__') and not isinstance(obj, basestring):
+    #     return True
+    # else:
+    #     return False
+
+
 def is_dict_like(obj, attr=('keys', 'items')):
     """test if object is dict like"""
     for a in attr:
@@ -406,8 +419,7 @@ def indexes(dic, keys=None):
     return new
 
 
-def flatten(d, key_as_tuple=True, sep='.',
-            list_of_dicts=None):
+def flatten(d, key_as_tuple=True, sep='.', list_of_dicts=None, all_iters=None):
     """ get nested dict as flat {key:val,...}, where key is tuple/string of all nested keys
 
     Parameters
@@ -419,13 +431,15 @@ def flatten(d, key_as_tuple=True, sep='.',
         if key_as_tuple=False, delimiter for keys
     list_of_dicts: str or None
         if not None, flatten lists of dicts using this prefix
+    all_iters: str or None
+        if not None, flatten all lists and tuples using this prefix
 
     Examples
     --------
 
     >>> from pprint import pprint
 
-    >>> d = {1:{"a":"A"},2:{"b":"B"}}
+    >>> d = {1:{"a":"A"}, 2:{"b":"B"}}
     >>> pprint(flatten(d))
     {(1, 'a'): 'A', (2, 'b'): 'B'}
 
@@ -433,31 +447,48 @@ def flatten(d, key_as_tuple=True, sep='.',
     >>> pprint(flatten(d,key_as_tuple=False))
     {'1.a': 'A', '2.b': 'B'}
 
-    >>> d = [{'a':1},{'b':2}]
+    >>> d = [{'a':1},{'b':[1, 2]}]
     >>> pprint(flatten(d,list_of_dicts='__list__'))
-    {('__list__0', 'a'): 1, ('__list__1', 'b'): 2}
+    {('__list__0', 'a'): 1, ('__list__1', 'b'): [1, 2]}
+
+    >>> d = [{'a':1},{'b':[1, 2]}]
+    >>> pprint(flatten(d,all_iters='__iter__'))
+    {('__iter__0', 'a'): 1,
+     ('__iter__1', 'b', '__iter__0'): 1,
+     ('__iter__1', 'b', '__iter__1'): 2}
 
     """
 
     def expand(key, value):
         if is_dict_like(value):
             if key_as_tuple:
-                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts).items()]
+                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts, all_iters).items()]
             else:
-                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts).items()]
+                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts,
+                                                                    all_iters).items()]
+        elif is_iter_non_string(value) and all_iters is not None:
+            value = {'{0}{1}'.format(all_iters, i): v for i, v in enumerate(value)}
+            if key_as_tuple:
+                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts, all_iters).items()]
+            else:
+                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts,
+                                                                    all_iters).items()]
         elif is_list_of_dict_like(value) and list_of_dicts is not None:
             value = {'{0}{1}'.format(list_of_dicts, i): v for i, v in enumerate(value)}
             if key_as_tuple:
-                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts).items()]
+                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts, all_iters).items()]
             else:
-                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts).items()]
+                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts,
+                                                                    all_iters).items()]
         else:
             return [(key, value)]
 
-    if is_list_of_dict_like(d) and list_of_dicts is not None:
+    if is_iter_non_string(d) and all_iters is not None:
+        d = {'{0}{1}'.format(all_iters, i): v for i, v in enumerate(d)}
+    elif is_list_of_dict_like(d) and list_of_dicts is not None:
         d = {'{0}{1}'.format(list_of_dicts, i): v for i, v in enumerate(d)}
     elif not is_dict_like(d):
-        raise TypeError('d is not dict like')
+        raise TypeError('d is not dict like: {}'.format(d))
 
     if key_as_tuple:
         items = [item for k, v in d.items() for item in expand((k,), v)]
@@ -1281,6 +1312,7 @@ def combine_apply(d, leaf_keys, func, new_name,
 def split_lists(d, split_keys,
                 new_name='split', check_length=True):
     """split_lists key:list pairs into dicts for each item in the lists
+    NB: will only split if all split_keys are present
 
     Parameters
     ----------
@@ -1433,6 +1465,93 @@ def list_to_dict(lst, key=None, remove_key=True):
             new_dict[k] = d
 
     return new_dict
+
+
+def diff(new_dict, old_dict, iter_prefix='__iter__',
+         np_allclose=False, **kwargs):
+    """ return the difference between two dict_like objects
+
+    Parameters
+    ----------
+    new_dict: dict_like
+    old_dict: dict_like
+    iter_prefix: str
+        prefix to use for list and tuple indexes
+    np_allclose: bool
+        if True, try using numpy.allclose to assess whether there has been a change
+    **kwargs:
+        keyword arguments to parse to numpy.allclose
+
+    Returns
+    -------
+    outcome: dict
+        Containing none or more of:
+        "insertions" : list of (path, val)
+        "deletions" : list of (path, val)
+        "changes" : list of (path, (val1, val2))
+        "uncomparable" : list of (path, (val1, val2))
+
+    Examples
+    --------
+    >>> from pprint import pprint
+
+    >>> diff({'a':1},{'a':1})
+    {}
+
+    >>> pprint(diff({'a': 1, 'b': 2},{'b': 3, 'c': 4}))
+    {'changes': [(('b',), (2, 3))],
+     'deletions': [(('c',), 4)],
+     'insertions': [(('a',), 1)]}
+
+    >>> pprint(diff({'a': [{"b":1}, {"c":2}, 1]},{'a': [{"b":1}, {"d":2}, 2]}))
+    {'changes': [(('a', '__iter__2'), (1, 2))],
+     'deletions': [(('a', '__iter__1', 'd'), 2)],
+     'insertions': [(('a', '__iter__1', 'c'), 2)]}
+
+    >>> diff({'a':1}, {'a':1+1e-10})
+    {'changes': [(('a',), (1, 1.0000000001))]}
+
+    >>> diff({'a':1}, {'a':1+1e-10}, np_allclose=True)
+    {}
+
+    """
+    if np_allclose:
+        try:
+            import numpy
+        except ImportError:
+            raise ValueError("to use np_allclose, numpy must be installed")
+
+    dct1_flat = flatten(new_dict, all_iters=iter_prefix)
+    dct2_flat = flatten(old_dict, all_iters=iter_prefix)
+
+    outcome = {'insertions': [], 'deletions': [], 'changes': [], 'uncomparable': []}
+
+    for path, val in dct1_flat.items():
+        if path not in dct2_flat:
+            outcome['insertions'].append((path, val))
+            continue
+        other_val = dct2_flat.pop(path)
+        if np_allclose:
+            try:
+                if numpy.allclose(val, other_val, **kwargs):
+                    continue
+            except:
+                pass
+        try:
+            if val != other_val:
+                outcome['changes'].append((path, (val, other_val)))
+        except:
+            outcome['uncomparable'].append((path, (val, other_val)))
+
+    for path2, val2 in dct2_flat.items():
+        outcome['deletions'].append((path2, val2))
+
+    # remove any empty lists
+    for key in list(outcome.keys()):
+        if not outcome[key]:
+            outcome.pop(key)
+
+    return outcome
 
 
 def to_json(dct, jfile, overwrite=False, dirlevel=0,
