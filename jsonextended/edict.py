@@ -596,6 +596,9 @@ def unflatten(d, key_as_tuple=True, delim='.',
 
     if list_of_dicts is not None:
         result = _recreate_lists(result, list_of_dicts)
+        # if is_dict_like(result):
+        #     if all([str(k).startswith(list_of_dicts) for k in result.keys()]):
+        #         result = [result[k] for k in sorted(list(result.keys()), key=lambda x: int(x.replace(list_of_dicts, '')))]
 
     return result
 
@@ -1390,7 +1393,7 @@ def split_lists(d, split_keys,
 def combine_lists(d, keys=None):
     """ combine lists of dicts
 
-    d : dict
+    d : dict or list of dicts
     keys : list
         keys to combine (all if None)
 
@@ -1401,7 +1404,17 @@ def combine_lists(d, keys=None):
     >>> pprint(combine_lists(d,['split']))
     {'path_key': {'a': 1, 'split': {'x': [1, 2], 'y': [3, 4]}}}
 
+    >>> combine_lists([{"a":2}, {"a":1}])
+    {'a': [2, 1]}
+
+
     """
+    if isinstance(d, list):
+        init_list = True
+        d = {'dummy_key843': d}
+    else:
+        init_list = False
+
     flattened = flatten(d, list_of_dicts=None)
     for key, value in list(flattened.items()):
         if not keys is None:
@@ -1422,7 +1435,12 @@ def combine_lists(d, keys=None):
                 newd[subk].append(subv)
         flattened[key] = newd
 
-    return unflatten(flattened, list_of_dicts=None)
+    final = unflatten(flattened, list_of_dicts=None)
+
+    if init_list:
+        return list(final.values())[0]
+    else:
+        return final
 
 
 def list_to_dict(lst, key=None, remove_key=True):
@@ -1486,10 +1504,11 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
     -------
     outcome: dict
         Containing none or more of:
-        "insertions" : list of (path, val)
-        "deletions" : list of (path, val)
-        "changes" : list of (path, (val1, val2))
-        "uncomparable" : list of (path, (val1, val2))
+
+        - "insertions" : list of (path, val)
+        - "deletions" : list of (path, val)
+        - "changes" : list of (path, (val1, val2))
+        - "uncomparable" : list of (path, (val1, val2))
 
     Examples
     --------
@@ -1498,9 +1517,9 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
     >>> diff({'a':1},{'a':1})
     {}
 
-    >>> pprint(diff({'a': 1, 'b': 2},{'b': 3, 'c': 4}))
-    {'changes': [(('b',), (2, 3))],
-     'deletions': [(('c',), 4)],
+    >>> pprint(diff({'a': 1, 'b': 2, 'c': 5},{'b': 3, 'c': 4, 'd': 6}))
+    {'changes': [(('b',), (2, 3)), (('c',), (5, 4))],
+     'deletions': [(('d',), 6)],
      'insertions': [(('a',), 1)]}
 
     >>> pprint(diff({'a': [{"b":1}, {"c":2}, 1]},{'a': [{"b":1}, {"d":2}, 2]}))

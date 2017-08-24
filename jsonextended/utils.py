@@ -107,19 +107,23 @@ class _OpenRead(object):
         self._linelist = linelist
         self._current_indx = 0
 
-    def read(self):
-        return '\n'.join(self._linelist)
+    def read(self, size=None):
+        out = '\n'.join(self._linelist)[self._current_indx:]
+        if size is not None:
+            self._current_indx += size
+            out = out[0:self._current_indx]
+        return out
 
     def readline(self):
         if self._current_indx >= len(self._linelist):
             line = ''
         else:
             line = self._linelist[self._current_indx] + '\n'
-        self._current_indx += 1
+        self._current_indx += len(line)
         return line
 
     def readlines(self):
-        self._current_indx = len(self._linelist) - 1
+        self._current_indx = len('\n'.join(self._linelist))
         return self._linelist[:]
 
     def __iter__(self):
