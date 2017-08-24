@@ -1565,10 +1565,14 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
     for path2, val2 in dct2_flat.items():
         outcome['deletions'].append((path2, val2))
 
-    # remove any empty lists
+    # remove any empty lists and sort
     for key in list(outcome.keys()):
         if not outcome[key]:
             outcome.pop(key)
+        try:
+            outcome[key] = sorted(outcome[key])
+        except:
+            pass
 
     return outcome
 
