@@ -252,6 +252,10 @@ class MockPath(object):
     def is_dir(self):
         return self._is_dir
 
+    @property
+    def parent(self):
+        return MockPath(os.path.dirname(self._path))
+
     def exists(self):
         return self._exists
 
@@ -368,7 +372,7 @@ class MockPath(object):
             return 'MockPath({})'.format(self.name)
 
     def __str__(self):
-        return self.__repr__()
+        return self._path#self.__repr__()
 
     def __repr__(self):
         if not self.exists():
