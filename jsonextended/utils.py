@@ -681,7 +681,7 @@ class MockPath(object):
         else:
             temppath = pathlib.Path(tempfile.mkdtemp())
             dirpath = os.path.join(os.path.dirname(str(temppath)), self.name)
-            os.rename(temppath, dirpath)
+            os.rename(str(temppath), dirpath)
             temppath = pathlib.Path(dirpath)
             try:
                 self.copy_to(temppath.parent)
