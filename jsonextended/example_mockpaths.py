@@ -4,15 +4,15 @@
 Examples
 --------
 >>> jsonfile1
-MockFile("file1.json")
+MockFile("dir1/file1.json")
 >>> jsonfile2
 MockFile("file2.json")
 >>> csvfile1
-MockFile("file1.csv")
+MockFile("dir1/subdir1/file1.csv")
 >>> csvfile2
-MockFile("file1.literal.csv")
+MockFile("dir1/subdir1/file1.literal.csv")
 >>> kpfile1
-MockFile("file1.keypair")
+MockFile("dir1/subdir2/subsubdir21/file1.keypair")
 
 >>> print(directory1.to_string(indentlvl=3,file_content=False))
 Folder("dir1")
