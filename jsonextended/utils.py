@@ -751,7 +751,10 @@ class MockPath(object):
                     else:
                         newpath.touch()
                     with newpath.open('w') as f:
-                        f.write('/n'.join(path._content))
+                        if sys.version_info.major > 2:
+                            f.write('/n'.join(path._content))
+                        else:
+                            f.write(unicode('/n'.join(path._content)))
 
         elif isinstance(target, MockPath):
             if not target.is_dir():
