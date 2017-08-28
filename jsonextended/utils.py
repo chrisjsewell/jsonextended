@@ -680,7 +680,7 @@ class MockPath(object):
                     os.remove(dirpath)
         else:
             temppath = pathlib.Path(tempfile.mkdtemp())
-            dirpath = os.path.join(os.path.dirname(temppath), self.name)
+            dirpath = os.path.join(os.path.dirname(str(temppath)), self.name)
             os.rename(temppath, dirpath)
             temppath = pathlib.Path(dirpath)
             try:
