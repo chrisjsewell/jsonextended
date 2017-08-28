@@ -11,8 +11,9 @@ Subpackages
     jsonextended.plugins
     jsonextended.encoders
     jsonextended.parsers
-    jsonextended.utils
     jsonextended.units
+    jsonextended.mockpath
+    jsonextended.utils
 
 Module contents
 ---------------
