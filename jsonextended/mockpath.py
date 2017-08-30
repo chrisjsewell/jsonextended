@@ -11,18 +11,25 @@ try:
     basestring
 except NameError:
     basestring = str
-# python 3 to 2 compatibility
+
 try:
     import pathlib
 except ImportError:
     import pathlib2 as pathlib
 
+try:
+    unicode
+except NameError:
+    unicode = str
 
+
+# TODO handling bytes/encoding (py 2 and 3)
 class _OpenRead(object):
-    def __init__(self, linelist, encoding=None):
+    def __init__(self, linelist, encoding=None, usebytes=False):
         self._linelist = linelist
         self._current_indx = 0
         self._encoding = encoding
+        self._bytes = usebytes
 
     def read(self, size=None):
         out = '\n'.join(self._linelist)[self._current_indx:]
@@ -45,7 +52,7 @@ class _OpenRead(object):
 
     def readlines(self):
         self._current_indx = len('\n'.join(self._linelist))
-        if self._encoding is not None:
+        if self._encoding is not None and self:
             return [line.encode(self._encoding) for line in self._linelist]
         else:
             return self._linelist[:]
@@ -57,9 +64,11 @@ class _OpenRead(object):
             yield line
 
 
+# TODO handling bytes/encoding (py 2 and 3)
 class _OpenWrite(object):
-    def __init__(self):
+    def __init__(self, usebytes=False):
         self._str = ''
+        self._bytes = usebytes
 
     def write(self, instr):
         self._str += instr
@@ -254,7 +263,7 @@ class MockPath(object):
 
     def __init__(self, path='root',
                  is_file=False, exists=True,
-                 structure=[], content='', parent=None):
+                 structure=(), content='', parent=None):
         self._path = path
         self._name = os.path.basename(path)
         self._exists = exists
@@ -376,8 +385,13 @@ class MockPath(object):
         child.parent = self
         self._children.append(child)
 
+    # TODO need to implement relative naming and switchin to/from
     def absolute(self):
         pass
+
+    # TODO should return a new mock path rather than a str, need to implement relative naming and switchin to/from
+    def relative_to(self, other):
+        return os.path.relpath(self._path, other._path)
 
     def rename(self, target):
 
@@ -730,10 +744,10 @@ class MockPath(object):
             raise IOError('[Errno 21] Is a directory: {}'.format(self.path))
 
         if 'r' in mode:
-            obj = _OpenRead(self._content, encoding)
+            obj = _OpenRead(self._content, encoding, "b" in mode)
             yield obj
         elif 'w' in mode:
-            obj = _OpenWrite()
+            obj = _OpenWrite("b" in mode)
             yield obj
             self._content = obj._str.splitlines()
         else:
@@ -801,3 +815,86 @@ class MockPath(object):
             return 'MockFile("{}")'.format(self._path)
         else:
             return 'MockPath("{}")'.format(self._path)
+
+_ATTRIBUTES = dict(
+    list(zip([
+        'bold',
+        'dark',
+        '',
+        'underline',
+        'blink',
+        '',
+        'reverse',
+        'concealed'
+    ],
+        list(range(1, 9))
+    ))
+)
+del _ATTRIBUTES['']
+
+_HIGHLIGHTS = dict(
+    list(zip([
+        'on_grey',
+        'on_red',
+        'on_green',
+        'on_yellow',
+        'on_blue',
+        'on_magenta',
+        'on_cyan',
+        'on_white'
+    ],
+        list(range(40, 48))
+    ))
+)
+
+_COLORS = dict(
+    list(zip([
+        'grey',
+        'red',
+        'green',
+        'yellow',
+        'blue',
+        'magenta',
+        'cyan',
+        'white',
+    ],
+        list(range(30, 38))
+    ))
+)
+
+
+def colortxt(text, color=None, on_color=None, attrs=None):
+    """Colorize text.
+
+    Available text colors:
+        red, green, yellow, blue, magenta, cyan, white.
+
+    Available text highlights:
+        on_red, on_green, on_yellow, on_blue, on_magenta, on_cyan, on_white.
+
+    Available attributes:
+        bold, dark, underline, blink, reverse, concealed.
+
+    Examples
+    --------
+    >>> txt = colortxt('Hello, World!', 'red', 'on_grey', ['bold'])
+    >>> print(txt)
+    \x1b[1m\x1b[40m\x1b[31mHello, World!\x1b[0m
+
+    """
+    _RESET = '\033[0m'
+    __ISON = True
+    if __ISON and os.getenv('ANSI_COLORS_DISABLED') is None:
+        fmt_str = '\033[%dm%s'
+        if color is not None:
+            text = fmt_str % (_COLORS[color], text)
+
+        if on_color is not None:
+            text = fmt_str % (_HIGHLIGHTS[on_color], text)
+
+        if attrs is not None:
+            for attr in attrs:
+                text = fmt_str % (_ATTRIBUTES[attr], text)
+
+        text += _RESET
+    return text
