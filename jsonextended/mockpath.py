@@ -387,7 +387,7 @@ class MockPath(object):
 
     # TODO need to implement relative naming and switchin to/from
     def absolute(self):
-        pass
+        return self
 
     # TODO should return a new mock path rather than a str, need to implement relative naming and switchin to/from
     def relative_to(self, other):
@@ -495,7 +495,7 @@ class MockPath(object):
                     return child.joinpath(*parts[1:])
             new = MockPath(path=os.path.join(self._path, parts[0]), exists=False, parent=self)
             self.add_child(new)
-            return child.joinpath(*parts[1:])
+            return new.joinpath(*parts[1:])
 
     def mkdir(self):
 
