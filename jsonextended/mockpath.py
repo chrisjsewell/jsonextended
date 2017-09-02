@@ -71,11 +71,16 @@ class _OpenWrite(object):
         self._bytes = usebytes
 
     def write(self, instr):
+        if hasattr(instr, "decode"):
+            instr = instr.decode()
         self._str += instr
 
     def writelines(self, lines):
         for instr in lines:
+            if hasattr(instr, "decode"):
+                instr = instr.decode()
             self.write(instr)
+
 
 @total_ordering
 class MockPath(object):
