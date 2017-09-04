@@ -513,6 +513,58 @@ class MockPath(object):
             self._is_dir = True
             self._exists = True
 
+    # TODO store stat attributes and apply them to mktemp
+    def stat(self):
+        """ Retrieve information about a file
+
+        Parameters
+        ----------
+        path: str
+
+        Returns
+        -------
+        attr: object
+            see os.stat, includes st_mode, st_size, st_uid, st_gid, st_atime, and st_mtime attributes
+
+        """
+        class MockStat(object):
+            # at present just returning a typical file result
+            def __init__(self):
+                self.st_mode = 33188
+                self.st_ino = 74204932
+                self.st_dev = 16777220
+                self.st_nlink = 1
+                self.st_uid = 634541
+                self.st_gid = 1335817362
+                self.st_size = 10410
+                self.st_atime = 1504518028
+                self.st_mtime = 1504518028
+                self.st_ctime = 1504518028
+
+            def __repr__(self):
+                return "MockStatResult(st_mode=33188, st_ino=74204932, st_dev=16777220, st_nlink=1, st_uid=634541, " \
+                    "st_gid=1335817362, st_size=10410, st_atime=1504518028, st_mtime=1504518028, st_ctime=1504518028)"
+
+        return MockStat()
+
+    def chmod(self, mode):
+        """ Change the mode (permissions) of a file
+
+        Parameters
+        ----------
+        path: str
+        mode: int
+            new permissions (see os.chmod)
+
+        Examples
+        --------
+        To make a file executable
+        cur_mode = folder.stat("exec.sh").st_mode
+        folder.chmod("exec.sh", cur_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH )
+
+        """
+        pass
+
     def touch(self):
 
         if self.parent is not None:
@@ -581,13 +633,15 @@ class MockPath(object):
                         yield path
 
     @contextlib.contextmanager
-    def maketemp(self, getoutput=False):
+    def maketemp(self, getoutput=False, dir=None):
         """make a named temporary file or folder containing the path contents
 
         Parameters
         ----------
         getoutput: bool
             if True, (on exit) new paths will be read/added to the path
+        dir: None or str
+            directory to place temp in (see tempfile.mkstemp)
 
         Yields
         ------
@@ -596,7 +650,7 @@ class MockPath(object):
 
         """
         if self.is_file():
-            filetemp = tempfile.NamedTemporaryFile(mode='w+', delete=False)
+            filetemp = tempfile.NamedTemporaryFile(mode='w+', delete=False, dir=dir)
             try:
                 filetemp.write('\n'.join(self._content))
                 filetemp.close()
@@ -610,7 +664,7 @@ class MockPath(object):
                 finally:
                     os.remove(dirpath)
         else:
-            temppath = pathlib.Path(tempfile.mkdtemp())
+            temppath = pathlib.Path(tempfile.mkdtemp(dir=dir))
             dirpath = os.path.join(os.path.dirname(str(temppath)), self.name)
             os.rename(str(temppath), dirpath)
             temppath = pathlib.Path(dirpath)
@@ -634,7 +688,7 @@ class MockPath(object):
     def _iter_temp(self, mock, temp, overwrite=False):
         if not mock.name == temp.name:
             raise ValueError("mock name and temp name different: {0}, {1}".format(mock.name, temp.name))
-        child_names = {c.name:c for c in mock.children}
+        child_names = {c.name: c for c in mock.children}
         for subpath in temp.iterdir():
             if subpath.is_file():
                 if subpath.name in child_names and not overwrite:
@@ -683,9 +737,9 @@ class MockPath(object):
                         newpath.touch()
                     with newpath.open('w') as f:
                         if sys.version_info.major > 2:
-                            f.write('/n'.join(path._content))
+                            f.write("\n".join(path._content))
                         else:
-                            f.write(unicode('/n'.join(path._content)))
+                            f.write(unicode('\n'.join(path._content)))
 
         elif isinstance(target, MockPath):
             if not target.is_dir():
