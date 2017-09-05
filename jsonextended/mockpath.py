@@ -502,11 +502,27 @@ class MockPath(object):
             self.add_child(new)
             return new.joinpath(*parts[1:])
 
-    def mkdir(self):
+    # TODO add mode=0o777, exist_ok=False
+    def mkdir(self, parents=False):
+        """
 
+        Parameters
+        ----------
+        mode
+        parents: bool
+            If parents is true, any missing parents of this path are created as needed
+            If parents is false, a missing parent raises FileNotFoundError.
+
+        Returns
+        -------
+
+        """
         if self.parent is not None:
             if not self.parent.exists():
-                raise IOError("the parent must exist")
+                if not parents:
+                    raise FileNotFoundError("the parent must exist for {}".format(self))
+                else:
+                    self.parent.mkdir(parents=parents)  # mode=0o777,
 
         if not self._exists:
             self._is_file = False
