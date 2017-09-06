@@ -49,7 +49,7 @@ with open('releases.rst', 'w') as f:
         header = True
         for minor in sorted(list(ordered_releases[major].keys())):
             rel = ordered_releases[major][minor]
-            f.write(' '.join([rel['tag_name'], '-', rel['name'], '\n']))
+            f.write(' '.join([rel['version'], '-', rel['header'], '\n']))
             if header:
                 f.write('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
                 header = False
