@@ -31,23 +31,34 @@ git_history = urllib.request.urlopen('https://api.github.com/repos/chrisjsewell/
     'utf-8')
 git_history_json = json.loads(git_history)
 
-current_maj_min = [0, 0]
+
+ordered_releases = {}
+for rel in git_history_json:
+    rversion = rel['tag_name'].replace("v", "").split(".") + ["0"]
+    major = float(".".join(rversion[0:2]))
+    minor = float(".".join(rversion[2:4]))
+    if major not in ordered_releases:
+        ordered_releases[major] = {}
+    ordered_releases[major][minor] = {"version": rel['tag_name'], "header": rel['name'], "body": rel["body"]}
+
 with open('releases.rst', 'w') as f:
     f.write('Releases\n')
     f.write('---------\n')
     f.write('\n')
-    for rel in git_history_json:
-        rversion = [int(r) for r in rel['tag_name'].replace("v", "").split(".")]
-        f.write(' '.join([rel['tag_name'], '-', rel['name'], '\n']))
-        if rversion[0:2] != current_maj_min:
-            f.write('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-            current_maj_min = rversion[0:2]
-        else:
-            f.write('++++++++++++++++++++++++++++++++++++++++++')
-        f.write('\n')
-        for line in rel['body'].split('\n'):
-            f.write(' '.join([line, '\n']))
-        f.write('\n')
+    for major in reversed(sorted(list(ordered_releases.keys()))):
+        header = True
+        for minor in sorted(list(ordered_releases[major].keys())):
+            rel = ordered_releases[major][minor]
+            f.write(' '.join([rel['tag_name'], '-', rel['name'], '\n']))
+            if header:
+                f.write('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+                header = False
+            else:
+                f.write('++++++++++++++++++++++++++++++++++++++++++')
+            f.write('\n')
+            for line in rel['body'].split('\n'):
+                f.write(' '.join([line, '\n']))
+            f.write('\n')
 
 # -- General configuration ------------------------------------------------
 
