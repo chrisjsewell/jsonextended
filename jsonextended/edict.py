@@ -2021,7 +2021,7 @@ class LazyLoad(object):
                 except Exception as err:
                     if sys.version_info.major > 2:
                         # NB: without exec, this raises a syntax error in python 2
-                        exec('raise IOError("Parsing error in file: {0}".format(obj)) from err')
+                        exec('raise IOError("Parsing error in file: {0}".format(obj)) from err', globals(), locals())
                     else:
                         raise IOError("Parsing error in file: {0}\n{1}".format(obj, err))
 
