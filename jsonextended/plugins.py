@@ -22,12 +22,12 @@ try:
     from importlib.machinery import SourceFileLoader
     from types import ModuleType
 
-
     def load_source(modname, fname):
         loader = SourceFileLoader(modname, fname)
         mod = ModuleType(loader.name)
         loader.exec_module(mod)
         return mod
+
 except ImportError as err:
     load_source = lambda modname, fname: imp.load_source(modname, fname)
 
@@ -276,7 +276,7 @@ def load_plugins_dir(path, category=None, overwrite=False):
                 # Make the path absolute, resolving any symlinks
                 pypath = pypath.resolve()
 
-            with warnings.catch_warnings(record=True) as w:
+            with warnings.catch_warnings(record=True):
                 warnings.filterwarnings("ignore", category=ImportWarning)
 
                 # for MockPaths

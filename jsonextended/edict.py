@@ -4,15 +4,19 @@
 """ a module to manipulate python dictionary like objects
 
 """
+# internal packages
 import copy
 import json
 import re
-# internal packages
+import logging
 import sys
 import textwrap
 import uuid
 from fnmatch import fnmatch
 from functools import reduce, total_ordering
+import warnings
+warnings.simplefilter('once', ImportWarning)
+logger = logging.getLogger(__name__)
 
 # python 3 to 2 compatibility
 try:
@@ -27,11 +31,6 @@ try:
     import pathlib
 except ImportError:
     import pathlib2 as pathlib
-
-# external packages
-import warnings
-
-warnings.simplefilter('once', ImportWarning)
 
 # local imports
 from jsonextended.utils import natural_sort, colortxt
@@ -1577,14 +1576,12 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
     return outcome
 
 
-def to_json(dct, jfile, overwrite=False, dirlevel=0,
-            sort_keys=True, indent=2,
-            default_name='root.json', **kwargs):
+def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, default_name='root.json', **kwargs):
     """ output dict to json
 
     Parameters
     ----------
-    d : dict
+    dct : dict
     jfile : str or file_like
         if file_like, must have write method
     overwrite : bool
@@ -1684,6 +1681,31 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0,
             to_json(val, newpath, overwrite=overwrite, dirlevel=dirlevel - 1,
                     sort_keys=sort_keys, indent=indent,
                     default_name='{}.json'.format(key), **kwargs)
+
+
+def dump(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, default_name='root.json', **kwargs):
+    """ output dict to json
+
+    Parameters
+    ----------
+    dct : dict
+    jfile : str or file_like
+        if file_like, must have write method
+    overwrite : bool
+        whether to overwrite existing files
+    dirlevel : int
+        if jfile is path to folder, defines how many key levels to set as sub-folders
+    sort_keys : bool
+        if true then the output of dictionaries will be sorted by key
+    indent : int
+        if non-negative integer, then JSON array elements and
+        object members will be pretty-printed on new lines with that indent level spacing.
+    kwargs : dict
+        keywords for json.dump
+    """
+    to_json(dct, jfile, overwrite=overwrite, dirlevel=dirlevel,
+            sort_keys=sort_keys, indent=indent,
+            default_name=default_name, **kwargs)
 
 
 class to_html(object):
@@ -1843,8 +1865,8 @@ class LazyLoad(object):
     ----------
     obj : dict, string, file_like
         object
-    ignore_prefix : list of str
-        ignore files and folders beginning with these prefixes
+    ignore_regexes : list of str
+        ignore files and folders matching these regexes (can contain *, ? and [] wildcards)
     recursive : bool
         if True, load subdirectories
     parent : obj
@@ -1936,14 +1958,14 @@ class LazyLoad(object):
     """
 
     def __init__(self, obj,
-                 ignore_prefixes=('.', '_'), recursive=True,
+                 ignore_regexes=('.*', '_*'), recursive=True,
                  parent=None, key_paths=True,
                  list_of_dicts=False,
                  **parser_kwargs):
         """ initialise
         """
         self._obj = obj
-        self._ignore_prefixes = ignore_prefixes
+        self._ignore_regexes = ignore_regexes
         self._key_paths = key_paths
         self._parser_kwargs = parser_kwargs
         if 'object_hook' not in parser_kwargs:
@@ -1956,19 +1978,19 @@ class LazyLoad(object):
     def _next_level(self, obj):
         """get object for next level of tab """
         if is_dict_like(obj):
-            child = LazyLoad(obj, self._ignore_prefixes, parent=self,
+            child = LazyLoad(obj, self._ignore_regexes, parent=self,
                              key_paths=False,
                              list_of_dicts=self._list_of_dicts)
             return child
         if is_path_like(obj):
-            if not obj.name.startswith(self._ignore_prefixes):
+            if not any([fnmatch(obj.name, regex) for regex in self._ignore_regexes]):
                 if parser_available(obj):
-                    child = LazyLoad(obj, self._ignore_prefixes, parent=self,
+                    child = LazyLoad(obj, self._ignore_regexes, parent=self,
                                      key_paths=False,
                                      list_of_dicts=self._list_of_dicts)
                     return child
                 elif obj.is_dir():
-                    child = LazyLoad(obj, self._ignore_prefixes, parent=self,
+                    child = LazyLoad(obj, self._ignore_regexes, parent=self,
                                      key_paths=self._key_paths,
                                      list_of_dicts=self._list_of_dicts)
                     return child
@@ -1993,7 +2015,15 @@ class LazyLoad(object):
 
         if is_path_like(obj):
             if obj.is_file():
-                new_obj = parse(obj, **self._parser_kwargs)
+                logger.debug("loading: {}".format(obj))
+                try:
+                    new_obj = parse(obj, **self._parser_kwargs)
+                except Exception as err:
+                    if sys.version_info.major > 2:
+                        raise IOError("Parsing error in file: {0}".format(obj)) from err
+                    else:
+                        raise IOError("Parsing error in file: {0}\n{1}".format(obj, err))
+
                 if is_dict_like(new_obj):
                     self._itemmap = {key: self._next_level(val) for key, val in new_obj.items()}
                 else:
@@ -2001,7 +2031,7 @@ class LazyLoad(object):
             if obj.is_dir():
                 new_obj = {}
                 for subpath in obj.iterdir():
-                    if not subpath.name.startswith(self._ignore_prefixes):
+                    if not any([fnmatch(subpath.name, regex) for regex in self._ignore_regexes]):
                         if parser_available(subpath):
                             new_obj[subpath.name] = self._next_level(subpath)
                         elif subpath.is_dir() and self._recurse:
