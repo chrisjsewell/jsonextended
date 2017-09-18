@@ -1201,7 +1201,7 @@ def split_key(d, key, new_keys, before=True, list_of_dicts=False):
     return unflatten(newd, list_of_dicts=list_of_dicts)
 
 
-def apply(d, leaf_key, func, new_name=None,
+def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
           list_of_dicts=False, **kwargs):
     """ apply a function to all values with a certain leaf (terminal) key
 
@@ -1214,6 +1214,8 @@ def apply(d, leaf_key, func, new_name=None,
         function to apply
     new_name : any
         if not None, rename leaf_key
+    remove_lkey: bool
+        whether to remove original leaf_key (if new_name is not None)
     list_of_dicts: bool
         treat list of dicts as additional branches
     kwargs : dict
@@ -1229,15 +1231,20 @@ def apply(d, leaf_key, func, new_name=None,
     {'a': 2, 'b': 1}
     >>> pprint(apply(d,'a',func,new_name='c'))
     {'b': 1, 'c': 2}
+    >>> pprint(apply(d,'a',func,new_name='c', remove_lkey=False))
+    {'a': 1, 'b': 1, 'c': 2}
+
 
     """
     list_of_dicts = '__list__' if list_of_dicts else None
     flatd = flatten(d, list_of_dicts=list_of_dicts)
-    flatd = {k: (func(v, **kwargs) if k[-1] == leaf_key else v) for k, v in flatd.items()}
+    newd = {k: (func(v, **kwargs) if k[-1] == leaf_key else v) for k, v in flatd.items()}
     if new_name is not None:
-        flatd = {(tuple(list(k[:-1]) + [new_name]) if k[-1] == leaf_key else k): v for k, v in flatd.items()}
+        newd = {(tuple(list(k[:-1]) + [new_name]) if k[-1] == leaf_key else k): v for k, v in newd.items()}
+        if not remove_lkey:
+            newd.update(flatd)
 
-    return unflatten(flatd, list_of_dicts=list_of_dicts)
+    return unflatten(newd, list_of_dicts=list_of_dicts)
 
 
 def combine_apply(d, leaf_keys, func, new_name,
@@ -1260,7 +1267,7 @@ def combine_apply(d, leaf_keys, func, new_name,
         the number of levels to leave unflattened before combining,
         for instance if you need dicts as inputs (None means all)
     remove_lkeys: bool
-        whether to remove leaf_keys
+        whether to remove original leaf_keys
     overwrite: bool
         whether to overwrite any existing new_name key
     kwargs : dict
@@ -1876,6 +1883,9 @@ class LazyLoad(object):
         (to ensure strings do not get unintentionally treated as paths)
     list_of_dicts: bool
         treat list of dicts as additional branches
+    parse_errors: bool
+        if True, if parsing a file fails then an IOError will be raised
+        if False, if parsing a file fails then only a logging.error will be made, and the value will be returned as None
     parser_kwargs : keywords or dict
         additional keywords for parser plugins read_file method,
         (loaded decoder plugins are parsed by default)
@@ -1960,13 +1970,14 @@ class LazyLoad(object):
     def __init__(self, obj,
                  ignore_regexes=('.*', '_*'), recursive=True,
                  parent=None, key_paths=True,
-                 list_of_dicts=False,
+                 list_of_dicts=False, parse_errors=True,
                  **parser_kwargs):
         """ initialise
         """
         self._obj = obj
         self._ignore_regexes = ignore_regexes
         self._key_paths = key_paths
+        self._parse_errors = parse_errors
         self._parser_kwargs = parser_kwargs
         if 'object_hook' not in parser_kwargs:
             self._parser_kwargs['object_hook'] = decode
@@ -1980,19 +1991,19 @@ class LazyLoad(object):
         if is_dict_like(obj):
             child = LazyLoad(obj, self._ignore_regexes, parent=self,
                              key_paths=False,
-                             list_of_dicts=self._list_of_dicts)
+                             list_of_dicts=self._list_of_dicts, parse_errors=self._parse_errors)
             return child
         if is_path_like(obj):
             if not any([fnmatch(obj.name, regex) for regex in self._ignore_regexes]):
                 if parser_available(obj):
                     child = LazyLoad(obj, self._ignore_regexes, parent=self,
                                      key_paths=False,
-                                     list_of_dicts=self._list_of_dicts)
+                                     list_of_dicts=self._list_of_dicts, parse_errors=self._parse_errors)
                     return child
                 elif obj.is_dir():
                     child = LazyLoad(obj, self._ignore_regexes, parent=self,
                                      key_paths=self._key_paths,
-                                     list_of_dicts=self._list_of_dicts)
+                                     list_of_dicts=self._list_of_dicts, parse_errors=self._parse_errors)
                     return child
 
         return obj
@@ -2019,11 +2030,15 @@ class LazyLoad(object):
                 try:
                     new_obj = parse(obj, **self._parser_kwargs)
                 except Exception as err:
-                    if sys.version_info.major > 2:
-                        # NB: without exec, this raises a syntax error in python 2
-                        exec('raise IOError("Parsing error in file: {0}".format(obj)) from err', globals(), locals())
+                    if self._parse_errors:
+                        if sys.version_info.major > 2:
+                            # NB: without exec, this raises a syntax error in python 2
+                            exec('raise IOError("Parsing error for file: {0}".format(obj)) from err', globals(), locals())
+                        else:
+                            raise IOError("Parsing error for file: {0}\n{1}".format(obj, err))
                     else:
-                        raise IOError("Parsing error in file: {0}\n{1}".format(obj, err))
+                        logger.error("Parsing error for file: {0}: {1}".format(obj, err))
+                        new_obj = None
 
                 if is_dict_like(new_obj):
                     self._itemmap = {key: self._next_level(val) for key, val in new_obj.items()}

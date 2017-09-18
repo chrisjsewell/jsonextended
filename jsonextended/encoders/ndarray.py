@@ -39,7 +39,7 @@ class Encode_NDArray(object):
         elements = reduce(operator.mul, obj.shape, 1)
         if elements > 10:
             return 'np.array({0}, min={1:.2E}, max={2:.2E})'.format(
-                obj.shape, obj.min(), obj.max())
+                obj.shape, np.nanmin(obj), np.nanmax(obj))
         else:
             return ' '.join(str(obj).split())
 
