@@ -331,7 +331,8 @@ def load_builtin_plugins(category=None, overwrite=False):
                  'hdf5.read': 'read *.hdf5 (in read mode) files using h5py',
                  'ipynb': 'read Jupyter Notebooks',
                  'json.basic': 'read *.json files using json.load',
-                 'keypair': "read *.keypair, where each line should be; '<key> <pair>'"}}
+                 'keypair': "read *.keypair, where each line should be; '<key> <pair>'",
+                 'yaml.ruamel': 'read *.yaml files using ruamel.yaml'}}
 
 
     >>> unload_all_plugins()
