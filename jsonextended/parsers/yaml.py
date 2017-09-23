@@ -16,8 +16,8 @@ class YAML_Parser(object):
     ... )
     >>> with fileobj.open() as f:
     ...     data = YAML_Parser().read_file(f)
-    >>> data["key1"]
-    CommentedMap([('subkey1', 'a'), ('subkey2', [1, 2, 3])])
+    >>> pprint(dict(data["key1"]))
+    {'subkey1': 'a', 'subkey2': [1, 2, 3]}
 
     """
 
