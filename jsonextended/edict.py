@@ -879,7 +879,7 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False):
     return unflatten(flatd, list_of_dicts=list_of_dicts)
 
 
-def remove_paths(d, keys=None, list_of_dicts=False):
+def remove_paths(d, keys, list_of_dicts=False):
     """ remove paths containing certain keys from dict
 
     Parameters
@@ -897,6 +897,11 @@ def remove_paths(d, keys=None, list_of_dicts=False):
     >>> pprint(remove_paths(d,[6,'a']))
     {2: {'b': 'B'}, 4: {5: {7: 'b'}}}
 
+    >>> d = {1:{2: 3}, 1:{4: 5}}
+    >>> pprint(remove_paths(d,[(1, 2)]))
+    {1: {4: 5}}
+
+
     >>> d2 = {'a':[{'b':1,'c':{'b':3}},{'b':1,'c':2}]}
     >>> pprint(remove_paths(d2,["b"],list_of_dicts=False))
     {'a': [{'b': 1, 'c': {'b': 3}}, {'b': 1, 'c': 2}]}
@@ -905,12 +910,12 @@ def remove_paths(d, keys=None, list_of_dicts=False):
     {'a': [{'c': 2}]}
 
     """
-    keys = [] if keys is None else keys
+    keys = [(key,) if not isinstance(key, tuple) else key for key in keys]
     list_of_dicts = '__list__' if list_of_dicts else None
 
     def contains(path):
         for k in keys:
-            if k in path:
+            if set(k).issubset(path):
                 return True
         return False
 
