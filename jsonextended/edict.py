@@ -602,7 +602,7 @@ def unflatten(d, key_as_tuple=True, delim='.',
     return result
 
 
-def merge(dicts, overwrite=False, append=False):
+def merge(dicts, overwrite=False, append=False, list_of_dicts=False):
     """ merge dicts,
     starting with dicts[1] into dicts[0]
 
@@ -614,6 +614,8 @@ def merge(dicts, overwrite=False, append=False):
         if true allow overwriting of current data
     append : bool
         if true and items are both lists, then add them
+    list_of_dicts: bool
+        treat list of dicts as additional branches
 
     Examples
     --------
@@ -635,7 +637,7 @@ def merge(dicts, overwrite=False, append=False):
     >>> merge([d1,d2],overwrite=False)
     Traceback (most recent call last):
     ...
-    ValueError: different data already exists at 1.a: old: A, new: X
+    ValueError: different data already exists at "1.a": old: A, new: X
 
     >>> merge([{},{}],overwrite=False)
     {}
@@ -643,26 +645,43 @@ def merge(dicts, overwrite=False, append=False):
     {'a': 1}
     >>> pprint(merge([{},{'a':1},{'a':1},{'b':2}]))
     {'a': 1, 'b': 2}
+    >>> pprint(merge([{'a':[{"b": 1}, {"c": 2}]}, {'a':[{"d": 3}]}]))
+    Traceback (most recent call last):
+     ...
+    ValueError: different data already exists at "a": old: [{'b': 1}, {'c': 2}], new: [{'d': 3}]
+    >>> pprint(merge([{'a':[{"b": 1}, {"c": 2}]}, {'a':[{"d": 3}]}], list_of_dicts=True))
+    Traceback (most recent call last):
+     ...
+    ValueError: list of dicts are of different lengths at "a": old: [{'b': 1}, {'c': 2}], new: [{'d': 3}]
+    >>> pprint(merge([{'a':[{"b": 1}, {"c": 2}]}, {'a':[{"d": 3}, {"e": 4}]}], list_of_dicts=True))
+    {'a': [{'b': 1, 'd': 3}, {'c': 2, 'e': 4}]}
 
     """
     outdict = copy.deepcopy(dicts[0])
 
-    def single_merge(a, b, overwrite=overwrite, error_path=None):
+    def single_merge(a, b, error_path=None):
         """merges b into a
         """
-        if error_path is None: error_path = []
+        if error_path is None:
+            error_path = []
         for key in b:
             if key in a:
                 if is_dict_like(a[key]) and is_dict_like(b[key]):
-                    single_merge(a[key], b[key], overwrite, error_path + [str(key)])
+                    single_merge(a[key], b[key], error_path + [str(key)])
                 elif isinstance(a[key], list) and isinstance(b[key], list) and append:
                     a[key] += b[key]
+                elif is_list_of_dict_like(a[key]) and is_list_of_dict_like(b[key]) and list_of_dicts:
+                    if len(a[key]) != len(b[key]):
+                        raise ValueError('list of dicts are of different lengths at "{0}": old: {1}, new: {2}'.format(
+                            '.'.join(error_path + [str(key)]), a[key], b[key]))
+                    for i, (a_item, b_item) in enumerate(zip(a[key], b[key])):
+                        single_merge(a_item, b_item, error_path + [str(key), "iter_{}".format(i)])
                 elif a[key] == b[key]:
                     pass  # same leaf value
                 elif overwrite:
                     a[key] = b[key]
                 else:
-                    raise ValueError('different data already exists at {0}: old: {1}, new: {2}'.format(
+                    raise ValueError('different data already exists at "{0}": old: {1}, new: {2}'.format(
                         '.'.join(error_path + [str(key)]), a[key], b[key]))
             else:
                 a[key] = b[key]
