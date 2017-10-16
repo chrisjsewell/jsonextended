@@ -943,6 +943,8 @@ def remove_paths(d, keys, list_of_dicts=False, deepcopy=True):
         list of keys to find and remove path
     list_of_dicts: bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -992,6 +994,8 @@ def filter_values(d, vals=None, list_of_dicts=False, deepcopy=True):
         values to filter by
     list_of_dicts: bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -1016,7 +1020,14 @@ def filter_values(d, vals=None, list_of_dicts=False, deepcopy=True):
     return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-# TODO deal with uncomparable values?
+def _in_pruned(k, pruned):
+    for p in pruned:
+        if tuple(k[:len(p)]) == p:
+            return True
+    return False
+
+
+# TODO filter_keyvals; deal with uncomparable values, speedup?
 def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=False, deepcopy=True):
     """ filters leaf nodes key:value pairs of nested dictionary
 
@@ -1031,6 +1042,8 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
         keep all sibling paths
     list_of_dicts : bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -1058,6 +1071,14 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
     >>> pprint(filter_keyvals(d2,[('b',1), ('c',2)], logic="AND", keep_siblings=True))
     {'a': {'b': 1, 'c': 2, 'd': 3}}
 
+    >>> d3 = {"a": {"b": 1, "f": {"d": 3}}, "e": {"b": 1, "c": 2, "f": {"d": 3}}, "g": 5}
+    >>> pprint(filter_keyvals(d3,[('b',1), ('c', 2)], logic="OR", keep_siblings=True))
+    {'a': {'b': 1, 'f': {'d': 3}}, 'e': {'b': 1, 'c': 2, 'f': {'d': 3}}}
+
+    >>> pprint(filter_keyvals(d3,[('b',1), ('c', 2)], logic="AND", keep_siblings=True))
+    {'e': {'b': 1, 'c': 2, 'f': {'d': 3}}}
+
+
     """
     if len(keyvals) != len(dict(keyvals)):
         raise ValueError("repeating keys in keyvals: {}".format(keyvals))
@@ -1065,28 +1086,33 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
     keyvals = dict(keyvals)
     list_of_dicts = '__list__' if list_of_dicts else None
 
+    flattened = flatten(d, list_of_dicts=list_of_dicts)
+
     if logic == "OR":
         if keep_siblings:
-            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
-                        if any(key in v and v[key] == keyvals[key] for key in keyvals)}
+            pruned = {tuple(k[:-1]) for k, v in flattened.items()
+                      if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
+            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
         else:
-            filtered = {k: v for k, v in flatten(d, list_of_dicts=list_of_dicts).items()
+            filtered = {k: v for k, v in flattened.items()
                         if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
-    elif logic == "AND" and sys.version_info.major == 3:
+    elif logic == "AND":
         if keep_siblings:
-            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
-                        if keyvals.items() <= v.items()}
+            pruned = {}
+            for k, v in flattened.items():
+                if any(key == k[-1] and v == keyvals[key] for key in keyvals):
+                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
+            all_keys = list(keyvals.keys())
+            pruned = [k for k, v in pruned.items() if v == all_keys]
+            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
         else:
-            filtered = {k: {k0: v0 for k0, v0 in v.items() if k0 in keyvals}
-                        for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items() if keyvals.items() <= v.items()}
-    elif logic == "AND" and sys.version_info.major == 2:
-        if keep_siblings:
-            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
-                        if keyvals.viewitems() <= v.viewitems()}
-        else:
-            filtered = {k: {k0: v0 for k0, v0 in v.items() if k0 in keyvals}
-                        for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
-                        if keyvals.viewitems() <= v.viewitems()}
+            pruned = {}
+            for k, v in flattened.items():
+                if any(key == k[-1] and v == keyvals[key] for key in keyvals):
+                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
+            all_keys = list(keyvals.keys())
+            pruned = [k for k, v in pruned.items() if v == all_keys]
+            filtered = {k: v for k, v in flattened.items() if k[-1] in all_keys and _in_pruned(k, pruned)}
     else:
         raise ValueError("logic must be AND or OR: {}".format(logic))
 
@@ -1107,6 +1133,8 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=
         keep all sibling paths
     list_of_dicts : bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -1135,28 +1163,40 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=
     {'a': {'b': 1, 'c': 2, 'd': 3}}
 
     """
-    if logic not in ["AND", "OR"]:
-        raise ValueError("logic must be AND or OR: {}".format(logic))
     if len(keyfuncs) != len(dict(keyfuncs)):
         raise ValueError("repeating keys in keyfuncs: {}".format(keyfuncs))
     keyfuncs = dict(keyfuncs)
     list_of_dicts = '__list__' if list_of_dicts else None
 
+    flattened = flatten(d, list_of_dicts=list_of_dicts)
+
     if logic == "OR":
         if keep_siblings:
-            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
-                        if any(key in v and keyfuncs[key](v[key]) for key in keyfuncs)}
+            pruned = {tuple(k[:-1]) for k, v in flattened.items()
+                      if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
+            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
         else:
-            filtered = {k: v for k, v in flatten(d, list_of_dicts=list_of_dicts).items()
+            filtered = {k: v for k, v in flattened.items()
                         if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
     elif logic == "AND":
         if keep_siblings:
-            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
-                        if all(key in v and keyfuncs[key](v[key]) for key in keyfuncs)}
+            pruned = {}
+            for k, v in flattened.items():
+                if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs):
+                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
+            all_keys = list(keyfuncs.keys())
+            pruned = [k for k, v in pruned.items() if v == all_keys]
+            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
         else:
-            filtered = {k: {k0: v0 for k0, v0 in v.items() if k0 in keyfuncs}
-                        for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
-                        if all(key in v and keyfuncs[key](v[key]) for key in keyfuncs)}
+            pruned = {}
+            for k, v in flattened.items():
+                if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs):
+                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
+            all_keys = list(keyfuncs.keys())
+            pruned = [k for k, v in pruned.items() if v == all_keys]
+            filtered = {k: v for k, v in flattened.items() if k[-1] in all_keys and _in_pruned(k, pruned)}
+    else:
+        raise ValueError("logic must be AND or OR: {}".format(logic))
 
     return unflatten(filtered, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
@@ -1172,6 +1212,8 @@ def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False, deepcopy=True
         if true, can use * (matches everything) and ? (matches any single character)
     list_of_dicts: bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -1220,6 +1262,8 @@ def filter_paths(d, paths, list_of_dicts=False, deepcopy=True):
     paths : list of tuples/strs
     list_of_dicts: bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -1260,6 +1304,8 @@ def rename_keys(d, keymap=None, list_of_dicts=False, deepcopy=True):
         dictionary of key name mappings
     list_of_dicts: bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -1353,6 +1399,8 @@ def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
     unflatten_level : int or None
         the number of levels to leave unflattened before combining,
         for instance if you need dicts as inputs
+    deepcopy: bool
+        deepcopy values
     kwargs : dict
         additional keywords to parse to function
 
@@ -1411,6 +1459,8 @@ def combine_apply(d, leaf_keys, func, new_name,
         whether to overwrite any existing new_name key
     list_of_dicts: bool
         treat list of dicts as additional branches
+    deepcopy: bool
+        deepcopy values
     kwargs : dict
         additional keywords to parse to function
 
@@ -1473,6 +1523,8 @@ def split_lists(d, split_keys, new_name='split', check_length=True, deepcopy=Tru
         top level key for split items
     check_length : bool
         if true, raise error if any lists are of a different length
+    deepcopy: bool
+        deepcopy values
 
     Examples
     --------
@@ -1543,6 +1595,8 @@ def combine_lists(d, keys=None, deepcopy=True):
     d : dict or list of dicts
     keys : list
         keys to combine (all if None)
+    deepcopy: bool
+        deepcopy values
 
     Example
     -------
