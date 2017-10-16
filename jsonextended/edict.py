@@ -859,6 +859,9 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False):
 
     Parameters
     ----------
+    d : dict
+    keyvals : list of tuples
+        (key,value) pairs to remove
     list_of_dicts: bool
         treat list of dicts as additional branches
 
@@ -903,6 +906,7 @@ def remove_paths(d, keys, list_of_dicts=False):
 
     Parameters
     ----------
+    d: dict
     keys : list
         list of keys to find and remove path
     list_of_dicts: bool
@@ -980,22 +984,20 @@ def filter_values(d, vals=None, list_of_dicts=False):
     return unflatten(flatd, list_of_dicts=list_of_dicts)
 
 
-def filter_keyvals(d, vals=None,
-                   error=None,
-                   keep_siblings=False,
-                   list_of_dicts=False):
+# TODO deal with uncomparable values?
+def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=False):
     """ filters leaf nodes key:value pairs of nested dictionary
 
     Parameters
     ----------
     d : dict
-    vals : list of tuples
-        (key,value) to filter by
-    error : float
-        allow values in range [val-error,val+error]
+    keyvals : dict or list of tuples
+        (key,value) pairs to filter by
+    logic : str
+        "OR" or "AND" for matching pairs
     keep_siblings : bool
         keep all sibling paths
-    list_of_dicts: bool
+    list_of_dicts : bool
         treat list of dicts as additional branches
 
     Examples
@@ -1007,53 +1009,119 @@ def filter_keyvals(d, vals=None,
     >>> pprint(filter_keyvals(d,[(6,'a')]))
     {1: {6: 'a'}, 4: {5: {6: 'a'}}}
 
-    >>> d2 = {'a':{'b':1,'c':2}, 'd':3}
-    >>> pprint(filter_keyvals(d2,[('b',1)],keep_siblings=False))
-    {'a': {'b': 1}}
+    >>> d2 = {'a':{'b':1,'c':2,'d':3}, 'e':4}
 
-    >>> pprint(filter_keyvals(d2,[('b',1)],keep_siblings=True))
+    >>> pprint(filter_keyvals(d2, {'b': 1, 'e': 4}, logic="OR", keep_siblings=False))
+    {'a': {'b': 1}, 'e': 4}
+
+    >>> pprint(filter_keyvals(d2,[('b',1)], logic="OR", keep_siblings=True))
+    {'a': {'b': 1, 'c': 2, 'd': 3}}
+
+    >>> pprint(filter_keyvals(d2, {'b': 1, 'e': 4}, logic="AND", keep_siblings=False))
+    {}
+
+    >>> pprint(filter_keyvals(d2, {'b': 1, 'c': 2}, logic="AND", keep_siblings=False))
     {'a': {'b': 1, 'c': 2}}
 
-    >>> pprint(filter_keyvals({'a':1},[('a',0.98)],error=0.01))
-    {}
-    >>> pprint(filter_keyvals({'a':1},[('a',0.98)],error=0.1))
-    {'a': 1}
+    >>> pprint(filter_keyvals(d2,[('b',1), ('c',2)], logic="AND", keep_siblings=True))
+    {'a': {'b': 1, 'c': 2, 'd': 3}}
 
     """
-    vals = {} if vals is None else dict(vals)
+    if logic not in ["AND", "OR"]:
+        raise ValueError("logic must be AND or OR: {}".format(logic))
+    if len(keyvals) != len(dict(keyvals)):
+        raise ValueError("repeating keys in keyvals: {}".format(keyvals))
+
+    keyvals = dict(keyvals)
     list_of_dicts = '__list__' if list_of_dicts else None
 
-    flatd = flatten(d, list_of_dicts=list_of_dicts)
+    if logic == "OR":
+        if keep_siblings:
+            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
+                        if any(key in v and v[key] == keyvals[key] for key in keyvals)}
+        else:
+            filtered = {k: v for k, v in flatten(d, list_of_dicts=list_of_dicts).items()
+                        if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
+    elif logic == "AND":
+        if keep_siblings:
+            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
+                        if keyvals.items() <= v.items()}
+        else:
+            filtered = {k: {k0: v0 for k0, v0 in v.items() if k0 in keyvals}
+                        for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items() if keyvals.items() <= v.items()}
 
-    def is_in(k, v, vmap):
-        try:
-            if not k in vmap:
-                return False
-            if v == vmap[k]:
-                return True
-            if error is not None:
-                if vmap[k] > v - error and vmap[k] < v + error:
-                    return True
-        except:
-            return False
-        return False
-
-    if not keep_siblings:
-        newd = {k: v for k, v in flatd.items() if is_in(k[-1], v, vals)}
-    else:
-        prune = [tuple(k[:-1]) for k, v in flatd.items() if is_in(k[-1], v, vals)]
-        newd = {}
-        for k, v in flatd.items():
-            for p in prune:
-                if tuple(k[:len(p)]) == p:
-                    newd[k] = v
-                    break
-
-    return unflatten(newd, list_of_dicts=list_of_dicts)
+    return unflatten(filtered, list_of_dicts=list_of_dicts)
 
 
-def filter_keys(d, keys, use_wildcards=False,
-                list_of_dicts=False):
+def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=False):
+    """ filters leaf nodes key:func(val) pairs of nested dictionary, where func(val) -> True/False
+
+    Parameters
+    ----------
+    d : dict
+    keyfuncs : dict or list of tuples
+        (key,funcs) pairs to filter by
+    logic : str
+        "OR" or "AND" for matching pairs
+    keep_siblings : bool
+        keep all sibling paths
+    list_of_dicts : bool
+        treat list of dicts as additional branches
+
+    Examples
+    --------
+
+    >>> from pprint import pprint
+
+    >>> d = {'a':{'b':1,'c':2,'d':3}, 'e':4}
+    >>> func1 = lambda v: v <= 2
+
+    >>> pprint(filter_keyfuncs(d, {'b': func1, 'e': func1}, logic="OR", keep_siblings=False))
+    {'a': {'b': 1}}
+
+    >>> pprint(filter_keyfuncs(d,[('b',func1), ('d', func1)], logic="OR", keep_siblings=True))
+    {'a': {'b': 1, 'c': 2, 'd': 3}}
+
+    >>> pprint(filter_keyfuncs(d, {'b': func1, 'e': func1}, logic="AND", keep_siblings=False))
+    {}
+
+    >>> pprint(filter_keyfuncs(d, {'b': func1, 'd': func1}, logic="AND", keep_siblings=False))
+    {}
+
+    >>> pprint(filter_keyfuncs(d, {'b': func1, 'c': func1}, logic="AND", keep_siblings=False))
+    {'a': {'b': 1, 'c': 2}}
+
+    >>> pprint(filter_keyfuncs(d,[('b',func1), ('c',func1)], logic="AND", keep_siblings=True))
+    {'a': {'b': 1, 'c': 2, 'd': 3}}
+
+    """
+    if logic not in ["AND", "OR"]:
+        raise ValueError("logic must be AND or OR: {}".format(logic))
+    if len(keyfuncs) != len(dict(keyfuncs)):
+        raise ValueError("repeating keys in keyfuncs: {}".format(keyfuncs))
+    keyfuncs = dict(keyfuncs)
+    list_of_dicts = '__list__' if list_of_dicts else None
+
+    if logic == "OR":
+        if keep_siblings:
+            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
+                        if any(key in v and keyfuncs[key](v[key]) for key in keyfuncs)}
+        else:
+            filtered = {k: v for k, v in flatten(d, list_of_dicts=list_of_dicts).items()
+                        if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
+    elif logic == "AND":
+        if keep_siblings:
+            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
+                        if all(key in v and keyfuncs[key](v[key]) for key in keyfuncs)}
+        else:
+            filtered = {k: {k0: v0 for k0, v0 in v.items() if k0 in keyfuncs}
+                        for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
+                        if all(key in v and keyfuncs[key](v[key]) for key in keyfuncs)}
+
+    return unflatten(filtered, list_of_dicts=list_of_dicts)
+
+
+def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False):
     """ filter dict by certain keys
 
     Parameters
