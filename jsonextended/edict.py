@@ -31,6 +31,10 @@ try:
     import pathlib
 except ImportError:
     import pathlib2 as pathlib
+try:
+    from urllib2 import urlopen
+except ImportError:
+    from urllib.request import urlopen
 
 # local imports
 from jsonextended.utils import natural_sort, colortxt
@@ -516,7 +520,7 @@ def _recreate_lists(d, prefix):
 
 
 def unflatten(d, key_as_tuple=True, delim='.',
-              list_of_dicts=None):
+              list_of_dicts=None, deepcopy=True):
     r""" unflatten dictionary with keys as tuples or delimited strings
 
     Parameters
@@ -556,10 +560,11 @@ def unflatten(d, key_as_tuple=True, delim='.',
     if not d:
         return d
 
-    try:
-        d = copy.deepcopy(d)
-    except:
-        warnings.warn('error in deepcopy, so using references to input dict')
+    if deepcopy:
+        try:
+            d = copy.deepcopy(d)
+        except:
+            warnings.warn('error in deepcopy, so using references to input dict')
 
     if key_as_tuple:
         result = d.pop(()) if () in d else {}
@@ -600,6 +605,44 @@ def unflatten(d, key_as_tuple=True, delim='.',
         #         result = [result[k] for k in sorted(list(result.keys()), key=lambda x: int(x.replace(list_of_dicts, '')))]
 
     return result
+
+
+def _single_merge(a, b, error_path=None, overwrite=False, append=False, list_of_dicts=False):
+    """merges b into a
+    """
+    if error_path is None:
+        error_path = []
+
+    if list_of_dicts and is_list_of_dict_like(a) and is_list_of_dict_like(b):
+        if len(a) != len(b):
+            raise ValueError('list of dicts are of different lengths at'
+                             ' "{0}": old: {1}, new: {2}'.format('.'.join(error_path), a, b))
+        return [_single_merge(a_item, b_item, error_path + ["iter_{}".format(i)], overwrite, append, list_of_dicts)
+                for i, (a_item, b_item) in enumerate(zip(a, b))]
+
+    for key in b:
+        if key in a:
+            if is_dict_like(a[key]) and is_dict_like(b[key]):
+                _single_merge(a[key], b[key], error_path + [str(key)], overwrite, append, list_of_dicts)
+            elif isinstance(a[key], list) and isinstance(b[key], list) and append:
+                a[key] += b[key]
+            elif list_of_dicts and is_list_of_dict_like(a[key]) and is_list_of_dict_like(b[key]):
+                if len(a[key]) != len(b[key]):
+                    raise ValueError('list of dicts are of different lengths at "{0}": old: {1}, new: {2}'.format(
+                        '.'.join(error_path + [str(key)]), a[key], b[key]))
+                for i, (a_item, b_item) in enumerate(zip(a[key], b[key])):
+                    _single_merge(a_item, b_item, error_path + [str(key), "iter_{}".format(i)],
+                                  overwrite, append, list_of_dicts)
+            elif a[key] == b[key]:
+                pass  # same leaf value
+            elif overwrite:
+                a[key] = b[key]
+            else:
+                raise ValueError('different data already exists at "{0}": old: {1}, new: {2}'.format(
+                    '.'.join(error_path + [str(key)]), a[key], b[key]))
+        else:
+            a[key] = b[key]
+    return a
 
 
 def merge(dicts, overwrite=False, append=False, list_of_dicts=False):
@@ -659,33 +702,8 @@ def merge(dicts, overwrite=False, append=False, list_of_dicts=False):
     """
     outdict = copy.deepcopy(dicts[0])
 
-    def single_merge(a, b, error_path=None):
-        """merges b into a
-        """
-        if error_path is None:
-            error_path = []
-        for key in b:
-            if key in a:
-                if is_dict_like(a[key]) and is_dict_like(b[key]):
-                    single_merge(a[key], b[key], error_path + [str(key)])
-                elif isinstance(a[key], list) and isinstance(b[key], list) and append:
-                    a[key] += b[key]
-                elif is_list_of_dict_like(a[key]) and is_list_of_dict_like(b[key]) and list_of_dicts:
-                    if len(a[key]) != len(b[key]):
-                        raise ValueError('list of dicts are of different lengths at "{0}": old: {1}, new: {2}'.format(
-                            '.'.join(error_path + [str(key)]), a[key], b[key]))
-                    for i, (a_item, b_item) in enumerate(zip(a[key], b[key])):
-                        single_merge(a_item, b_item, error_path + [str(key), "iter_{}".format(i)])
-                elif a[key] == b[key]:
-                    pass  # same leaf value
-                elif overwrite:
-                    a[key] = b[key]
-                else:
-                    raise ValueError('different data already exists at "{0}": old: {1}, new: {2}'.format(
-                        '.'.join(error_path + [str(key)]), a[key], b[key]))
-            else:
-                a[key] = b[key]
-        return a
+    def single_merge(a, b):
+        return _single_merge(a, b, overwrite=overwrite, append=append, list_of_dicts=list_of_dicts)
 
     reduce(single_merge, [outdict] + dicts[1:])
 
@@ -735,6 +753,15 @@ def flattennd(d, levels=0, key_as_tuple=True, delim='.',
     >>> pprint(flattennd(d,1,key_as_tuple=False,delim='.'))
     {'1.2': {4: 'D'}, '1.2.3': {'b': 'B', 'c': 'C'}}
 
+    >>> test_dict = {"a":[{"b":[{"c":1, "d": 2}, {"e":3, "f": 4}]}, {"b":[{"c":5, "d": 6}, {"e":7, "f": 8}]}]}
+    >>> pprint(flattennd(test_dict, list_of_dicts="__list__", levels=2))
+    {('a', '__list__0', 'b'): [{'c': 1, 'd': 2}, {'e': 3, 'f': 4}],
+     ('a', '__list__1', 'b'): [{'c': 5, 'd': 6}, {'e': 7, 'f': 8}]}
+
+    >>> pprint(flattennd(test_dict, list_of_dicts="__list__", levels=3))
+    {('a', '__list__0'): {'b': [{'c': 1, 'd': 2}, {'e': 3, 'f': 4}]},
+     ('a', '__list__1'): {'b': [{'c': 5, 'd': 6}, {'e': 7, 'f': 8}]}}
+
     """
     if levels < 0:
         raise ValueError('unflattened levels must be greater than 0')
@@ -748,13 +775,18 @@ def flattennd(d, levels=0, key_as_tuple=True, delim='.',
         new_key = key[:-(levels)] if key_as_tuple else delim.join([str(k) for k in key[:-(levels)]])
         new_levels = key[-(levels):]
 
-        val_dict = {new_levels: value}
-        val_dict = unflatten(val_dict, True, delim, list_of_dicts=list_of_dicts)
+        #val_dict = {new_levels: value}
+        #val_dict = unflatten(val_dict, True, delim)
 
         if not new_key in new_d:
-            new_d[new_key] = val_dict
+            new_d[new_key] = {new_levels: value}
         else:
-            new_d[new_key] = merge([new_d[new_key], val_dict])
+            if new_levels in new_d[new_key]:
+                raise ValueError("key clash for: {0}; {1}".format(new_key, new_levels))
+            new_d[new_key][new_levels] = value
+
+    for nkey, nvalue in new_d.items():
+        new_d[nkey] = unflatten(nvalue, list_of_dicts=list_of_dicts, deepcopy=False)
 
     return new_d
 
@@ -792,7 +824,7 @@ def flatten2d(d, key_as_tuple=True, delim='.',
 
 
 def remove_keys(d, keys=None, use_wildcards=True,
-                list_of_dicts=False):
+                list_of_dicts=False, deepcopy=True):
     """remove certain keys from nested dict, retaining preceeding paths
 
     Parameters
@@ -851,10 +883,10 @@ def remove_keys(d, keys=None, use_wildcards=True,
             except:
                 pass
             new_dic[new_key] = value
-        return unflatten(new_dic, list_of_dicts=list_of_dicts)
+        return unflatten(new_dic, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def remove_keyvals(d, keyvals=None, list_of_dicts=False):
+def remove_keyvals(d, keyvals=None, list_of_dicts=False, deepcopy=True):
     """remove paths with at least one branch leading to certain (key,value) pairs from dict
 
     Parameters
@@ -898,10 +930,10 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False):
     prune = [k[0] for k, v in flatd.items() if is_in((k[-1], v), keyvals)]
     flatd = {k: v for k, v in flatd.items() if not is_in(k[0], prune)}
 
-    return unflatten(flatd, list_of_dicts=list_of_dicts)
+    return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def remove_paths(d, keys, list_of_dicts=False):
+def remove_paths(d, keys, list_of_dicts=False, deepcopy=True):
     """ remove paths containing certain keys from dict
 
     Parameters
@@ -946,11 +978,11 @@ def remove_paths(d, keys, list_of_dicts=False):
 
     flatd = {path: v for path, v in flatd.items() if not contains(path)}
 
-    return unflatten(flatd, list_of_dicts=list_of_dicts)
+    return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
     # return {key: remove_paths(value,keys) for key, value in d.items() if key not in keys}
 
 
-def filter_values(d, vals=None, list_of_dicts=False):
+def filter_values(d, vals=None, list_of_dicts=False, deepcopy=True):
     """ filters leaf nodes of nested dictionary
 
     Parameters
@@ -981,11 +1013,11 @@ def filter_values(d, vals=None, list_of_dicts=False):
             return False
 
     flatd = {k: v for k, v in flatd.items() if is_in(v, vals)}
-    return unflatten(flatd, list_of_dicts=list_of_dicts)
+    return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
 # TODO deal with uncomparable values?
-def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=False):
+def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=False, deepcopy=True):
     """ filters leaf nodes key:value pairs of nested dictionary
 
     Parameters
@@ -1058,10 +1090,10 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
     else:
         raise ValueError("logic must be AND or OR: {}".format(logic))
 
-    return unflatten(filtered, list_of_dicts=list_of_dicts)
+    return unflatten(filtered, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=False):
+def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=False, deepcopy=True):
     """ filters leaf nodes key:func(val) pairs of nested dictionary, where func(val) -> True/False
 
     Parameters
@@ -1126,15 +1158,15 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=
                         for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
                         if all(key in v and keyfuncs[key](v[key]) for key in keyfuncs)}
 
-    return unflatten(filtered, list_of_dicts=list_of_dicts)
+    return unflatten(filtered, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False):
+def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False, deepcopy=True):
     """ filter dict by certain keys
 
     Parameters
     ----------
-    dic : dict
+    d : dict
     keys: list
     use_wildcards : bool
         if true, can use * (matches everything) and ? (matches any single character)
@@ -1176,10 +1208,10 @@ def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False):
                 return False
 
     flatd = {paths: v for paths, v in flatd.items() if any([is_in(k, paths) for k in keys])}
-    return unflatten(flatd, list_of_dicts=list_of_dicts)
+    return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def filter_paths(d, paths, list_of_dicts=False):
+def filter_paths(d, paths, list_of_dicts=False, deepcopy=True):
     """ filter dict by certain paths containing key sets
 
     Parameters
@@ -1215,10 +1247,10 @@ def filter_paths(d, paths, list_of_dicts=False):
     for key in list(new_d.keys()):
         if not any([set(key).issuperset(path if isinstance(path, tuple) else [path]) for path in paths]):
             new_d.pop(key)
-    return unflatten(new_d, list_of_dicts=list_of_dicts)
+    return unflatten(new_d, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def rename_keys(d, keymap=None, list_of_dicts=False):
+def rename_keys(d, keymap=None, list_of_dicts=False, deepcopy=True):
     """ rename keys in dict
 
     Parameters
@@ -1245,11 +1277,11 @@ def rename_keys(d, keymap=None, list_of_dicts=False):
 
     flatd = {tuple([keymap.get(k, k) for k in path]): v for path, v in flatd.items()}
 
-    return unflatten(flatd, list_of_dicts=list_of_dicts)
+    return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
     # return {keymap[key] if key in keymap else key: rename_keys(value,keymap) for key, value in d.items()}
 
 
-def split_key(d, key, new_keys, before=True, list_of_dicts=False):
+def split_key(d, key, new_keys, before=True, list_of_dicts=False, deepcopy=True):
     """ split an existing key(s) into multiple levels
 
     Parameters
@@ -1298,11 +1330,11 @@ def split_key(d, key, new_keys, before=True, list_of_dicts=False):
         else:
             newd[path] = v
 
-    return unflatten(newd, list_of_dicts=list_of_dicts)
+    return unflatten(newd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
 def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
-          list_of_dicts=False, **kwargs):
+          list_of_dicts=False, unflatten_level=0, deepcopy=True, **kwargs):
     """ apply a function to all values with a certain leaf (terminal) key
 
     Parameters
@@ -1318,6 +1350,9 @@ def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
         whether to remove original leaf_key (if new_name is not None)
     list_of_dicts: bool
         treat list of dicts as additional branches
+    unflatten_level : int or None
+        the number of levels to leave unflattened before combining,
+        for instance if you need dicts as inputs
     kwargs : dict
         additional keywords to parse to function
 
@@ -1334,23 +1369,27 @@ def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
     >>> pprint(apply(d,'a',func,new_name='c', remove_lkey=False))
     {'a': 1, 'b': 1, 'c': 2}
 
+    >>> test_dict = {"a":[{"b":[{"c":1, "d": 2}, {"e":3, "f": 4}]}, {"b":[{"c":5, "d": 6}, {"e":7, "f": 8}]}]}
+    >>> pprint(apply(test_dict, "b", lambda x: x[-1], list_of_dicts=True, unflatten_level=2))
+    {'a': [{'b': {'e': 3, 'f': 4}}, {'b': {'e': 7, 'f': 8}}]}
 
     """
     list_of_dicts = '__list__' if list_of_dicts else None
-    flatd = flatten(d, list_of_dicts=list_of_dicts)
+    if unflatten_level == 0:
+        flatd = flatten(d, list_of_dicts=list_of_dicts)
+    else:
+        flatd = flattennd(d, unflatten_level, list_of_dicts=list_of_dicts)
     newd = {k: (func(v, **kwargs) if k[-1] == leaf_key else v) for k, v in flatd.items()}
     if new_name is not None:
         newd = {(tuple(list(k[:-1]) + [new_name]) if k[-1] == leaf_key else k): v for k, v in newd.items()}
         if not remove_lkey:
             newd.update(flatd)
 
-    return unflatten(newd, list_of_dicts=list_of_dicts)
+    return unflatten(newd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
 def combine_apply(d, leaf_keys, func, new_name,
-                  unflatten_level=1,
-                  remove_lkeys=True, overwrite=False,
-                  **kwargs):
+                  unflatten_level=1, remove_lkeys=True, overwrite=False, list_of_dicts=False, deepcopy=True, **kwargs):
     """ combine values with certain leaf (terminal) keys by a function
 
     Parameters
@@ -1370,6 +1409,8 @@ def combine_apply(d, leaf_keys, func, new_name,
         whether to remove original leaf_keys
     overwrite: bool
         whether to overwrite any existing new_name key
+    list_of_dicts: bool
+        treat list of dicts as additional branches
     kwargs : dict
         additional keywords to parse to function
 
@@ -1394,11 +1435,12 @@ def combine_apply(d, leaf_keys, func, new_name,
     {'d': {'a': ['b', 'c']}}
 
     """
+    list_of_dicts = '__list__' if list_of_dicts else None
     if unflatten_level is not None:
-        flatd = flattennd(d, levels=unflatten_level)
+        flatd = flattennd(d, levels=unflatten_level, list_of_dicts=list_of_dicts)
     else:
         # TODO could do this better?
-        flatd = unflatten(d, key_as_tuple=False, delim='*@#$')
+        flatd = unflatten(d, key_as_tuple=False, delim='*@#$', deepcopy=deepcopy)
 
     for dic in flatd.values():
         if not is_dict_like(dic):
@@ -1413,13 +1455,12 @@ def combine_apply(d, leaf_keys, func, new_name,
             dic[new_name] = func(*vals, **kwargs)
 
     if unflatten_level is not None:
-        return unflatten(flatd)
+        return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
     else:
         return flatd
 
 
-def split_lists(d, split_keys,
-                new_name='split', check_length=True):
+def split_lists(d, split_keys, new_name='split', check_length=True, deepcopy=True):
     """split_lists key:list pairs into dicts for each item in the lists
     NB: will only split if all split_keys are present
 
@@ -1493,10 +1534,10 @@ def split_lists(d, split_keys,
         else:
             new_d[key] = value
 
-    return unflatten(new_d)
+    return unflatten(new_d, deepcopy=deepcopy)
 
 
-def combine_lists(d, keys=None):
+def combine_lists(d, keys=None, deepcopy=True):
     """ combine lists of dicts
 
     d : dict or list of dicts
@@ -1541,7 +1582,7 @@ def combine_lists(d, keys=None):
                 newd[subk].append(subv)
         flattened[key] = newd
 
-    final = unflatten(flattened, list_of_dicts=None)
+    final = unflatten(flattened, list_of_dicts=None, deepcopy=deepcopy)
 
     if init_list:
         return list(final.values())[0]
@@ -2066,7 +2107,7 @@ class LazyLoad(object):
     >>> plugins.unload_all_plugins()
 
     """
-
+    # TODO lazyload parent is not used
     def __init__(self, obj,
                  ignore_regexes=('.*', '_*'), recursive=True,
                  parent=None, key_paths=True,
