@@ -1027,8 +1027,6 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
     {'a': {'b': 1, 'c': 2, 'd': 3}}
 
     """
-    if logic not in ["AND", "OR"]:
-        raise ValueError("logic must be AND or OR: {}".format(logic))
     if len(keyvals) != len(dict(keyvals)):
         raise ValueError("repeating keys in keyvals: {}".format(keyvals))
 
@@ -1042,13 +1040,23 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
         else:
             filtered = {k: v for k, v in flatten(d, list_of_dicts=list_of_dicts).items()
                         if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
-    elif logic == "AND":
+    elif logic == "AND" and sys.version_info.major == 3:
         if keep_siblings:
             filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
                         if keyvals.items() <= v.items()}
         else:
             filtered = {k: {k0: v0 for k0, v0 in v.items() if k0 in keyvals}
                         for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items() if keyvals.items() <= v.items()}
+    elif logic == "AND" and sys.version_info.major == 2:
+        if keep_siblings:
+            filtered = {k: v for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
+                        if keyvals.viewitems() <= v.viewitems()}
+        else:
+            filtered = {k: {k0: v0 for k0, v0 in v.items() if k0 in keyvals}
+                        for k, v in flatten2d(d, list_of_dicts=list_of_dicts).items()
+                        if keyvals.viewitems() <= v.viewitems()}
+    else:
+        raise ValueError("logic must be AND or OR: {}".format(logic))
 
     return unflatten(filtered, list_of_dicts=list_of_dicts)
 
