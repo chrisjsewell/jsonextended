@@ -8,6 +8,7 @@ import os
 import uuid
 import warnings
 from fnmatch import fnmatch
+from contextlib import contextmanager
 
 # py 2/3 compatibility
 try:
@@ -164,7 +165,7 @@ def unload_all_plugins(category=None):
         _all_plugins[category] = {}
 
 
-def unload_plugin(name, category):
+def unload_plugin(name, category=None):
     """ remove single plugin
 
     Parameters
@@ -198,7 +199,12 @@ def unload_plugin(name, category):
     {'decoders': {}, 'encoders': {}, 'parsers': {}}
 
     """
-    _all_plugins[category].pop(name)
+    if category is not None:
+        _all_plugins[category].pop(name)
+    else:
+        for cat in _all_plugins:
+            if name in _all_plugins[cat]:
+                _all_plugins[cat].pop(name)
 
 
 def load_plugin_classes(classes, category=None, overwrite=False):
@@ -206,6 +212,8 @@ def load_plugin_classes(classes, category=None, overwrite=False):
 
     Parameters
     ----------
+    classes: list
+        list of classes
     category : None or str
         if str, apply for single plugin category
     overwrite : bool
@@ -247,6 +255,53 @@ def load_plugin_classes(classes, category=None, overwrite=False):
             else:
                 load_errors.append((klass.__name__, 'does not match {0} interface: {1}'.format(pcat, pinterface)))
     return load_errors
+
+
+@contextmanager
+def plugins_context(classes, category=None):
+    """ context manager to load plugin class(es) then unload on exit
+
+    Parameters
+    ----------
+    classes: list
+        list of classes
+    category : None or str
+        if str, apply for single plugin category
+
+    Examples
+    --------
+    >>> from pprint import pprint
+
+    >>> class DecoderPlugin(object):
+    ...     plugin_name = 'example'
+    ...     plugin_descript = 'a decoder for dicts containing _example_ key'
+    ...     dict_signature = ('_example_',)
+    ...
+
+    >>> with plugins_context([DecoderPlugin]):
+    ...     pprint(view_plugins())
+    {'decoders': {'example': 'a decoder for dicts containing _example_ key'},
+     'encoders': {},
+     'parsers': {}}
+
+    >>> pprint(view_plugins())
+    {'decoders': {}, 'encoders': {}, 'parsers': {}}
+
+
+    """
+    original = {cat: list(_all_plugins[cat].keys()) for cat in _all_plugins}
+    errors = load_plugin_classes(classes, category, overwrite=True)
+    # if errors:
+    #     for cat in _all_plugins:
+    #         for name, kls in list(_all_plugins[cat].items()):
+    #             if name not in original[cat]:
+    #                 _all_plugins[cat].pop(name)
+    #     raise RuntimeError("errors occurred while loading plugins: {}".format(errors))
+    yield
+    for cat in _all_plugins:
+        for name, kls in list(_all_plugins[cat].items()):
+            if name not in original[cat]:
+                _all_plugins[cat].pop(name)
 
 
 def load_plugins_dir(path, category=None, overwrite=False):
@@ -303,6 +358,7 @@ def load_builtin_plugins(category=None, overwrite=False):
 
     Parameters
     ----------
+    name: None or str
     category : None or str
         if str, apply for single plugin category
 
