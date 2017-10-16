@@ -1097,21 +1097,16 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
             filtered = {k: v for k, v in flattened.items()
                         if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
     elif logic == "AND":
+        pruned = {}
+        for k, v in flattened.items():
+            if any(key == k[-1] and v == keyvals[key] for key in keyvals):
+                pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
+        all_keys = set(keyvals.keys())
+        pruned = [k for k, v in pruned.items() if set(v) == all_keys]
+
         if keep_siblings:
-            pruned = {}
-            for k, v in flattened.items():
-                if any(key == k[-1] and v == keyvals[key] for key in keyvals):
-                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
-            all_keys = list(keyvals.keys())
-            pruned = [k for k, v in pruned.items() if v == all_keys]
             filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
         else:
-            pruned = {}
-            for k, v in flattened.items():
-                if any(key == k[-1] and v == keyvals[key] for key in keyvals):
-                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
-            all_keys = list(keyvals.keys())
-            pruned = [k for k, v in pruned.items() if v == all_keys]
             filtered = {k: v for k, v in flattened.items() if k[-1] in all_keys and _in_pruned(k, pruned)}
     else:
         raise ValueError("logic must be AND or OR: {}".format(logic))
@@ -1179,21 +1174,16 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=
             filtered = {k: v for k, v in flattened.items()
                         if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
     elif logic == "AND":
+        pruned = {}
+        for k, v in flattened.items():
+            if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs):
+                pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
+        all_keys = set(keyfuncs.keys())
+        pruned = [k for k, v in pruned.items() if set(v) == all_keys]
+
         if keep_siblings:
-            pruned = {}
-            for k, v in flattened.items():
-                if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs):
-                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
-            all_keys = list(keyfuncs.keys())
-            pruned = [k for k, v in pruned.items() if v == all_keys]
-            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
+             filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
         else:
-            pruned = {}
-            for k, v in flattened.items():
-                if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs):
-                    pruned[tuple(k[:-1])] = pruned.get(tuple(k[:-1]), []) + [k[-1]]
-            all_keys = list(keyfuncs.keys())
-            pruned = [k for k, v in pruned.items() if v == all_keys]
             filtered = {k: v for k, v in flattened.items() if k[-1] in all_keys and _in_pruned(k, pruned)}
     else:
         raise ValueError("logic must be AND or OR: {}".format(logic))
