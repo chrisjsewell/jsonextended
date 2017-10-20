@@ -375,10 +375,12 @@ def load_builtin_plugins(category=None, overwrite=False):
 
     >>> pprint(view_plugins(),width=200)
     {'decoders': {'decimal.Decimal': 'encode/decode Decimal type',
+                  'fractions.Fraction': 'encode/decode Fraction type',
                   'numpy.ndarray': 'encode/decode numpy.ndarray',
                   'pint.Quantity': 'encode/decode pint.Quantity object',
                   'python.set': 'decode/encode python set'},
      'encoders': {'decimal.Decimal': 'encode/decode Decimal type',
+                  'fractions.Fraction': 'encode/decode Fraction type',
                   'numpy.ndarray': 'encode/decode numpy.ndarray',
                   'pint.Quantity': 'encode/decode pint.Quantity object',
                   'python.set': 'decode/encode python set'},
