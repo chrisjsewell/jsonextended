@@ -7,11 +7,6 @@
 #      could use this: https://stackoverflow.com/a/13252112, but wrap lists with NoIndent first
 #      would need to go through first and wrap values that are list instances with NoIndent first
 
-# have a look at:
-#    mergers: https://pypi.python.org/pypi/jsonmerge, https://pypi.python.org/pypi/json-merger/0.2.5
-
-# NB: examples use pprint to make sure keys are sorted
-# NB: using Decimal parsing my default
 
 # internal packages
 import json

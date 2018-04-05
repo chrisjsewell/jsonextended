@@ -892,7 +892,7 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False, deepcopy=True):
     Parameters
     ----------
     d : dict
-    keyvals : list of tuples
+    keyvals : dict or list of tuples
         (key,value) pairs to remove
     list_of_dicts: bool
         treat list of dicts as additional branches
@@ -915,6 +915,9 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False, deepcopy=True):
     """
     keyvals = [] if keyvals is None else keyvals
     list_of_dicts = '__list__' if list_of_dicts else None
+
+    if hasattr(keyvals, 'items'):
+        keyvals = [(k, v) for k, v in keyvals.items()]
 
     if not hasattr(d, 'items'):
         return d
@@ -2175,20 +2178,20 @@ class LazyLoad(object):
         """get object for next level of tab """
         if is_dict_like(obj):
             child = LazyLoad(obj, self._ignore_regexes, parent=self,
-                             key_paths=False,
-                             list_of_dicts=self._list_of_dicts, parse_errors=self._parse_errors)
+                             key_paths=False, list_of_dicts=self._list_of_dicts,
+                             parse_errors=self._parse_errors, **self._parser_kwargs)
             return child
         if is_path_like(obj):
             if not any([fnmatch(obj.name, regex) for regex in self._ignore_regexes]):
                 if parser_available(obj):
                     child = LazyLoad(obj, self._ignore_regexes, parent=self,
-                                     key_paths=False,
-                                     list_of_dicts=self._list_of_dicts, parse_errors=self._parse_errors)
+                                     key_paths=False, list_of_dicts=self._list_of_dicts,
+                                     parse_errors=self._parse_errors, **self._parser_kwargs)
                     return child
                 elif obj.is_dir():
                     child = LazyLoad(obj, self._ignore_regexes, parent=self,
-                                     key_paths=self._key_paths,
-                                     list_of_dicts=self._list_of_dicts, parse_errors=self._parse_errors)
+                                     key_paths=self._key_paths, list_of_dicts=self._list_of_dicts,
+                                     parse_errors=self._parse_errors, **self._parser_kwargs)
                     return child
 
         return obj

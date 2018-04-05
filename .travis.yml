@@ -1,11 +1,22 @@
 language: python
 
-python:
-    - "2.7"
-    #- "3.3" # takes a really longer time for pandas to install
-    - "3.4"
-    - "3.5"
-    - "3.6"
+matrix:
+  include:
+  - python: 2.7
+  - python: 3.4
+  - python: 3.5
+  - python: 3.6
+  allow_failures:
+  - python: 3.4
+  - python: 3.5
+
+
+#python:
+#    - "2.7"
+#    #- "3.3" # takes a really longer time for pandas to install
+#    - "3.4"
+#    - "3.5"
+#    - "3.6"
 
 before_install:
   - pip install -U pip setuptools wheel
@@ -34,7 +45,7 @@ deploy:
     on:
       branch: master
       tags: false
-      condition: $TRAVIS_PYTHON_VERSION = "2.7"
+      condition: $TRAVIS_PYTHON_VERSION = "3.6"
      # production pypi
   - provider: pypi
     distributions: bdist_wheel
@@ -44,4 +55,4 @@ deploy:
     on:
       branch: master
       tags: true
-      condition: $TRAVIS_PYTHON_VERSION = "2.7"
+      condition: $TRAVIS_PYTHON_VERSION = "3.6"
