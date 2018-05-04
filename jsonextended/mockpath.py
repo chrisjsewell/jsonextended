@@ -28,6 +28,7 @@ class _OpenRead(object):
     def __init__(self, linelist, encoding=None, usebytes=False):
         self._linelist = linelist
         self._current_indx = 0
+        self._current_line = 0
         self._encoding = encoding
         self._bytes = usebytes
 
@@ -41,17 +42,19 @@ class _OpenRead(object):
         return out
 
     def readline(self):
-        if self._current_indx >= len(self._linelist):
+        if self._current_line >= len(self._linelist):
             line = ''
         else:
-            line = self._linelist[self._current_indx] + '\n'
-        self._current_indx += len(line)
+            line = self._linelist[self._current_line] + '\n'
+        self._current_line += 1
+        self._current_indx += len('\n'.join(self._linelist[0:self._current_line]))
         if self._encoding is not None:
             line = line.encode(self._encoding)
         return line
 
     def readlines(self):
         self._current_indx = len('\n'.join(self._linelist))
+        self._current_line = len(self._linelist)
         if self._encoding is not None and self:
             return [line.encode(self._encoding) for line in self._linelist]
         else:
@@ -334,6 +337,11 @@ class MockPath(object):
         return self._children[:]
 
     children = property(_get_children)
+
+    def _get_content(self):
+        return self._content[:]
+
+    file_content = property(_get_content)
 
     def __getitem__(self, name):
         """
