@@ -829,10 +829,12 @@ def remove_keys(d, keys=None, use_wildcards=True,
 
     Parameters
     ----------
+    keys: list
     use_wildcards : bool
         if true, can use * (matches everything) and ? (matches any single character)
     list_of_dicts: bool
         treat list of dicts as additional branches
+    deepcopy: bool
 
     Examples
     --------

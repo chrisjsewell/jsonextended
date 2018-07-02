@@ -308,6 +308,9 @@ Interface specifications
    -  *dict\_signature* attribute, a tuple denoting the keys which the
       dictionary must have, e.g. dict\_signature=('a','b') decodes
       {'a':1,'b':2}
+   -  optionally, the attribute *allow\_other\_keys = True* can be set,
+      to allow the dictionary to have more keys than the dict\_signature and still be decoded,
+      e.g. dict\_signature=('a','b') would also decode {'a':1,'b':2,'c': 3}
    -  *from\_...* method(s), which takes a dict object as parameter. The
       ``plugins.decode`` function will use the method denoted by the
       intype parameter, e.g. if intype='json', then *from\_json* will be

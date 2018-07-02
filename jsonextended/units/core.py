@@ -65,20 +65,16 @@ def apply_unitschema(data, uschema, as_quantity=True,
 
     >>> newschema = {'energy':'kJ','other':{'y':'nm'},'y':'m'}
     >>> new_data = apply_unitschema(data_units,newschema)
-    >>> pprint(new_data)
-    {'energy': <Quantity(1.60217653e-22, 'kilojoule')>,
-     'meta': None,
-     'other': {'y': <Quantity([  4.00000000e+09   5.00000000e+09], 'nanometer')>},
-     'x': <Quantity([1 2], 'nanometer')>,
-     'y': <Quantity([ 0.04  0.05], 'meter')>}
+    >>> str(new_data["energy"])
+    '1.60217653e-22 kilojoule'
+    >>> new_data["other"]["y"].magnitude.round(3).tolist(), str(new_data["other"]["y"].units)
+    ([4000000000.0, 5000000000.0], 'nanometer')
 
     >>> old_data = apply_unitschema(new_data,uschema,as_quantity=False)
-    >>> pprint(old_data)
-    {'energy': 1.0,
-     'meta': None,
-     'other': {'y': array([ 4.,  5.])},
-     'x': array([1, 2]),
-     'y': array([ 4.,  5.])}
+    >>> old_data["energy"]
+    1.0
+    >>> old_data["other"]["y"].round(3).tolist()
+    [4.0, 5.0]
 
     """
     try:
