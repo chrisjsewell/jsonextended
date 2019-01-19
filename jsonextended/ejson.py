@@ -68,7 +68,7 @@ please install for on-disk key indexing', ImportWarning)
 
 
 def _get_keys_folder(jdir, key_path=None, in_memory=True, ignore_prefix=('.', '_')):
-    """ get json keys from directory sturcture
+    """ get json keys from directory structure
 
     e.g.
 
@@ -123,7 +123,7 @@ def _get_keys_folder(jdir, key_path=None, in_memory=True, ignore_prefix=('.', '_
     if not key_found:
         raise KeyError('key not found: {0}'.format(search_key))
 
-    return keys
+    return sorted(keys)
 
 
 def jkeys(jfile, key_path=None, in_memory=True, ignore_prefix=('.', '_')):
