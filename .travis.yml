@@ -48,7 +48,7 @@ deploy:
 #      condition: $TRAVIS_PYTHON_VERSION = "3.6"
      # production pypi
   - provider: pypi
-    distributions: bdist_wheel
+    distributions: "sdist bdist_wheel"
     user: "cjsewell"
     password:
       secure: KhgfNkJaHD7CDI49Wbz16b78SGuM9ROTDrk2kqILXWBohKPe6N6RAYMDSRkJldmCG3/ryg5QMOU38HLqnkFA2cNoBt1TShrF7nsVIXdKEsRnQDynXqnSXRrQ4mGIlEnOjcWUPL8t7y1t1+4qjHH3rBVojgR3dsfKTJSKF7lhd7MpWoOhh7u2tRQHqIp3jteqDlh4EpTp/9ClOjTOcUl2w4NgOUr64h8cseXV4YZPhhMrLGr1gKYLaPY8btkm2iSI8p0Vm4tuSyNLQTT73mrEVHAfSNZQT+wFRgA5xaP8FVescdd9ftotbbgsIeh7Ke464n/5htWSfurrQUc4ZQNtUTDj5riD4BVtdBz1T9tFbn+w93b/v/dO5XJKObj3n1oG3w0iBnlfl6obGyb46Y6FsmMt+sYYC67EgFeulJaAKPiF3OSZvEpE/zgvqNLVG2SbrPmLj/TPGqoQA3fNXQdoqmldLrliq5FqvruNPprsMrf9tDV2E/mIMuAQDWgtTRCEkdZallP2Cyj7zFLB9FQJ8qepwselUWoAAvvoaFgNRSFfcCQQgZ3MU465g01bXYmRKynCeksD/stmn78fSkVnZdxoBrjTLxgyS8XSAOlOmMzd0iNfrmi2AgiyCnO9vfHWV7vPjEO6Ui5Q6Uc6D0k30d0/dzJt7sxtJWLMfV2lDmE=
