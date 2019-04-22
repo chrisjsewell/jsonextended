@@ -2,7 +2,7 @@
 import ast
 
 
-class CSVLiteral_Parser(object):
+class CSVLiteral_Parser(object):  # noqa: N801
     """
     Examples
     --------
@@ -23,7 +23,9 @@ class CSVLiteral_Parser(object):
     """
 
     plugin_name = 'csv.literal'
-    plugin_descript = "read *.literal.csv delimited files with headers to {header:column_values}, with number strings converted to int/float"
+    plugin_descript = (
+        "read *.literal.csv delimited files with headers to "
+        "{header:column_values}, with number strings converted to int/float")
     ", s.t. values are converted to their python type"
     file_regex = '*.literal.csv'
 
@@ -47,8 +49,12 @@ class CSVLiteral_Parser(object):
             if keypairs is None:
                 keypairs = [(v, []) for v in values]
                 continue
-            assert len(keypairs) == len(values), 'row different length to headers'
+            if len(keypairs) != len(values):
+                raise AssertionError('row different length to headers')
             for keypair, value in zip(keypairs, values):
                 keypair[1].append(value)
 
-        return {} if keypairs is None else {k: [self.tryeval(v) for v in vs] for k, vs in keypairs}
+        if keypairs is None:
+            return {}
+
+        return {k: [self.tryeval(v) for v in vs] for k, vs in keypairs}

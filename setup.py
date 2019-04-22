@@ -7,24 +7,27 @@ import io
 from importlib import import_module
 from setuptools import setup, find_packages
 
-with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
-with open('test_requirements.txt') as f:
-    test_requirements = f.read().splitlines()
+with open('requirements.txt') as handle:
+    requirements = handle.read().splitlines()
+with open('test_requirements.txt') as handle:
+    test_requirements = handle.read().splitlines()
 
-with io.open('README.rst') as readme:
-    setup(
-        name='jsonextended',
-        version=import_module('jsonextended').__version__,
-        description='Extending the python json package functionality',
-        long_description=readme.read(),
-        install_requires=requirements,
-        tests_require=test_requirements,
-        license='MIT',
-        author='Chris Sewell',
-        author_email='chrisj_sewell@hotmail.com',
-        url='https://github.com/chrisjsewell/jsonextended',
-        classifiers=[
+with io.open('README.md') as handle:
+    readme_text = handle.read()
+
+setup(
+    name='jsonextended',
+    version=import_module('jsonextended').__version__,
+    description='Extending the python json package functionality',
+    long_description=readme_text,
+    long_description_content_type='text/markdown',
+    install_requires=requirements,
+    tests_require=test_requirements,
+    license='MIT',
+    author='Chris Sewell',
+    author_email='chrisj_sewell@hotmail.com',
+    url='https://github.com/chrisjsewell/jsonextended',
+    classifiers=[
             'Development Status :: 3 - Alpha',
             'Environment :: Console',
             'Environment :: Web Environment',
@@ -45,9 +48,10 @@ with io.open('README.rst') as readme:
             'Topic :: Scientific/Engineering :: Physics',
             'Topic :: Software Development :: Libraries :: Python Modules',
             'Topic :: Utilities',
-        ],
-        keywords='json, units, parser, python',
-        zip_safe=True,
-        packages = find_packages(),
-        package_data={'': ['*.json', '*.crystal.out','*.csv','*.keypair','*.data']},
-    )
+    ],
+    keywords='json, units, parser, python',
+    zip_safe=True,
+    packages=find_packages(),
+    package_data={'': ['*.json', '*.crystal.out',
+                       '*.csv', '*.keypair', '*.data']},
+)

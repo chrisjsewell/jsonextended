@@ -1,4 +1,4 @@
-class Encode_Set(object):
+class Encode_Set(object):  # noqa: N801
     """
 
     Examples

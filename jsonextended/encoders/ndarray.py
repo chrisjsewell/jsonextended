@@ -11,7 +11,7 @@ except ImportError:
 import operator
 
 
-class Encode_NDArray(object):
+class Encode_NDArray(object):  # noqa: N801
     """
 
     Examples
@@ -28,7 +28,7 @@ class Encode_NDArray(object):
     >>> Encode_NDArray().from_json({'_numpy_ndarray_': {'dtype': 'int64', 'value': [1, 2, 3]}})
     array([1, 2, 3])
 
-    """
+    """  # noqa: E501
 
     plugin_name = 'numpy.ndarray'
     plugin_descript = 'encode/decode numpy.ndarray'
@@ -44,7 +44,9 @@ class Encode_NDArray(object):
             return ' '.join(str(obj).split())
 
     def to_json(self, obj):
-        return {'_numpy_ndarray_': {'value': obj.tolist(), 'dtype': str(obj.dtype)}}
+        return {'_numpy_ndarray_': {
+            'value': obj.tolist(),
+            'dtype': str(obj.dtype)}}
 
     def from_json(self, obj):
         return np.array(obj['_numpy_ndarray_']['value'],

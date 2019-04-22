@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-class KeyPair_Parser(object):
+
+class KeyPair_Parser(object):  # noqa: N801
     """
     Examples
     --------
@@ -21,7 +22,8 @@ class KeyPair_Parser(object):
     """
 
     plugin_name = 'keypair'
-    plugin_descript = "read *.keypair, where each line should be; '<key> <pair>'"
+    plugin_descript = (
+        "read *.keypair, where each line should be; '<key> <pair>'")
     file_regex = '*.keypair'
 
     def read_file(self, file_obj, **kwargs):

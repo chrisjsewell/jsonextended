@@ -54,11 +54,14 @@ Folder("dir1")
 
 from jsonextended.utils import MockPath
 
-jsonfile1 = MockPath('file1.json', is_file=True,
-                     content='{"key2": {"key3": 4, "key4": 5}, "key1": [1, 2, 3]}')
+jsonfile1 = MockPath(
+    'file1.json', is_file=True,
+    content='{"key2": {"key3": 4, "key4": 5}, "key1": [1, 2, 3]}')
 
-jsonfile2 = MockPath('file2.json', is_file=True,
-                     content='{"key1":{"_python_set_": [1, 2, 3]},"key2":{"_numpy_ndarray_": {"dtype": "int64", "value": [1, 2, 3]}}}')
+jsonfile2 = MockPath(
+    'file2.json', is_file=True,
+    content=('{"key1":{"_python_set_": [1, 2, 3]},"key2":{"_numpy_ndarray_": '
+             '{"dtype": "int64", "value": [1, 2, 3]}}}'))
 
 csvfile1 = MockPath('file1.csv', is_file=True,
                     content=""" # a csv file

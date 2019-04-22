@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-class CSV_Parser(object):
+
+class CSV_Parser(object):  # noqa: N801
     """
     Examples
     --------
@@ -21,7 +22,8 @@ class CSV_Parser(object):
     """
 
     plugin_name = 'csv.basic'
-    plugin_descript = 'read *.csv delimited file with headers to {header:[column_values]}'
+    plugin_descript = (
+        'read *.csv delimited file with headers to {header:[column_values]}')
     file_regex = '*.csv'
 
     def read_file(self, file_obj, **kwargs):
@@ -36,7 +38,8 @@ class CSV_Parser(object):
             if keypairs is None:
                 keypairs = [(v, []) for v in values]
                 continue
-            assert len(keypairs) == len(values), 'row different length to headers'
+            if len(keypairs) != len(values):
+                raise AssertionError('row different length to headers')
             for keypair, value in zip(keypairs, values):
                 keypair[1].append(value)
 

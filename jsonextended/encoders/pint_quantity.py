@@ -1,10 +1,9 @@
 from pint import UnitRegistry
-
 ureg = UnitRegistry()
-from pint.quantity import _Quantity
+from pint.quantity import _Quantity  # noqa: E402
 
 
-class Encode_Quantity(object):
+class Encode_Quantity(object):  # noqa: N801
     """
 
     Examples
@@ -22,7 +21,7 @@ class Encode_Quantity(object):
     >>> Encode_Quantity().from_json({'_pint_Quantity_': {'Magnitude': 1, 'Units': 'nanometer'}})
     <Quantity(1, 'nanometer')>
 
-    """
+    """  # noqa: E501
 
     plugin_name = 'pint.Quantity'
     plugin_descript = 'encode/decode pint.Quantity object'

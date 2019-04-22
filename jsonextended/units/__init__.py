@@ -9,5 +9,6 @@ https://socialcompare.com/en/comparison/python-units-quantities-packages-383avix
 
 """
 
-from jsonextended.units.core import (get_in_units, apply_unitschema,
-                                     split_quantities, combine_quantities)
+from jsonextended.units.core import (  # noqa: F401
+    get_in_units, apply_unitschema,
+    split_quantities, combine_quantities)

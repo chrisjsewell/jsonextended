@@ -1,3 +1,4 @@
+from jsonextended import _example_data_folder
 import inspect
 import re
 import os
@@ -14,7 +15,8 @@ except ImportError:
     import pathlib2 as pathlib
 
 # back compatibility
-from jsonextended.mockpath import MockPath, colortxt
+from jsonextended.mockpath import MockPath, colortxt  # noqa: F401
+
 
 def class_to_str(obj):
     """ get class string from object
@@ -36,10 +38,8 @@ def class_to_str(obj):
 
 def get_module_path(module):
     """return a directory path to a module"""
-    return pathlib.Path(os.path.dirname(os.path.abspath(inspect.getfile(module))))
-
-
-from jsonextended import _example_data_folder
+    return pathlib.Path(
+        os.path.dirname(os.path.abspath(inspect.getfile(module))))
 
 
 def get_test_path():
@@ -58,12 +58,17 @@ def get_test_path():
 def get_data_path(data, module, check_exists=True):
     """return a directory path to data within a module
 
-    data : str or list of str
-        file name or list of sub-directories and file name (e.g. ['lammps','data.txt'])
+    Parameters
+    ----------
+    data : str or list[str]
+        file name or list of sub-directories
+        and file name (e.g. ['lammps','data.txt'])
+
     """
     basepath = os.path.dirname(os.path.abspath(inspect.getfile(module)))
 
-    if isinstance(data, basestring): data = [data]
+    if isinstance(data, basestring):
+        data = [data]
 
     dirpath = os.path.join(basepath, *data)
 
@@ -82,7 +87,7 @@ def _natural_keys(text):
 
     alist.sort(key=_natural_keys)
     """
-    return [_atoi(c) for c in re.split('(\d+)', str(text))]
+    return [_atoi(c) for c in re.split(r'(\d+)', str(text))]
 
 
 def natural_sort(iterable):
@@ -104,7 +109,8 @@ def natural_sort(iterable):
 def memory_usage():
     """return memory usage of python process in MB
 
-    from http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
+    from
+    http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
     psutil is quicker
 
     >>> isinstance(memory_usage(),float)
@@ -112,7 +118,8 @@ def memory_usage():
 
     """
     try:
-        import psutil, os
+        import psutil
+        import os
     except ImportError:
         return _memory_usage_ps()
 
@@ -128,9 +135,11 @@ def _memory_usage_ps():
     True
 
     """
-    import subprocess, os
-    out = subprocess.Popen(['ps', 'v', '-p', str(os.getpid())],
-                           stdout=subprocess.PIPE).communicate()[0].split(b'\n')
+    import subprocess
+    import os
+    out = subprocess.Popen(
+        ['ps', 'v', '-p', str(os.getpid())],
+        stdout=subprocess.PIPE).communicate()[0].split(b'\n')
     vsz_index = out[0].split().index(b'RSS')
     mem = float(out[1].split()[vsz_index]) / 1024
     return mem
@@ -164,11 +173,12 @@ def load_memit():
               %memit [-ir<R>t<T>] statement
 
             Options:
-            -r<R>: repeat the loop iteration <R> times and take the best result.
-            Default: 3
+            -r<R>: repeat the loop iteration <R> times
+            and take the best result. Default: 3
 
             -i: run the code in the current environment, without forking a new
-            process. This is required on some MacOS versions of Accelerate if your
+            process.
+            This is required on some MacOS versions of Accelerate if your
             line contains a call to `np.dot`.
 
             -t<T>: timeout after <T> seconds. Unused if `-i` is active.
@@ -215,14 +225,16 @@ def load_memit():
                 q = SimpleQueue()
             except ImportError:
                 class ListWithPut(list):
-                    "Just a list where the `append` method is aliased to `put`."
+                    """Just a list,
+                    where the `append` method is aliased to `put`."""
 
                     def put(self, x):
                         self.append(x)
 
                 q = ListWithPut()
-                print('WARNING: cannot import module `multiprocessing`. Forcing '
-                      'the `-i` option.')
+                print(
+                    'WARNING: cannot import module `multiprocessing`. Forcing '
+                    'the `-i` option.')
                 run_in_place = True
 
             ns = self.shell.user_ns
@@ -239,30 +251,32 @@ def load_memit():
                     raise e
 
             if run_in_place:
-                for _ in xrange(repeat):
+                for _ in range(repeat):
                     _get_usage(q, stmt, ns=ns)
             else:
                 # run in consecutive subprocesses
                 at_least_one_worked = False
-                for _ in xrange(repeat):
-                    p = pr.Process(target=_get_usage, args=(q, stmt, 'pass', ns))
+                for _ in range(repeat):
+                    p = pr.Process(
+                        target=_get_usage, args=(q, stmt, 'pass', ns))
                     p.start()
                     p.join(timeout=timeout)
                     if p.exitcode == 0:
                         at_least_one_worked = True
                     else:
                         p.terminate()
-                        if p.exitcode == None:
+                        if p.exitcode is None:
                             print('Subprocess timed out.')
                         else:
-                            print('Subprocess exited with code %d.' % p.exitcode)
+                            print(
+                                'Subprocess exited with code %d.' % p.exitcode)
                         q.put(float('-inf'))
 
                 if not at_least_one_worked:
                     print('ERROR: all subprocesses exited unsuccessfully. Try '
                           'again with the `-i` option.')
 
-            usages = [q.get() for _ in xrange(repeat)]
+            usages = [q.get() for _ in range(repeat)]
             usage = max(usages)
             print("maximum of %d: %f MB per loop" % (repeat, usage))
 

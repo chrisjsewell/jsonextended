@@ -4,7 +4,7 @@ https://stackoverflow.com/questions/1960516/python-json-serialize-a-decimal-obje
 from fractions import Fraction
 
 
-class Encode_Fraction(object):
+class Encode_Fraction(object):  # noqa: N801
     """
 
     Examples

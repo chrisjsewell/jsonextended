@@ -3,7 +3,7 @@
 import h5py
 
 
-class HDF5_Parser(object):
+class HDF5_Parser(object):  # noqa: N801
     """
 
     Examples

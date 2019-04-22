@@ -4,7 +4,7 @@ https://stackoverflow.com/questions/1960516/python-json-serialize-a-decimal-obje
 from decimal import Decimal
 
 
-class Encode_Decimal(object):
+class Encode_Decimal(object):  # noqa: N801
     """
 
     Examples

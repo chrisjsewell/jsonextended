@@ -9,14 +9,6 @@ try:
 except ImportError:
     pass
 
-try:
-    from pint import UnitRegistry
-
-    ureg = UnitRegistry()
-    from pint.quantity import _Quantity
-except ImportError:
-    pass
-
 from jsonextended.edict import flatten, flatten2d, unflatten, merge
 
 
@@ -76,10 +68,12 @@ def apply_unitschema(data, uschema, as_quantity=True,
     >>> old_data["other"]["y"].round(3).tolist()
     [4.0, 5.0]
 
-    """
+    """  # noqa: E501
     try:
-        _Quantity
-    except NameError:
+        from pint import UnitRegistry
+        ureg = UnitRegistry()
+        from pint.quantity import _Quantity
+    except ImportError:
         raise ImportError('please install pint to use this module')
     list_of_dicts = '__list__' if list_of_dicts else None
 
@@ -97,12 +91,13 @@ def apply_unitschema(data, uschema, as_quantity=True,
                 continue
 
             if use_wildcards:
-                match = all([fnmatch(d, u) for u, d in zip(ukey, dkey[-len(ukey):])])
+                match = all(
+                    [fnmatch(d, u) for u, d in zip(ukey, dkey[-len(ukey):])])
             else:
                 match = ukey == dkey[-len(ukey):]
 
             if match:
-                # handle the fact that it return an numpy object type if list of floats
+                # handle that it return an numpy object type if list of floats
                 if isinstance(dvalue, (list, tuple)):
                     dvalue = np.array(dvalue)
                     if dvalue.dtype == np.object:
@@ -166,8 +161,8 @@ def split_quantities(data, units='units', magnitude='magnitude',
 
     """
     try:
-        _Quantity
-    except NameError:
+        from pint.quantity import _Quantity
+    except ImportError:
         raise ImportError('please install pint to use this module')
     list_of_dicts = '__list__' if list_of_dicts else None
     data_flatten = flatten(data, list_of_dicts=list_of_dicts)
@@ -210,10 +205,11 @@ def combine_quantities(data, units='units', magnitude='magnitude',
      'x': <Quantity([1 2 3], 'nanometer')>,
      'y': <Quantity([ 8  9 10], 'meter')>}
 
-    """
+    """  # noqa: E501
     try:
-        _Quantity
-    except NameError:
+        from pint import UnitRegistry
+        ureg = UnitRegistry()
+    except ImportError:
         raise ImportError('please install pint to use this module')
     list_of_dicts = '__list__' if list_of_dicts else None
 
@@ -228,7 +224,8 @@ def combine_quantities(data, units='units', magnitude='magnitude',
     final_dict = merge([data_flatten2d, new_dict])
     # olddict = unflatten(data_flatten2d,list_of_dicts=list_of_dicts)
     # new_dict = unflatten(new_dict,list_of_dicts=list_of_dicts)
-    return unflatten(final_dict, list_of_dicts=list_of_dicts)  # merge([olddict,new_dict])
+    return unflatten(
+        final_dict, list_of_dicts=list_of_dicts)  # merge([olddict,new_dict])
 
 
 if __name__ == '__main__':

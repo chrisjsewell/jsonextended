@@ -47,7 +47,8 @@ class _OpenRead(object):
         else:
             line = self._linelist[self._current_line] + '\n'
         self._current_line += 1
-        self._current_indx += len('\n'.join(self._linelist[0:self._current_line]))
+        self._current_indx += len(
+            '\n'.join(self._linelist[0:self._current_line]))
         if self._encoding is not None:
             line = line.encode(self._encoding)
         return line
@@ -267,7 +268,7 @@ class MockPath(object):
       File("newfile2.txt")
       File("newfile3.txt")
 
-    """
+    """  # noqa: E501
 
     def __init__(self, path='root',
                  is_file=False, exists=True,
@@ -292,10 +293,12 @@ class MockPath(object):
                                         structure=subobj[key], parent=self))
             elif isinstance(subobj, MockPath):
                 if subobj._parent is not None:
-                    raise ValueError("attempting to add a child which already has a parent: {}".format(subobj))
+                    raise ValueError("attempting to add a child which already "
+                                     "has a parent: {}".format(subobj))
                 self.add_child(subobj)
             else:
-                raise ValueError('items must be dict_like or MockPath: {}'.format(subobj))
+                raise ValueError(
+                    'items must be dict_like or MockPath: {}'.format(subobj))
 
     def _get_path(self):
         return self._path
@@ -394,7 +397,8 @@ class MockPath(object):
     def add_child(self, child):
         # TODO could allow same name if one is file and one is dir?
         if child.name in [c.name for c in self._children]:
-            raise IOError("child with this name already exists: {}".format(child.name))
+            raise IOError(
+                "child with this name already exists: {}".format(child.name))
         child.parent = self
         self._children.append(child)
 
@@ -402,7 +406,8 @@ class MockPath(object):
     def absolute(self):
         return self
 
-    # TODO should return a new mock path rather than a str, need to implement relative naming and switchin to/from
+    # TODO should return a new mock path rather than a str,
+    # need to implement relative naming and switchin to/from
     def relative_to(self, other):
         return os.path.relpath(self._path, other._path)
 
@@ -413,7 +418,8 @@ class MockPath(object):
         elif isinstance(target, basestring):
             name = target
         else:
-            raise ValueError("target must be a string or have a name attribute")
+            raise ValueError(
+                "target must be a string or have a name attribute")
 
         if not self.exists():
             raise IOError("path doesn't exist: {}".format(self))
@@ -428,17 +434,20 @@ class MockPath(object):
             if child.is_file():
                 structure.append(child.copy_path_obj())
             else:
-                structure.append({child.name: [c.copy_path_obj() for c in child.children]})
+                structure.append(
+                    {child.name: [c.copy_path_obj() for c in child.children]})
         return structure
 
     def copy_path_obj(self):
         """copy mock path (removing path and parent)"""
         if self.is_file():
             return MockPath(path=self.name, is_file=True,
-                            exists=self.exists(), structure=[], content="\n".join(self._content), parent=None)
+                            exists=self.exists(), structure=[],
+                            content="\n".join(self._content), parent=None)
         else:
             structure = self._recurse_structure()
-            return MockPath(path=self.name, is_file=False, exists=self.exists(), parent=None,
+            return MockPath(path=self.name, is_file=False,
+                            exists=self.exists(), parent=None,
                             structure=structure)
 
     def is_file(self):
@@ -458,7 +467,8 @@ class MockPath(object):
         if isinstance(path, MockPath):
             path = os.path.relpath(str(path), str(self))
         if not isinstance(path, basestring):
-            raise ValueError("path is not a string or MockPath: {}".format(path))
+            raise ValueError(
+                "path is not a string or MockPath: {}".format(path))
 
         allparts = []
         while 1:
@@ -476,7 +486,8 @@ class MockPath(object):
 
     def _flatten(self, l):
         for el in l:
-            if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
+            if (isinstance(el, collections.Iterable)
+                    and not isinstance(el, basestring)):
                 for sub in self._flatten(el):
                     yield sub
             else:
@@ -497,8 +508,10 @@ class MockPath(object):
                 if child.name == parts[0]:
                     return child
 
-            # does not yet exist, must use touch or mkdir to convert to file or folder
-            new = MockPath(path=os.path.join(self._path, parts[0]), exists=False, parent=self)
+            # does not yet exist,
+            # must use touch or mkdir to convert to file or folder
+            new = MockPath(path=os.path.join(
+                self._path, parts[0]), exists=False, parent=self)
             self.add_child(new)
             return new
 
@@ -506,7 +519,8 @@ class MockPath(object):
             for child in self._children:
                 if child.name == parts[0]:
                     return child.joinpath(*parts[1:])
-            new = MockPath(path=os.path.join(self._path, parts[0]), exists=False, parent=self)
+            new = MockPath(path=os.path.join(
+                self._path, parts[0]), exists=False, parent=self)
             self.add_child(new)
             return new.joinpath(*parts[1:])
 
@@ -518,8 +532,8 @@ class MockPath(object):
         ----------
         mode
         parents: bool
-            If parents is true, any missing parents of this path are created as needed
-            If parents is false, a missing parent raises FileNotFoundError.
+            If True, any missing parents of this path are created as needed
+            If False, a missing parent raises FileNotFoundError.
 
         Returns
         -------
@@ -528,7 +542,8 @@ class MockPath(object):
         if self.parent is not None:
             if not self.parent.exists():
                 if not parents:
-                    raise FileNotFoundError("the parent must exist for {}".format(self))
+                    raise FileNotFoundError(
+                        "the parent must exist for {}".format(self))
                 else:
                     self.parent.mkdir(parents=parents)  # mode=0o777,
 
@@ -548,7 +563,8 @@ class MockPath(object):
         Returns
         -------
         attr: object
-            see os.stat, includes st_mode, st_size, st_uid, st_gid, st_atime, and st_mtime attributes
+            see os.stat, includes st_mode, st_size, st_uid, st_gid, st_atime,
+            and st_mtime attributes
 
         """
         class MockStat(object):
@@ -566,8 +582,11 @@ class MockPath(object):
                 self.st_ctime = 1504518028
 
             def __repr__(self):
-                return "MockStatResult(st_mode=33188, st_ino=74204932, st_dev=16777220, st_nlink=1, st_uid=634541, " \
-                    "st_gid=1335817362, st_size=10410, st_atime=1504518028, st_mtime=1504518028, st_ctime=1504518028)"
+                return (
+                    "MockStatResult(st_mode=33188, st_ino=74204932, "
+                    "st_dev=16777220, st_nlink=1, st_uid=634541, "
+                    "st_gid=1335817362, st_size=10410, st_atime=1504518028, "
+                    "st_mtime=1504518028, st_ctime=1504518028)")
 
         return MockStat()
 
@@ -586,7 +605,7 @@ class MockPath(object):
         cur_mode = folder.stat("exec.sh").st_mode
         folder.chmod("exec.sh", cur_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH )
 
-        """
+        """  # noqa: E501
         pass
 
     def touch(self):
@@ -624,7 +643,8 @@ class MockPath(object):
         Parameters
         ----------
         regex: str
-            the path regex, with * to match 0 or more (non-recursive) paths and ** to match zero or more (recursive) directories
+            the path regex, with * to match 0 or more (non-recursive) paths
+            and ** to match zero or more (recursive) directories
         recurse: bool
 
         Yields
@@ -642,7 +662,8 @@ class MockPath(object):
             for subobj in sorted(self.iterdir()):
                 if subobj.is_dir() and recurse:
                     yield subobj
-                    for path in subobj.glob(parts[0], recurse=recurse, toplevel=False):
+                    for path in subobj.glob(parts[0],
+                                            recurse=recurse, toplevel=False):
                         yield path
                 elif fnmatch(subobj.name, parts[0]):
                     yield subobj
@@ -650,10 +671,12 @@ class MockPath(object):
             for subobj in sorted(self.iterdir()):
                 if subobj.is_dir() and recurse:
                     yield subobj
-                    for path in subobj.glob(os.path.join(*parts[1:]), recurse=recurse, toplevel=False):
+                    for path in subobj.glob(os.path.join(*parts[1:]),
+                                            recurse=recurse, toplevel=False):
                         yield path
                 elif fnmatch(subobj.name, parts[0]):
-                    for path in subobj.glob(os.path.join(*parts[1:]), recurse=recurse, toplevel=False):
+                    for path in subobj.glob(os.path.join(*parts[1:]),
+                                            recurse=recurse, toplevel=False):
                         yield path
 
     @contextlib.contextmanager
@@ -674,11 +697,13 @@ class MockPath(object):
 
         """
         if self.is_file():
-            filetemp = tempfile.NamedTemporaryFile(mode='w+', delete=False, dir=dir)
+            filetemp = tempfile.NamedTemporaryFile(
+                mode='w+', delete=False, dir=dir)
             try:
                 filetemp.write('\n'.join(self._content))
                 filetemp.close()
-                dirpath = os.path.join(os.path.dirname(filetemp.name), self.name)
+                dirpath = os.path.join(
+                    os.path.dirname(filetemp.name), self.name)
                 os.rename(filetemp.name, dirpath)
                 yield pathlib.Path(dirpath)
             finally:
@@ -711,7 +736,9 @@ class MockPath(object):
 
     def _iter_temp(self, mock, temp, overwrite=False):
         if not mock.name == temp.name:
-            raise ValueError("mock name and temp name different: {0}, {1}".format(mock.name, temp.name))
+            raise ValueError(
+                "mock name and temp name different: "
+                "{0}, {1}".format(mock.name, temp.name))
         child_names = {c.name: c for c in mock.children}
         for subpath in temp.iterdir():
             if subpath.is_file():
@@ -719,7 +746,9 @@ class MockPath(object):
                     pass
                 else:
                     with subpath.open() as f:
-                        newpath = MockPath(subpath.name, is_file=True, content=f.read(), exists=True)
+                        newpath = MockPath(
+                            subpath.name, is_file=True,
+                            content=f.read(), exists=True)
                     mock.add_child(newpath)
             else:
                 if subpath.name not in child_names:
@@ -756,7 +785,8 @@ class MockPath(object):
                         newpath.mkdir()
                 else:
                     if newpath.exists():
-                        raise IOError("file already exists: {}".format(newpath))
+                        raise IOError(
+                            "file already exists: {}".format(newpath))
                     else:
                         newpath.touch()
                     with newpath.open('w') as f:
@@ -771,7 +801,9 @@ class MockPath(object):
             newpath = self.copy_path_obj()
             return target.add_child(newpath)
         else:
-            raise ValueError("target is not str, pathlib.Path or MockPath: {}".format(target))
+            raise ValueError(
+                "target is not str, "
+                "pathlib.Path or MockPath: {}".format(target))
 
     def copy_from(self, source):
         """ copy from a source to a mock directory
@@ -803,12 +835,15 @@ class MockPath(object):
             elif source.is_file():
                 with source.open() as f:
                     content = f.read()
-                newfile = MockPath(source.name, is_file=True, parent=self, content=content)
+                newfile = MockPath(source.name, is_file=True,
+                                   parent=self, content=content)
                 self.add_child(newfile)
             else:
                 raise NotImplementedError
         else:
-            raise ValueError("source is not str, pathlib.Path or MockPath: {}".format(source))
+            raise ValueError(
+                "source is not str, "
+                "pathlib.Path or MockPath: {}".format(source))
 
     @contextlib.contextmanager
     def open(self, mode='r', encoding=None):
@@ -846,22 +881,27 @@ class MockPath(object):
             return NotImplemented
         return self.path == other.path
 
-    def _recurse_print(self, obj, text='', indent=0, indentlvl=2, file_content=False):
+    def _recurse_print(self, obj, text='',
+                       indent=0, indentlvl=2, file_content=False):
         indent += indentlvl
         for subobj in sorted(obj):
             if not subobj.exists():
                 continue
             if subobj.is_dir():
-                text += ' ' * indent + '{0}("{1}")\n'.format(self._folderstr, subobj.name)
-                text += self._recurse_print(subobj.iterdir(),
-                                            indent=indent, file_content=file_content)
+                text += ' ' * indent + \
+                    '{0}("{1}")\n'.format(self._folderstr, subobj.name)
+                text += self._recurse_print(
+                    subobj.iterdir(), indent=indent, file_content=file_content)
             else:
                 if file_content:
+                    contents = ['{0}("{1}") Contents:'.format(
+                        self._filestr, subobj.name)]
+                    contents.extend(subobj._content)
                     sep = '\n' + ' ' * (indent + 1)
-                    text += ' ' * indent + sep.join(
-                        ['{0}("{1}") Contents:'.format(self._filestr, subobj.name)] + subobj._content) + '\n'
+                    text += ' ' * indent + sep.join(contents) + '\n'
                 else:
-                    text += ' ' * indent + '{0}("{1}")\n'.format(self._filestr, subobj.name)
+                    text += ' ' * indent + \
+                        '{0}("{1}")\n'.format(self._filestr, subobj.name)
 
         return text
 
@@ -875,7 +915,10 @@ class MockPath(object):
             self._filestr = 'File'
 
         if self.is_file():
-            return '\n'.join(['{0}("{1}") Contents:'.format(self._filestr, self.name)] + self._content)
+            contents = [
+                '{0}("{1}") Contents:'.format(self._filestr, self.name)]
+            contents.extend(self._content)
+            return '\n'.join(contents)
         elif self.is_dir():
             text = '{0}("{1}")\n'.format(self._folderstr, self.name)
             text += self._recurse_print(self.iterdir(), indentlvl=indentlvl,
@@ -898,6 +941,7 @@ class MockPath(object):
             return 'MockFile("{}")'.format(self._path)
         else:
             return 'MockPath("{}")'.format(self._path)
+
 
 _ATTRIBUTES = dict(
     list(zip([

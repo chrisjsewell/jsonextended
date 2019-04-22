@@ -3,7 +3,7 @@
 import json
 
 
-class JSON_Parser(object):
+class JSON_Parser(object):  # noqa: N801
     """
 
     Examples

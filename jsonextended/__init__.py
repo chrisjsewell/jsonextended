@@ -91,32 +91,6 @@ optimised:
 
 """
 
-__version__ = '0.7.9'
+__version__ = '0.7.10'
 
-from jsonextended import ejson, units, utils, edict, plugins
-
-
-def _run_nose_tests(doctests=True, verbose=True):
-    """
-    mimics nosetests --with-doctest -v --exe jsonextended
-    also use:
-    pylint --output-format html jsonextended > jsonextended_pylint.html
-    """
-    import os, sys, jsonextended, nose
-    nose_argv = sys.argv
-    nose_argv += ['--detailed-errors', '--exe']
-    if verbose:
-        nose_argv.append('-v')
-    if doctests:
-        nose_argv.append('--with-doctest')
-    nose_argv.append('jsonextended')
-    initial_dir = os.getcwd()
-    my_package_file = os.path.abspath(jsonextended.__file__)
-    print(my_package_file)
-    my_package_dir = os.path.dirname(os.path.dirname(my_package_file))
-    print(my_package_dir)
-    os.chdir(my_package_dir)
-    try:
-        nose.run(argv=nose_argv)
-    finally:
-        os.chdir(initial_dir)
+from jsonextended import ejson, units, utils, edict, plugins  # noqa: F401

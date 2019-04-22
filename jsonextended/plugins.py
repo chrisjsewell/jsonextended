@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 
+from jsonextended import encoders, parsers
 import glob
 import imp
 import inspect
@@ -18,7 +19,7 @@ except NameError:
 try:
     from StringIO import StringIO
 except ImportError:
-    from io import StringIO
+    from io import StringIO  # noqa: F401
 try:
     from importlib.machinery import SourceFileLoader
     from types import ModuleType
@@ -29,8 +30,8 @@ try:
         loader.exec_module(mod)
         return mod
 
-except ImportError as err:
-    load_source = lambda modname, fname: imp.load_source(modname, fname)
+except ImportError:
+    def load_source(modname, fname): return imp.load_source(modname, fname)
 
 from jsonextended.utils import get_module_path
 
@@ -43,7 +44,6 @@ _plugins_interface = {
     'parsers': ['plugin_name', 'plugin_descript', 'file_regex', 'read_file']}
 
 # builtin plugin locations
-from jsonextended import encoders, parsers
 
 _plugins_builtin = {'encoders': get_module_path(encoders),
                     'decoders': get_module_path(encoders),
@@ -110,15 +110,21 @@ def view_plugins(category=None):
     >>> unload_all_plugins()
 
     """
-    dct = _all_plugins
-    if not category is None:
+    if category is not None:
         if category == 'parsers':
-            return {name: {"descript": klass.plugin_descript, "regex": klass.file_regex}
-                    for name, klass in _all_plugins[category].items()}
-        return {name: klass.plugin_descript for name, klass in _all_plugins[category].items()}
+            return {
+                name: {"descript": klass.plugin_descript,
+                       "regex": klass.file_regex}
+                for name, klass in _all_plugins[category].items()
+            }
+        return {
+            name: klass.plugin_descript
+            for name, klass in _all_plugins[category].items()
+        }
     else:
         return {cat: {name: klass.plugin_descript
-                      for name, klass in plugins.items()} for cat, plugins in _all_plugins.items()}
+                      for name, klass in plugins.items()}
+                for cat, plugins in _all_plugins.items()}
 
 
 def get_plugins(category):
@@ -248,12 +254,16 @@ def load_plugin_classes(classes, category=None, overwrite=False):
                 continue
             if all([hasattr(klass, attr) for attr in pinterface]):
                 if klass.plugin_name in _all_plugins[pcat] and not overwrite:
-                    err = '{0} is already set for {1}'.format(klass.plugin_name, pcat)
+                    err = '{0} is already set for {1}'.format(
+                        klass.plugin_name, pcat)
                     load_errors.append((klass.__name__, '{}'.format(err)))
                     continue
                 _all_plugins[pcat][klass.plugin_name] = klass()
             else:
-                load_errors.append((klass.__name__, 'does not match {0} interface: {1}'.format(pcat, pinterface)))
+                load_errors.append((
+                    klass.__name__,
+                    'does not match {} interface: {}'.format(pcat, pinterface)
+                ))
     return load_errors
 
 
@@ -290,13 +300,14 @@ def plugins_context(classes, category=None):
 
     """
     original = {cat: list(_all_plugins[cat].keys()) for cat in _all_plugins}
-    errors = load_plugin_classes(classes, category, overwrite=True)
+    load_plugin_classes(classes, category, overwrite=True)
     # if errors:
     #     for cat in _all_plugins:
     #         for name, kls in list(_all_plugins[cat].items()):
     #             if name not in original[cat]:
     #                 _all_plugins[cat].pop(name)
-    #     raise RuntimeError("errors occurred while loading plugins: {}".format(errors))
+    #     raise RuntimeError(
+    # "errors occurred while loading plugins: {}".format(errors))
     yield
     for cat in _all_plugins:
         for name, kls in list(_all_plugins[cat].items()):
@@ -346,7 +357,8 @@ def load_plugins_dir(path, category=None, overwrite=False):
             continue
 
         # only get classes that are local to the module
-        classes = [klass for klass_name, klass in inspect.getmembers(module, inspect.isclass) if
+        class_members = inspect.getmembers(module, inspect.isclass)
+        classes = [klass for klass_name, klass in class_members if
                    klass.__module__ == mod_name]
         load_errors += load_plugin_classes(classes, category, overwrite)
 
@@ -395,10 +407,10 @@ def load_builtin_plugins(category=None, overwrite=False):
 
     >>> unload_all_plugins()
 
-    """
+    """  # noqa: E501
     load_errors = []
     for cat, path in _plugins_builtin.items():
-        if cat != category and not category is None:
+        if cat != category and category is not None:
             continue
         load_errors += load_plugins_dir(path, cat, overwrite=overwrite)
     return load_errors
@@ -434,12 +446,15 @@ def encode(obj, outtype='json', raise_error=False):
 
     """
     for encoder in get_plugins('encoders').values():
-        if isinstance(obj, encoder.objclass) and hasattr(encoder, 'to_{}'.format(outtype)):
+        if (isinstance(obj, encoder.objclass)
+                and hasattr(encoder, 'to_{}'.format(outtype))):
             return getattr(encoder, 'to_{}'.format(outtype))(obj)
             break
 
     if raise_error:
-        raise ValueError('No JSON serializer is available for {0} (of type {1})'.format(obj, type(obj)))
+        raise ValueError(
+            "No JSON serializer is available for"
+            "{0} (of type {1})".format(obj, type(obj)))
     else:
         return obj
 
@@ -467,11 +482,13 @@ def decode(dct, intype='json', raise_error=False):
 
     """
     for decoder in get_plugins('decoders').values():
-        if set(list(decoder.dict_signature)).issubset(dct.keys()) and hasattr(decoder, 'from_{}'.format(intype)) \
-                and getattr(decoder, 'allow_other_keys', False):
+        if (set(list(decoder.dict_signature)).issubset(dct.keys())
+            and hasattr(decoder, 'from_{}'.format(intype))
+                and getattr(decoder, 'allow_other_keys', False)):
             return getattr(decoder, 'from_{}'.format(intype))(dct)
             break
-        elif sorted(list(decoder.dict_signature)) == sorted(dct.keys()) and hasattr(decoder, 'from_{}'.format(intype)):
+        elif (sorted(list(decoder.dict_signature)) == sorted(dct.keys())
+              and hasattr(decoder, 'from_{}'.format(intype))):
             return getattr(decoder, 'from_{}'.format(intype))(dct)
             break
 
@@ -507,7 +524,8 @@ def parser_available(fpath):
     elif hasattr(fpath, 'readline') and hasattr(fpath, 'name'):
         fname = fpath.name
     else:
-        raise ValueError('fpath should be a str or file_like object: {}'.format(fpath))
+        raise ValueError(
+            'fpath should be a str or file_like object: {}'.format(fpath))
 
     for parser in get_plugins('parsers').values():
         if fnmatch(fname, parser.file_regex):
@@ -571,9 +589,12 @@ def parse(fpath, **kwargs):
     elif hasattr(fpath, 'readline') and hasattr(fpath, 'name'):
         fname = fpath.name
     else:
-        raise ValueError('fpath should be a str or file_like object: {}'.format(fpath))
+        raise ValueError(
+            'fpath should be a str or file_like object: {}'.format(fpath))
 
-    parser_dict = {plugin.file_regex: plugin for plugin in get_plugins('parsers').values()}
+    parser_dict = {
+        plugin.file_regex: plugin
+        for plugin in get_plugins('parsers').values()}
 
     # find longest match first
     for regex in sorted(parser_dict.keys(), key=len, reverse=True):

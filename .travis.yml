@@ -10,29 +10,21 @@ matrix:
   - python: 3.4
   - python: 3.5
 
-
-#python:
-#    - "2.7"
-#    #- "3.3" # takes a really longer time for pandas to install
-#    - "3.4"
-#    - "3.5"
-#    - "3.6"
-
 before_install:
   - pip install -U pip setuptools wheel
 
 install:
-    - travis_wait pip install -r requirements.txt
-    - pip install -r test_requirements.txt
-    - pip install .
-    - pip install --quiet coverage
-    - pip install --quiet coveralls
+  - travis_wait pip install -r requirements.txt
+  - pip install -r test_requirements.txt
+  - pip install .
+  - pip install --quiet coverage
+  - pip install --quiet coveralls
 
 script:
-    - nosetests -v --nocapture --with-doctest --with-coverage --exe --cover-package=jsonextended
+  - pytest -v --cov=jsonextended --cov-report= jsonextended
 
 after_success:
-    - coveralls
+  - coveralls
 
 deploy:
     # test pypi

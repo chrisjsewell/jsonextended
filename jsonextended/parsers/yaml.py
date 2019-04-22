@@ -3,7 +3,7 @@
 from ruamel.yaml import YAML
 
 
-class YAML_Parser(object):
+class YAML_Parser(object):  # noqa: N801
     r"""
 
     Examples
