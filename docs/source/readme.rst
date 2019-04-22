@@ -1,12 +1,20 @@
 Installation
 ------------
 
+From Conda (recommended):
+
+::
+
+    conda install -c conda-forge jsonextended
+
+From PyPi:
+
 ::
 
     pip install jsonextended
 
 jsonextended has no import dependancies, on Python 3.x and only
-``pathlib2`` on 2.7 but, for full functionallity, it is advised to
+``pathlib2`` on 2.7 but, for full functionality, it is advised to
 install the following packages:
 
 ::

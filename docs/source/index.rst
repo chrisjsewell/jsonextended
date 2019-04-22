@@ -1,12 +1,10 @@
 .. jsonextended documentation master file, created by
    sphinx-quickstart on Sat Jun  3 02:06:22 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
 JSON Extended
 ========================================
 
-|Build Status| |Coverage Status| |PyPI|
+|Build Status| |Coverage Status| |PyPI| |Conda|
 
 A module to extend the python json package functionality:
 
@@ -30,8 +28,8 @@ A module to extend the python json package functionality:
    package)
 
 -  **Units schema** concept to apply and convert physical quantities (using the
-   pint package) 
-   
+   pint package)
+
 - All functions are thoroughly documented with tested examples.
 
 .. toctree::
@@ -56,3 +54,5 @@ Indices and tables
    :target: https://coveralls.io/github/chrisjsewell/jsonextended?branch=master
 .. |PyPI| image:: https://img.shields.io/pypi/v/jsonextended.svg
    :target: https://pypi.python.org/pypi/jsonextended/
+.. |Conda| image:: https://anaconda.org/conda-forge/jsonextended/badges/version.svg
+   :target: https://anaconda.org/conda-forge/jsonextended

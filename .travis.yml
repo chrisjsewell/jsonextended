@@ -4,7 +4,7 @@ matrix:
   include:
   - python: 3.6
     env: TEST_TYPE="flake8"
-  # - env: TEST_TYPE="rtd"
+  - env: TEST_TYPE="rtd"
   - python: 2.7
     env: TEST_TYPE="pytest"
   - python: 3.4
@@ -13,8 +13,6 @@ matrix:
     env: TEST_TYPE="pytest"
   - python: 3.6
     env: TEST_TYPE="pytest" PYPI_DEPLOY=true
-  - python: 3.7
-    env: TEST_TYPE="pytest"
   allow_failures:
   - python: 3.4
     env: TEST_TYPE="pytest"
@@ -37,10 +35,15 @@ install:
     if [[ "$TEST_TYPE" == "flake8" ]]; then
       pip install "flake8(>=3.7,<3.8)"
     fi
+  - |
+    if [[ "$TEST_TYPE" == "rtd" ]]; then
+      pip install sphinx
+    fi
 
 script:
 - if [[ "$TEST_TYPE" == "pytest" ]]; then pytest -v --cov=jsonextended --cov-report= jsonextended ; fi
 - if [[ "$TEST_TYPE" == "flake8" ]]; then flake8 . ; fi
+- if [[ "$TEST_TYPE" == "rtd" ]]; then cd docs; make ; fi
 
 after_success:
   - if [[ "$TEST_TYPE" == "pytest" ]]; then coveralls ; fi
