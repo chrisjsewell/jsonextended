@@ -5,7 +5,8 @@
 -  decoding/encoding between the on-disk JSON structure
    and in-memory nested dictionary structure, including:
 
-   -  treating path structures, with nested directories and multiple .json files, as a single json.
+   -  treating path structures, with nested directories
+      and multiple .json files, as a single json.
 
    -  on-disk indexing of the json structure (using the ijson package)
 
@@ -30,8 +31,9 @@ Notes
 -----
 
 On-disk indexing of the json structure, before reading into memory,
-to reduce memory overhead when dealing with large json structures/files (using the ijson package).
-e.g.
+to reduce memory overhead when dealing with large json structures/files
+(using the ijson package), e.g.
+
     path = get_test_path()
     %memit jdict1 = to_dict(path,['dir1','file2','meta'],in_memory=True)
     maximum of 3: 12.242188 MB per loop

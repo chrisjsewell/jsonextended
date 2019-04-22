@@ -37,8 +37,9 @@ except ImportError:
     from urllib.request import urlopen
 
 # local imports
-from jsonextended.utils import natural_sort, colortxt
-from jsonextended.plugins import encode, decode, parse, parser_available
+from jsonextended.utils import natural_sort, colortxt  # noqa: E402
+from jsonextended.plugins import (
+    encode, decode, parse, parser_available)  # noqa: E402
 
 
 def is_iter_non_string(obj):
@@ -68,7 +69,7 @@ def is_list_of_dict_like(obj, attr=('keys', 'items')):
         if len(obj) == 0:
             return False
         return all([is_dict_like(i, attr) for i in obj])
-    except:
+    except Exception:
         return False
 
 
@@ -120,7 +121,7 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
         if isinstance(obj, intype):
             try:
                 obj = outtype(obj)
-            except:
+            except Exception:
                 pass
         elif isinstance(obj, list) and convert_list:
             obj = _traverse_iter(obj)
@@ -150,7 +151,7 @@ def convert_type(d, intype, outtype, convert_list=True, in_place=True):
     if is_dict_like(out_dict):
         _traverse_dict(out_dict)
     else:
-        data = _convert(out_dict)
+        _convert(out_dict)
 
     return out_dict
 
@@ -261,7 +262,8 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
             if compress_lists is not None:
                 if len(obj) > compress_lists:
                     diff = str(len(obj) - compress_lists)
-                    obj = list(obj[:compress_lists]) + ['...(x{})'.format(diff)]
+                    obj = list(
+                        obj[:compress_lists]) + ['...(x{})'.format(diff)]
             val_string = '(' + ', '.join([decode_to_str(o) for o in obj]) + ')'
         elif isinstance(obj, float) and round_floats is not None:
             round_str = '{0:.' + str(round_floats - 1) + 'E}'
@@ -274,7 +276,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
         # convert unicode to str (so no u'' prefix in python 2)
         try:
             return str(val_string)
-        except:
+        except Exception:
             return unicode(val_string)
 
     if align_vals:
@@ -298,11 +300,12 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
             key_str = colortxt(key_str, keycolor)
 
         if align_vals:
-            key_str = '{0: <{1}} '.format(key_str + delim, key_width + len(delim))
+            key_str = '{0: <{1}} '.format(
+                key_str + delim, key_width + len(delim))
         else:
             key_str = '{0}{1} '.format(key_str, delim)
 
-        depth = max_depth if not max_depth is None else 2
+        depth = max_depth if max_depth is not None else 2
         if keycolor is not None:
             key_length = len(_strip_ansi(key_str))
         else:
@@ -318,10 +321,12 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
             else:
                 print_func(' ' * initindent + key_str)
                 pprint(value, lvlindent, initindent + lvlindent + extra, delim,
-                       max_width, depth=max_depth - 1 if not max_depth is None else None,
+                       max_width,
+                       depth=max_depth - 1 if max_depth is not None else None,
                        no_values=no_values, align_vals=align_vals,
                        print_func=print_func, keycolor=keycolor,
-                       compress_lists=compress_lists, round_floats=round_floats)
+                       compress_lists=compress_lists,
+                       round_floats=round_floats)
             continue
 
         if isinstance(value, list):
@@ -331,23 +336,27 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
                     continue
                 print_func(key_line)
                 for obj in value:
-                    pprint(obj, lvlindent, initindent + lvlindent + extra, delim,
-                           max_width, depth=max_depth - 1 if not max_depth is None else None,
-                           no_values=no_values, align_vals=align_vals,
-                           print_func=print_func, keycolor=keycolor,
-                           compress_lists=compress_lists,
-                           round_floats=round_floats, _dlist=True)
+                    pprint(
+                        obj, lvlindent, initindent + lvlindent + extra, delim,
+                        max_width,
+                        depth=max_depth - 1 if max_depth is not None else None,
+                        no_values=no_values, align_vals=align_vals,
+                        print_func=print_func, keycolor=keycolor,
+                        compress_lists=compress_lists,
+                        round_floats=round_floats, _dlist=True)
                 continue
 
         val_string_all = decode_to_str(value) if not no_values else ''
         for i, val_string in enumerate(val_string_all.split('\n')):
-            if not max_width is None:
+            if max_width is not None:
                 if len(key_line) + 1 > max_width:
-                    raise Exception('cannot fit keys and data within set max_width')
+                    raise Exception(
+                        'cannot fit keys and data within set max_width')
                 # divide into chuncks and join by same indentation
                 val_indent = ' ' * (initindent + key_length)
                 n = max_width - len(val_indent)
-                val_string = val_indent.join([s + '\n' for s in textwrap.wrap(val_string, n)])[:-1]
+                val_string = val_indent.join(
+                    [s + '\n' for s in textwrap.wrap(val_string, n)])[:-1]
 
             if i == 0:
                 print_func(key_line + val_string)
@@ -414,6 +423,7 @@ def indexes(dic, keys=None):
 
     assert hasattr(dic, 'keys')
     new = dic.copy()
+    old_key = None
     for key in keys:
         if not hasattr(new, 'keys'):
             raise KeyError('No indexes after: {}'.format(old_key))
@@ -423,7 +433,8 @@ def indexes(dic, keys=None):
 
 
 def flatten(d, key_as_tuple=True, sep='.', list_of_dicts=None, all_iters=None):
-    """ get nested dict as flat {key:val,...}, where key is tuple/string of all nested keys
+    """ get nested dict as flat {key:val,...},
+    where key is tuple/string of all nested keys
 
     Parameters
     ----------
@@ -464,25 +475,33 @@ def flatten(d, key_as_tuple=True, sep='.', list_of_dicts=None, all_iters=None):
 
     def expand(key, value):
         if is_dict_like(value):
+            flatten_dict = flatten(value, key_as_tuple, sep,
+                                   list_of_dicts, all_iters)
             if key_as_tuple:
-                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts, all_iters).items()]
+                return [(key + k, v) for k, v in flatten_dict.items()]
             else:
-                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts,
-                                                                    all_iters).items()]
+                return [(str(key) + sep + k, v)
+                        for k, v in flatten_dict.items()]
         elif is_iter_non_string(value) and all_iters is not None:
-            value = {'{0}{1}'.format(all_iters, i): v for i, v in enumerate(value)}
+            value = {'{0}{1}'.format(all_iters, i): v
+                     for i, v in enumerate(value)}
+            flatten_dict = flatten(value, key_as_tuple, sep,
+                                   list_of_dicts, all_iters)
             if key_as_tuple:
-                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts, all_iters).items()]
+                return [(key + k, v) for k, v in flatten_dict.items()]
             else:
-                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts,
-                                                                    all_iters).items()]
+                return [(str(key) + sep + k, v)
+                        for k, v in flatten_dict.items()]
         elif is_list_of_dict_like(value) and list_of_dicts is not None:
-            value = {'{0}{1}'.format(list_of_dicts, i): v for i, v in enumerate(value)}
+            value = {'{0}{1}'.format(list_of_dicts, i): v
+                     for i, v in enumerate(value)}
+            flatten_dict = flatten(value, key_as_tuple, sep,
+                                   list_of_dicts, all_iters)
             if key_as_tuple:
-                return [(key + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts, all_iters).items()]
+                return [(key + k, v) for k, v in flatten_dict.items()]
             else:
-                return [(str(key) + sep + k, v) for k, v in flatten(value, key_as_tuple, sep, list_of_dicts,
-                                                                    all_iters).items()]
+                return [(str(key) + sep + k, v)
+                        for k, v in flatten_dict.items()]
         else:
             return [(key, value)]
 
@@ -513,8 +532,10 @@ def _recreate_lists(d, prefix):
         return d
 
     if all([_startswith(k, prefix) for k in d.keys()]):
+        sorted_keys = sorted(list(d.keys()),
+                             key=lambda x: int(x.replace(prefix, '')))
         return [_recreate_lists(d[k], prefix) if is_dict_like(d[k]) else d[k]
-                for k in sorted(list(d.keys()), key=lambda x: int(x.replace(prefix, '')))]
+                for k in sorted_keys]
 
     return {k: _recreate_lists(v, prefix) for k, v in d.items()}
 
@@ -563,8 +584,9 @@ def unflatten(d, key_as_tuple=True, delim='.',
     if deepcopy:
         try:
             d = copy.deepcopy(d)
-        except:
-            warnings.warn('error in deepcopy, so using references to input dict')
+        except Exception:
+            warnings.warn(
+                'error in deepcopy, so using references to input dict')
 
     if key_as_tuple:
         result = d.pop(()) if () in d else {}
@@ -574,9 +596,11 @@ def unflatten(d, key_as_tuple=True, delim='.',
     for key, value in d.items():
 
         if not isinstance(key, tuple) and key_as_tuple:
-            raise ValueError('key not tuple and key_as_tuple set to True: {}'.format(key))
+            raise ValueError(
+                'key not tuple and key_as_tuple set to True: {}'.format(key))
         elif not isinstance(key, basestring) and not key_as_tuple:
-            raise ValueError('key not string and key_as_tuple set to False: {}'.format(key))
+            raise ValueError(
+                'key not string and key_as_tuple set to False: {}'.format(key))
         elif isinstance(key, basestring) and not key_as_tuple:
             parts = key.split(delim)
         else:
@@ -589,25 +613,29 @@ def unflatten(d, key_as_tuple=True, delim='.',
             d = d[part]
         if not is_dict_like(d):
             v1, v2 = sorted([str(d), str({parts[-1]: value})])
-            raise KeyError("child conflict for path: {0}; {1} and {2}".format(parts[:-1], v1, v2))
+            raise KeyError("child conflict for path: "
+                           "{0}; {1} and {2}".format(parts[:-1], v1, v2))
         elif parts[-1] in d:
             try:
                 value = merge([d[parts[-1]], value])
-            except:
+            except Exception:
                 v1, v2 = sorted([str(value), str(d[parts[-1]])])
-                raise KeyError("child conflict for path: {0}; {1} and {2}".format(parts, v1, v2))
+                raise KeyError("child conflict for path: "
+                               "{0}; {1} and {2}".format(parts, v1, v2))
         d[parts[-1]] = value
 
     if list_of_dicts is not None:
         result = _recreate_lists(result, list_of_dicts)
         # if is_dict_like(result):
-        #     if all([str(k).startswith(list_of_dicts) for k in result.keys()]):
-        #         result = [result[k] for k in sorted(list(result.keys()), key=lambda x: int(x.replace(list_of_dicts, '')))]
+        #    if all([str(k).startswith(list_of_dicts) for k in result.keys()]):
+        #         result = [result[k] for k in sorted(list(result.keys()),
+        # key=lambda x: int(x.replace(list_of_dicts, '')))]
 
     return result
 
 
-def _single_merge(a, b, error_path=None, overwrite=False, append=False, list_of_dicts=False):
+def _single_merge(a, b, error_path=None, overwrite=False,
+                  append=False, list_of_dicts=False):
     """merges b into a
     """
     if error_path is None:
@@ -615,31 +643,43 @@ def _single_merge(a, b, error_path=None, overwrite=False, append=False, list_of_
 
     if list_of_dicts and is_list_of_dict_like(a) and is_list_of_dict_like(b):
         if len(a) != len(b):
-            raise ValueError('list of dicts are of different lengths at'
-                             ' "{0}": old: {1}, new: {2}'.format('.'.join(error_path), a, b))
-        return [_single_merge(a_item, b_item, error_path + ["iter_{}".format(i)], overwrite, append, list_of_dicts)
+            raise ValueError(
+                'list of dicts are of different lengths at '
+                '"{0}": old: {1}, new: {2}'.format('.'.join(error_path), a, b))
+        return [_single_merge(a_item, b_item,
+                              error_path + ["iter_{}".format(i)],
+                              overwrite, append, list_of_dicts)
                 for i, (a_item, b_item) in enumerate(zip(a, b))]
 
     for key in b:
         if key in a:
             if is_dict_like(a[key]) and is_dict_like(b[key]):
-                _single_merge(a[key], b[key], error_path + [str(key)], overwrite, append, list_of_dicts)
-            elif isinstance(a[key], list) and isinstance(b[key], list) and append:
+                _single_merge(a[key], b[key], error_path +
+                              [str(key)], overwrite, append, list_of_dicts)
+            elif (isinstance(a[key], list)
+                  and isinstance(b[key], list) and append):
                 a[key] += b[key]
-            elif list_of_dicts and is_list_of_dict_like(a[key]) and is_list_of_dict_like(b[key]):
+            elif (list_of_dicts
+                  and is_list_of_dict_like(a[key])
+                  and is_list_of_dict_like(b[key])):
                 if len(a[key]) != len(b[key]):
-                    raise ValueError('list of dicts are of different lengths at "{0}": old: {1}, new: {2}'.format(
-                        '.'.join(error_path + [str(key)]), a[key], b[key]))
+                    raise ValueError(
+                        'list of dicts are of different lengths at '
+                        '"{0}": old: {1}, new: {2}'.format(
+                            '.'.join(error_path + [str(key)]), a[key], b[key]))
                 for i, (a_item, b_item) in enumerate(zip(a[key], b[key])):
-                    _single_merge(a_item, b_item, error_path + [str(key), "iter_{}".format(i)],
+                    _single_merge(a_item, b_item,
+                                  error_path + [str(key), "iter_{}".format(i)],
                                   overwrite, append, list_of_dicts)
             elif a[key] == b[key]:
                 pass  # same leaf value
             elif overwrite:
                 a[key] = b[key]
             else:
-                raise ValueError('different data already exists at "{0}": old: {1}, new: {2}'.format(
-                    '.'.join(error_path + [str(key)]), a[key], b[key]))
+                raise ValueError(
+                    'different data already exists at '
+                    '"{0}": old: {1}, new: {2}'.format(
+                        '.'.join(error_path + [str(key)]), a[key], b[key]))
         else:
             a[key] = b[key]
     return a
@@ -699,11 +739,12 @@ def merge(dicts, overwrite=False, append=False, list_of_dicts=False):
     >>> pprint(merge([{'a':[{"b": 1}, {"c": 2}]}, {'a':[{"d": 3}, {"e": 4}]}], list_of_dicts=True))
     {'a': [{'b': 1, 'd': 3}, {'c': 2, 'e': 4}]}
 
-    """
+    """  # noqa: E501
     outdict = copy.deepcopy(dicts[0])
 
     def single_merge(a, b):
-        return _single_merge(a, b, overwrite=overwrite, append=append, list_of_dicts=list_of_dicts)
+        return _single_merge(a, b, overwrite=overwrite, append=append,
+                             list_of_dicts=list_of_dicts)
 
     reduce(single_merge, [outdict] + dicts[1:])
 
@@ -712,7 +753,8 @@ def merge(dicts, overwrite=False, append=False, list_of_dicts=False):
 
 def flattennd(d, levels=0, key_as_tuple=True, delim='.',
               list_of_dicts=None):
-    """ get nested dict as {key:dict,...}, where key is tuple/string of all-n levels of nested keys
+    """ get nested dict as {key:dict,...},
+    where key is tuple/string of all-n levels of nested keys
 
     Parameters
     ----------
@@ -762,7 +804,7 @@ def flattennd(d, levels=0, key_as_tuple=True, delim='.',
     {('a', '__list__0'): {'b': [{'c': 1, 'd': 2}, {'e': 3, 'f': 4}]},
      ('a', '__list__1'): {'b': [{'c': 5, 'd': 6}, {'e': 7, 'f': 8}]}}
 
-    """
+    """  # noqa: E501
     if levels < 0:
         raise ValueError('unflattened levels must be greater than 0')
 
@@ -772,28 +814,34 @@ def flattennd(d, levels=0, key_as_tuple=True, delim='.',
         return flattened
 
     for key, value in flattened.items():
-        new_key = key[:-(levels)] if key_as_tuple else delim.join([str(k) for k in key[:-(levels)]])
+        if key_as_tuple:
+            new_key = key[: - (levels)]
+        else:
+            new_key = delim.join([str(k) for k in key[:-(levels)]])
         new_levels = key[-(levels):]
 
-        #val_dict = {new_levels: value}
-        #val_dict = unflatten(val_dict, True, delim)
+        # val_dict = {new_levels: value}
+        # val_dict = unflatten(val_dict, True, delim)
 
-        if not new_key in new_d:
+        if new_key not in new_d:
             new_d[new_key] = {new_levels: value}
         else:
             if new_levels in new_d[new_key]:
-                raise ValueError("key clash for: {0}; {1}".format(new_key, new_levels))
+                raise ValueError(
+                    "key clash for: {0}; {1}".format(new_key, new_levels))
             new_d[new_key][new_levels] = value
 
     for nkey, nvalue in new_d.items():
-        new_d[nkey] = unflatten(nvalue, list_of_dicts=list_of_dicts, deepcopy=False)
+        new_d[nkey] = unflatten(
+            nvalue, list_of_dicts=list_of_dicts, deepcopy=False)
 
     return new_d
 
 
 def flatten2d(d, key_as_tuple=True, delim='.',
               list_of_dicts=None):
-    """ get nested dict as {key:dict,...}, where key is tuple/string of all-1 nested keys
+    """ get nested dict as {key:dict,...},
+    where key is tuple/string of all-1 nested keys
 
     NB: is same as flattennd(d,1,key_as_tuple,delim)
 
@@ -831,7 +879,8 @@ def remove_keys(d, keys=None, use_wildcards=True,
     ----------
     keys: list
     use_wildcards : bool
-        if true, can use * (matches everything) and ? (matches any single character)
+        if true, can use * (matches everything)
+        and ? (matches any single character)
     list_of_dicts: bool
         treat list of dicts as additional branches
     deepcopy: bool
@@ -861,13 +910,13 @@ def remove_keys(d, keys=None, use_wildcards=True,
                         return True
                     if fnmatch(a, b):
                         return True
-                except:
+                except Exception:
                     pass
             return False
         else:
             try:
                 return a in bs
-            except:
+            except Exception:
                 return False
 
     if not hasattr(d, 'items'):
@@ -882,14 +931,16 @@ def remove_keys(d, keys=None, use_wildcards=True,
             try:
                 if new_key[-1].startswith(list_of_dicts):
                     continue
-            except:
+            except Exception:
                 pass
             new_dic[new_key] = value
-        return unflatten(new_dic, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
+        return unflatten(
+            new_dic, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
 def remove_keyvals(d, keyvals=None, list_of_dicts=False, deepcopy=True):
-    """remove paths with at least one branch leading to certain (key,value) pairs from dict
+    """remove paths with at least one branch leading
+    to certain (key,value) pairs from dict
 
     Parameters
     ----------
@@ -929,7 +980,7 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False, deepcopy=True):
     def is_in(a, b):
         try:
             return a in b
-        except:
+        except Exception:
             return False
 
     prune = [k[0] for k, v in flatd.items() if is_in((k[-1], v), keyvals)]
@@ -986,7 +1037,8 @@ def remove_paths(d, keys, list_of_dicts=False, deepcopy=True):
     flatd = {path: v for path, v in flatd.items() if not contains(path)}
 
     return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
-    # return {key: remove_paths(value,keys) for key, value in d.items() if key not in keys}
+    # return {key: remove_paths(value,keys)
+    # for key, value in d.items() if key not in keys}
 
 
 def filter_values(d, vals=None, list_of_dicts=False, deepcopy=True):
@@ -1018,7 +1070,7 @@ def filter_values(d, vals=None, list_of_dicts=False, deepcopy=True):
     def is_in(a, b):
         try:
             return a in b
-        except:
+        except Exception:
             return False
 
     flatd = {k: v for k, v in flatd.items() if is_in(v, vals)}
@@ -1033,7 +1085,8 @@ def _in_pruned(k, pruned):
 
 
 # TODO filter_keyvals; deal with uncomparable values, speedup?
-def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=False, deepcopy=True):
+def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False,
+                   list_of_dicts=False, deepcopy=True):
     """ filters leaf nodes key:value pairs of nested dictionary
 
     Parameters
@@ -1084,7 +1137,7 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
     {'e': {'b': 1, 'c': 2, 'f': {'d': 3}}}
 
 
-    """
+    """  # noqa: E501
     if len(keyvals) != len(dict(keyvals)):
         raise ValueError("repeating keys in keyvals: {}".format(keyvals))
 
@@ -1095,12 +1148,15 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
 
     if logic == "OR":
         if keep_siblings:
-            pruned = {tuple(k[:-1]) for k, v in flattened.items()
-                      if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
-            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
-        else:
+            pruned = {
+                tuple(k[:-1]) for k, v in flattened.items()
+                if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
             filtered = {k: v for k, v in flattened.items()
-                        if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
+                        if _in_pruned(k, pruned)}
+        else:
+            filtered = {
+                k: v for k, v in flattened.items()
+                if any(key == k[-1] and v == keyvals[key] for key in keyvals)}
     elif logic == "AND":
         pruned = {}
         for k, v in flattened.items():
@@ -1110,17 +1166,21 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False, list_of_dicts=Fa
         pruned = [k for k, v in pruned.items() if set(v) == all_keys]
 
         if keep_siblings:
-            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
+            filtered = {k: v for k, v in flattened.items()
+                        if _in_pruned(k, pruned)}
         else:
-            filtered = {k: v for k, v in flattened.items() if k[-1] in all_keys and _in_pruned(k, pruned)}
+            filtered = {k: v for k, v in flattened.items(
+            ) if k[-1] in all_keys and _in_pruned(k, pruned)}
     else:
         raise ValueError("logic must be AND or OR: {}".format(logic))
 
     return unflatten(filtered, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=False, deepcopy=True):
-    """ filters leaf nodes key:func(val) pairs of nested dictionary, where func(val) -> True/False
+def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False,
+                    list_of_dicts=False, deepcopy=True):
+    """ filters leaf nodes key:func(val) pairs of nested dictionary,
+    where func(val) -> True/False
 
     Parameters
     ----------
@@ -1162,7 +1222,7 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=
     >>> pprint(filter_keyfuncs(d,[('b',func1), ('c',func1)], logic="AND", keep_siblings=True))
     {'a': {'b': 1, 'c': 2, 'd': 3}}
 
-    """
+    """  # noqa: E501
     if len(keyfuncs) != len(dict(keyfuncs)):
         raise ValueError("repeating keys in keyfuncs: {}".format(keyfuncs))
     keyfuncs = dict(keyfuncs)
@@ -1172,12 +1232,15 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=
 
     if logic == "OR":
         if keep_siblings:
-            pruned = {tuple(k[:-1]) for k, v in flattened.items()
-                      if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
-            filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
-        else:
+            pruned = {
+                tuple(k[:-1]) for k, v in flattened.items()
+                if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
             filtered = {k: v for k, v in flattened.items()
-                        if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
+                        if _in_pruned(k, pruned)}
+        else:
+            filtered = {
+                k: v for k, v in flattened.items()
+                if any(key == k[-1] and keyfuncs[key](v) for key in keyfuncs)}
     elif logic == "AND":
         pruned = {}
         for k, v in flattened.items():
@@ -1187,16 +1250,19 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False, list_of_dicts=
         pruned = [k for k, v in pruned.items() if set(v) == all_keys]
 
         if keep_siblings:
-             filtered = {k: v for k, v in flattened.items() if _in_pruned(k, pruned)}
+            filtered = {k: v for k, v in flattened.items()
+                        if _in_pruned(k, pruned)}
         else:
-            filtered = {k: v for k, v in flattened.items() if k[-1] in all_keys and _in_pruned(k, pruned)}
+            filtered = {k: v for k, v in flattened.items(
+            ) if k[-1] in all_keys and _in_pruned(k, pruned)}
     else:
         raise ValueError("logic must be AND or OR: {}".format(logic))
 
     return unflatten(filtered, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
-def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False, deepcopy=True):
+def filter_keys(d, keys, use_wildcards=False,
+                list_of_dicts=False, deepcopy=True):
     """ filter dict by certain keys
 
     Parameters
@@ -1204,7 +1270,8 @@ def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False, deepcopy=True
     d : dict
     keys: list
     use_wildcards : bool
-        if true, can use * (matches everything) and ? (matches any single character)
+        if true, can use * (matches everything)
+        and ? (matches any single character)
     list_of_dicts: bool
         treat list of dicts as additional branches
     deepcopy: bool
@@ -1235,16 +1302,17 @@ def filter_keys(d, keys, use_wildcards=False, list_of_dicts=False, deepcopy=True
                         return True
                     if fnmatch(b, a):
                         return True
-                except:
+                except Exception:
                     pass
             return False
         else:
             try:
                 return a in bs
-            except:
+            except Exception:
                 return False
 
-    flatd = {paths: v for paths, v in flatd.items() if any([is_in(k, paths) for k in keys])}
+    flatd = {paths: v for paths, v in flatd.items() if any(
+        [is_in(k, paths) for k in keys])}
     return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
 
@@ -1284,7 +1352,9 @@ def filter_paths(d, paths, list_of_dicts=False, deepcopy=True):
     new_d = filter_keys(d, all_keys, list_of_dicts=list_of_dicts)
     new_d = flatten(d, list_of_dicts=list_of_dicts)
     for key in list(new_d.keys()):
-        if not any([set(key).issuperset(path if isinstance(path, tuple) else [path]) for path in paths]):
+        if not any([
+                set(key).issuperset(path if isinstance(path, tuple) else[path])
+                for path in paths]):
             new_d.pop(key)
     return unflatten(new_d, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
 
@@ -1316,13 +1386,17 @@ def rename_keys(d, keymap=None, list_of_dicts=False, deepcopy=True):
 
     flatd = flatten(d, list_of_dicts=list_of_dicts)
 
-    flatd = {tuple([keymap.get(k, k) for k in path]): v for path, v in flatd.items()}
+    flatd = {
+        tuple([keymap.get(k, k) for k in path]): v for path, v in flatd.items()
+    }
 
     return unflatten(flatd, list_of_dicts=list_of_dicts, deepcopy=deepcopy)
-    # return {keymap[key] if key in keymap else key: rename_keys(value,keymap) for key, value in d.items()}
+    # return {keymap[key] if key in keymap else key: rename_keys(value,keymap)
+    # for key, value in d.items()}
 
 
-def split_key(d, key, new_keys, before=True, list_of_dicts=False, deepcopy=True):
+def split_key(d, key, new_keys, before=True,
+              list_of_dicts=False, deepcopy=True):
     """ split an existing key(s) into multiple levels
 
     Parameters
@@ -1416,15 +1490,17 @@ def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
     >>> pprint(apply(test_dict, "b", lambda x: x[-1], list_of_dicts=True, unflatten_level=2))
     {'a': [{'b': {'e': 3, 'f': 4}}, {'b': {'e': 7, 'f': 8}}]}
 
-    """
+    """  # noqa: E501
     list_of_dicts = '__list__' if list_of_dicts else None
     if unflatten_level == 0:
         flatd = flatten(d, list_of_dicts=list_of_dicts)
     else:
         flatd = flattennd(d, unflatten_level, list_of_dicts=list_of_dicts)
-    newd = {k: (func(v, **kwargs) if k[-1] == leaf_key else v) for k, v in flatd.items()}
+    newd = {k: (func(v, **kwargs) if k[-1] == leaf_key else v)
+            for k, v in flatd.items()}
     if new_name is not None:
-        newd = {(tuple(list(k[:-1]) + [new_name]) if k[-1] == leaf_key else k): v for k, v in newd.items()}
+        newd = {(tuple(list(k[:-1]) + [new_name]) if k[-1]
+                 == leaf_key else k): v for k, v in newd.items()}
         if not remove_lkey:
             newd.update(flatd)
 
@@ -1432,7 +1508,8 @@ def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
 
 
 def combine_apply(d, leaf_keys, func, new_name,
-                  unflatten_level=1, remove_lkeys=True, overwrite=False, list_of_dicts=False, deepcopy=True, **kwargs):
+                  unflatten_level=1, remove_lkeys=True, overwrite=False,
+                  list_of_dicts=False, deepcopy=True, **kwargs):
     """ combine values with certain leaf (terminal) keys by a function
 
     Parameters
@@ -1482,10 +1559,12 @@ def combine_apply(d, leaf_keys, func, new_name,
     """
     list_of_dicts = '__list__' if list_of_dicts else None
     if unflatten_level is not None:
-        flatd = flattennd(d, levels=unflatten_level, list_of_dicts=list_of_dicts)
+        flatd = flattennd(d, levels=unflatten_level,
+                          list_of_dicts=list_of_dicts)
     else:
         # TODO could do this better?
-        flatd = unflatten(d, key_as_tuple=False, delim='*@#$', deepcopy=deepcopy)
+        flatd = unflatten(d, key_as_tuple=False,
+                          delim='*@#$', deepcopy=deepcopy)
 
     for dic in flatd.values():
         if not is_dict_like(dic):
@@ -1505,7 +1584,8 @@ def combine_apply(d, leaf_keys, func, new_name,
         return flatd
 
 
-def split_lists(d, split_keys, new_name='split', check_length=True, deepcopy=True):
+def split_lists(d, split_keys, new_name='split',
+                check_length=True, deepcopy=True):
     """split_lists key:list pairs into dicts for each item in the lists
     NB: will only split if all split_keys are present
 
@@ -1543,7 +1623,7 @@ def split_lists(d, split_keys, new_name='split', check_length=True, deepcopy=Tru
     ValueError: lists at the following path do not have the same size ('path_key',)
 
 
-    """
+    """  # noqa: E501
     flattened = flatten2d(d)
 
     new_d = {}
@@ -1556,12 +1636,15 @@ def split_lists(d, split_keys, new_name='split', check_length=True, deepcopy=Tru
             for subkey, subvalue in value.items():
                 if subkey in split_keys:
                     if not isinstance(subvalue, list):
-                        raise ValueError('"{0}" data at the following path is not a list {1}'.format(subkey, key))
+                        raise ValueError(
+                            '"{0}" data at the following path is not a list '
+                            '{1}'.format(subkey, key))
 
                     if check_length and length is not None:
                         if len(subvalue) != length:
-                            raise ValueError('lists at the following path '
-                                             'do not have the same size {0}'.format(key))
+                            raise ValueError(
+                                'lists at the following path '
+                                'do not have the same size {0}'.format(key))
                     if length is None:
                         combine_d = [{subkey: v} for v in subvalue]
                     else:
@@ -1569,15 +1652,17 @@ def split_lists(d, split_keys, new_name='split', check_length=True, deepcopy=Tru
                             item[subkey] = val
 
                     length = len(subvalue)
-                    # new_combine = {k:{subkey:v} for k,v in enumerate(subvalue)}
+                    # new_combine = {k:{subkey:v}
+                    # for k,v in enumerate(subvalue)}
                     # combine_d = merge([combine_d,new_combine])
                 else:
                     sub_d[subkey] = subvalue
                 try:
                     new_d[key] = merge([sub_d, {new_name: combine_d}])
-                except ValueError as err:
-                    raise ValueError('split data key: '
-                                     '{0}, already exists at this level for {1}'.format(new_name, key))
+                except ValueError:
+                    raise ValueError(
+                        'split data key: {0}, already exists at '
+                        'this level for {1}'.format(new_name, key))
         else:
             new_d[key] = value
 
@@ -1604,7 +1689,7 @@ def combine_lists(d, keys=None, deepcopy=True):
     {'a': [2, 1]}
 
 
-    """
+    """  # noqa: E501
     if isinstance(d, list):
         init_list = True
         d = {'dummy_key843': d}
@@ -1613,11 +1698,11 @@ def combine_lists(d, keys=None, deepcopy=True):
 
     flattened = flatten(d, list_of_dicts=None)
     for key, value in list(flattened.items()):
-        if not keys is None:
+        if keys is not None:
             try:
                 if not key[-1] in keys:
                     continue
-            except:
+            except Exception:
                 continue
         if not isinstance(value, list):
             continue
@@ -1692,7 +1777,7 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
     iter_prefix: str
         prefix to use for list and tuple indexes
     np_allclose: bool
-        if True, try using numpy.allclose to assess whether there has been a change
+        if True, try using numpy.allclose to assess differences
     **kwargs:
         keyword arguments to parse to numpy.allclose
 
@@ -1739,7 +1824,8 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
     dct1_flat = flatten(new_dict, all_iters=iter_prefix)
     dct2_flat = flatten(old_dict, all_iters=iter_prefix)
 
-    outcome = {'insertions': [], 'deletions': [], 'changes': [], 'uncomparable': []}
+    outcome = {'insertions': [], 'deletions': [],
+               'changes': [], 'uncomparable': []}
 
     for path, val in dct1_flat.items():
         if path not in dct2_flat:
@@ -1750,12 +1836,12 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
             try:
                 if numpy.allclose(val, other_val, **kwargs):
                     continue
-            except:
+            except Exception:
                 pass
         try:
             if val != other_val:
                 outcome['changes'].append((path, (val, other_val)))
-        except:
+        except Exception:
             outcome['uncomparable'].append((path, (val, other_val)))
 
     for path2, val2 in dct2_flat.items():
@@ -1767,13 +1853,14 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
             outcome.pop(key)
         try:
             outcome[key] = sorted(outcome[key])
-        except:
+        except Exception:
             pass
 
     return outcome
 
 
-def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, default_name='root.json', **kwargs):
+def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2,
+            default_name='root.json', **kwargs):
     """ output dict to json
 
     Parameters
@@ -1784,12 +1871,13 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, d
     overwrite : bool
         whether to overwrite existing files
     dirlevel : int
-        if jfile is path to folder, defines how many key levels to set as sub-folders
+        if jfile is path to folder,
+        defines how many key levels to set as sub-folders
     sort_keys : bool
         if true then the output of dictionaries will be sorted by key
     indent : int
-        if non-negative integer, then JSON array elements and
-        object members will be pretty-printed on new lines with that indent level spacing.
+        if non-negative integer, then JSON array elements and object members
+        will be pretty-printed on new lines with that indent level spacing.
     kwargs : dict
         keywords for json.dump
 
@@ -1830,7 +1918,8 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, d
 
     """
     if hasattr(jfile, 'write'):
-        json.dump(dct, jfile, sort_keys=sort_keys, indent=indent, default=encode)
+        json.dump(dct, jfile, sort_keys=sort_keys,
+                  indent=indent, default=encode)
         return
 
     if isinstance(jfile, basestring):
@@ -1838,17 +1927,21 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, d
     else:
         path = jfile
 
-    if not all([hasattr(path, attr) for attr in ['exists', 'is_dir', 'is_file', 'touch', 'open']]):
-        raise ValueError('jfile should be a str or file_like object: {}'.format(jfile))
+    file_attrs = ['exists', 'is_dir', 'is_file', 'touch', 'open']
+    if not all([hasattr(path, attr) for attr in file_attrs]):
+        raise ValueError(
+            'jfile should be a str or file_like object: {}'.format(jfile))
 
     if path.is_file() and path.exists() and not overwrite:
-        raise IOError('jfile already exists and overwrite is set to false: {}'.format(jfile))
+        raise IOError('jfile already exists and '
+                      'overwrite is set to false: {}'.format(jfile))
 
     if not path.is_dir() and dirlevel <= 0:
         path.touch()  # try to create file if doesn't already exist
         with path.open('w') as outfile:
             outfile.write(unicode(json.dumps(
-                dct, sort_keys=sort_keys, indent=indent, default=encode, **kwargs)))
+                dct, sort_keys=sort_keys,
+                indent=indent, default=encode, **kwargs)))
             return
 
     if not path.is_dir():
@@ -1861,7 +1954,8 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, d
         newpath.touch()
         with newpath.open('w') as outfile:
             outfile.write(unicode(json.dumps(
-                dct, sort_keys=sort_keys, indent=indent, default=encode, **kwargs)))
+                dct, sort_keys=sort_keys,
+                indent=indent, default=encode, **kwargs)))
             return
 
     for key, val in dct.items():
@@ -1870,7 +1964,8 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, d
             newpath.touch()
             with newpath.open('w') as outfile:
                 outfile.write(unicode(json.dumps(
-                    val, ensure_ascii=False, sort_keys=sort_keys, indent=indent, default=encode, **kwargs)))
+                    val, ensure_ascii=False, sort_keys=sort_keys,
+                    indent=indent, default=encode, **kwargs)))
         else:
             newpath = path.joinpath('{}'.format(key))
             if not newpath.exists():
@@ -1880,7 +1975,8 @@ def to_json(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, d
                     default_name='{}.json'.format(key), **kwargs)
 
 
-def dump(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, default_name='root.json', **kwargs):
+def dump(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True,
+         indent=2, default_name='root.json', **kwargs):
     """ output dict to json
 
     Parameters
@@ -1891,12 +1987,13 @@ def dump(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, defa
     overwrite : bool
         whether to overwrite existing files
     dirlevel : int
-        if jfile is path to folder, defines how many key levels to set as sub-folders
+        if jfile is path to folder,
+        defines how many key levels to set as sub-folders
     sort_keys : bool
         if true then the output of dictionaries will be sorted by key
     indent : int
-        if non-negative integer, then JSON array elements and
-        object members will be pretty-printed on new lines with that indent level spacing.
+        if non-negative integer, then JSON array elements and object members
+        will be pretty-printed on new lines with that indent level spacing.
     kwargs : dict
         keywords for json.dump
     """
@@ -1905,7 +2002,7 @@ def dump(dct, jfile, overwrite=False, dirlevel=0, sort_keys=True, indent=2, defa
             default_name=default_name, **kwargs)
 
 
-class to_html(object):
+class to_html(object):  # noqa: N801
     """
     Pretty display dictionary in collapsible format with indents
 
@@ -1916,7 +2013,8 @@ class to_html(object):
     depth: int
         Depth of the json tree structure displayed, the rest is collapsed.
     max_length: int
-        Maximum number of characters of a string displayed as preview, longer string appear collapsed.
+        Maximum number of characters of a string displayed as preview,
+        longer string appear collapsed.
     max_height: int
         Maxium height in pixels of containing box.
     sort: bool
@@ -1946,18 +2044,18 @@ class to_html(object):
         .renderjson .array.syntax  { color: lightseagreen; }
         </style><div id="123" style="max-height: 600px; width:100%%;"></div>
                     <script>
-                require(["jsonextended/renderjson.js"], function() {
-                    document.getElementById("123").appendChild(
-                        renderjson.set_max_string_length(10)
-                                  //.set_icons(circled plus, circled minus)
-                                  .set_icons(String.fromCharCode(8853), String.fromCharCode(8854))
-                                  .set_sort_objects(false)
-                                  .set_show_to_level(1)({"guido": 4127, "jack": 4098, "sape": {"value": 22}}))
-                });</script>
+    require(["jsonextended/renderjson.js"], function() {
+        document.getElementById("123").appendChild(
+            renderjson.set_max_string_length(10)
+                //.set_icons(circled plus, circled minus)
+                .set_icons(String.fromCharCode(8853), String.fromCharCode(8854))
+                .set_sort_objects(false)
+                .set_show_to_level(1)({"guido": 4127, "jack": 4098, "sape": {"value": 22}}))
+    });</script>
 
 
 
-    """
+    """  # noqa: E501
 
     _CSS = '<style>' + """
     .renderjson a              { text-decoration: none; }
@@ -1981,7 +2079,8 @@ class to_html(object):
         depth: int
             Depth of the json tree structure displayed, the rest is collapsed.
         max_length: int
-            Maximum number of characters of a string displayed as preview, longer string appear collapsed.
+            Maximum number of characters of a string displayed as preview,
+            longer string appear collapsed.
         max_height: int
             Maxium height in pixels of containing box.
         sort: bool
@@ -1991,7 +2090,7 @@ class to_html(object):
 
         def is_json(myjson):
             try:
-                object = json.loads(myjson)
+                json.loads(myjson)
             except ValueError:
                 return False
             return True
@@ -2015,31 +2114,34 @@ class to_html(object):
                 """.format(self.uuid, self.max_height)
 
     def _get_renderpath(self):
-        # return os.path.join(os.path.dirname(os.path.dirname(os.path.relpath(inspect.getfile(_example_json_folder)))),
+        # return os.path.join(os.path.dirname(os.path.dirname(
+        # os.path.relpath(inspect.getfile(_example_json_folder)))),
         #                              'renderjson.js')
         renderjson = 'jsonextended/renderjson.js'
         if sys.version_info < (3, 0) or self.local:
             return renderjson
         # try online, python 2 doesn't seem to like it
         try:
-            renderjson = 'https://rawgit.com/caldwell/renderjson/master/renderjson.js'
+            renderjson = (
+                'https://rawgit.com/caldwell/renderjson/master/renderjson.js')
             urlopen(renderjson)
-        except:
+        except Exception:
             pass
         return renderjson
 
     def _get_javascript(self):
         renderjson = self._get_renderpath()
-        return """<script>
-            require(["{0}"], function() {{
-                document.getElementById("{1}").appendChild(
-                    renderjson.set_max_string_length({2})
-                              //.set_icons(circled plus, circled minus)
-                              .set_icons(String.fromCharCode(8853), String.fromCharCode(8854))
-                              .set_sort_objects({3})
-                              .set_show_to_level({4})({5}))
-            }});</script>""".format(renderjson, self.uuid, self.max_length,
-                                    self.sort, self.depth, self.str)
+        return """\
+<script>
+require(["{0}"], function() {{
+    document.getElementById("{1}").appendChild(
+        renderjson.set_max_string_length({2})
+            //.set_icons(circled plus, circled minus)
+            .set_icons(String.fromCharCode(8853), String.fromCharCode(8854))
+            .set_sort_objects({3})
+            .set_show_to_level({4})({5}))
+}});</script>""".format(renderjson, self.uuid, self.max_length, self.sort,
+                        self.depth, self.str)
 
     def _repr_html_(self):
 
@@ -2063,19 +2165,21 @@ class LazyLoad(object):
     obj : dict, string, file_like
         object
     ignore_regexes : list of str
-        ignore files and folders matching these regexes (can contain *, ? and [] wildcards)
+        ignore files and folders matching these regexes
+        (can contain *, ? and [] wildcards)
     recursive : bool
         if True, load subdirectories
     parent : obj
          the parent object of this instance
     key_paths : bool
-        indicates if the keys of the object can be resolved as file/folder paths
-        (to ensure strings do not get unintentionally treated as paths)
+        indicates if the keys of the object can be resolved as file/folder
+        paths (to ensure strings do not get unintentionally treated as paths)
     list_of_dicts: bool
         treat list of dicts as additional branches
     parse_errors: bool
         if True, if parsing a file fails then an IOError will be raised
-        if False, if parsing a file fails then only a logging.error will be made, and the value will be returned as None
+        if False, if parsing a file fails then only a logging.error will be
+        made and the value will be returned as None
     parser_kwargs : keywords or dict
         additional keywords for parser plugins read_file method,
         (loaded decoder plugins are parsed by default)
@@ -2155,8 +2259,9 @@ class LazyLoad(object):
 
     >>> plugins.unload_all_plugins()
 
-    """
+    """  # noqa: E501
     # TODO lazyload parent is not used
+
     def __init__(self, obj,
                  ignore_regexes=('.*', '_*'), recursive=True,
                  parent=None, key_paths=True,
@@ -2179,21 +2284,26 @@ class LazyLoad(object):
     def _next_level(self, obj):
         """get object for next level of tab """
         if is_dict_like(obj):
-            child = LazyLoad(obj, self._ignore_regexes, parent=self,
-                             key_paths=False, list_of_dicts=self._list_of_dicts,
-                             parse_errors=self._parse_errors, **self._parser_kwargs)
+            child = LazyLoad(
+                obj, self._ignore_regexes, parent=self,
+                key_paths=False, list_of_dicts=self._list_of_dicts,
+                parse_errors=self._parse_errors, **self._parser_kwargs)
             return child
         if is_path_like(obj):
-            if not any([fnmatch(obj.name, regex) for regex in self._ignore_regexes]):
+            if not any([fnmatch(obj.name, regex)
+                        for regex in self._ignore_regexes]):
                 if parser_available(obj):
-                    child = LazyLoad(obj, self._ignore_regexes, parent=self,
-                                     key_paths=False, list_of_dicts=self._list_of_dicts,
-                                     parse_errors=self._parse_errors, **self._parser_kwargs)
+                    child = LazyLoad(
+                        obj, self._ignore_regexes, parent=self,
+                        key_paths=False, list_of_dicts=self._list_of_dicts,
+                        parse_errors=self._parse_errors, **self._parser_kwargs)
                     return child
                 elif obj.is_dir():
-                    child = LazyLoad(obj, self._ignore_regexes, parent=self,
-                                     key_paths=self._key_paths, list_of_dicts=self._list_of_dicts,
-                                     parse_errors=self._parse_errors, **self._parser_kwargs)
+                    child = LazyLoad(
+                        obj, self._ignore_regexes, parent=self,
+                        key_paths=self._key_paths,
+                        list_of_dicts=self._list_of_dicts,
+                        parse_errors=self._parse_errors, **self._parser_kwargs)
                     return child
 
         return obj
@@ -2206,10 +2316,12 @@ class LazyLoad(object):
 
         obj = self._obj
         if is_dict_like(obj):
-            self._itemmap = {key: self._next_level(val) for key, val in obj.items()}
+            self._itemmap = {key: self._next_level(
+                val) for key, val in obj.items()}
 
         elif is_list_of_dict_like(obj) and self._list_of_dicts:
-            self._itemmap = {i: self._next_level(val) for i, val in enumerate(obj)}
+            self._itemmap = {i: self._next_level(
+                val) for i, val in enumerate(obj)}
 
         elif isinstance(obj, basestring) and self._key_paths:
             obj = pathlib.Path(obj)
@@ -2222,22 +2334,30 @@ class LazyLoad(object):
                 except Exception as err:
                     if self._parse_errors:
                         if sys.version_info.major > 2:
-                            # NB: without exec, this raises a syntax error in python 2
-                            exec('raise IOError("Parsing error for file: {0}".format(obj)) from err', globals(), locals())
+                            # NB: without exec,
+                            # this raises a syntax error in python 2
+                            cmnd = ('raise IOError("Parsing error for file: '
+                                    '{0}".format(obj)) from err')
+                            exec(cmnd, globals(), locals())
                         else:
-                            raise IOError("Parsing error for file: {0}\n{1}".format(obj, err))
+                            raise IOError("Parsing error for file: "
+                                          "{0}\n{1}".format(obj, err))
                     else:
-                        logger.error("Parsing error for file: {0}: {1}".format(obj, err))
+                        logger.error("Parsing error for file: "
+                                     "{0}: {1}".format(obj, err))
                         new_obj = None
 
                 if is_dict_like(new_obj):
-                    self._itemmap = {key: self._next_level(val) for key, val in new_obj.items()}
+                    self._itemmap = {key: self._next_level(
+                        val) for key, val in new_obj.items()}
                 else:
                     self._itemmap = {'non_dict': new_obj}
             if obj.is_dir():
                 new_obj = {}
                 for subpath in obj.iterdir():
-                    if not any([fnmatch(subpath.name, regex) for regex in self._ignore_regexes]):
+                    ignore_path = [fnmatch(subpath.name, regex)
+                                   for regex in self._ignore_regexes]
+                    if not any(ignore_path):
                         if parser_available(subpath):
                             new_obj[subpath.name] = self._next_level(subpath)
                         elif subpath.is_dir() and self._recurse:
@@ -2246,11 +2366,13 @@ class LazyLoad(object):
 
         if self._itemmap is None:
             raise ValueError('not an expandable object: {}'.format(obj))
-        self._tabmap = {self._sanitise(key): val for key, val in self._itemmap.items()}
+        self._tabmap = {self._sanitise(
+            key): val for key, val in self._itemmap.items()}
 
     def __dir__(self):
         self._expand()
-        return ['keys', 'items', 'values', 'to_dict', 'to_df', 'to_obj'] + [name for name in self._tabmap]
+        dict_attrs = ['keys', 'items', 'values', 'to_dict', 'to_df', 'to_obj']
+        return dict_attrs + [name for name in self._tabmap]
 
     def __getattr__(self, attr):
         self._expand()
@@ -2281,8 +2403,9 @@ class LazyLoad(object):
 
     def __repr__(self):
         self._expand()
+        start = ':..,'.join(sorted([str(_) for _ in self._itemmap]))
         end = ':..' if len(self._itemmap) > 0 else ''
-        return '{' + ':..,'.join(sorted([str(_) for _ in self._itemmap])) + end + '}'
+        return '{' + start + end + '}'
 
     def __str__(self):
         return self.__repr__()
@@ -2305,11 +2428,12 @@ class LazyLoad(object):
         try:
             int(str(val)[0])
             val = 'i' + str(val)
-        except:
+        except Exception:
             pass
         val = re.sub('[^0-9a-zA-Z]+', '_', str(val))
         val = 'u' + val if val.startswith('_') else val
-        val = val + '_key' if val in ['keys', 'items', 'values', 'to_dict', 'to_df', 'to_obj'] else val
+        val = val + '_key' if val in [
+            'keys', 'items', 'values', 'to_dict', 'to_df', 'to_obj'] else val
         return val
 
     def keys(self):
@@ -2336,8 +2460,10 @@ class LazyLoad(object):
         if not hasattr(obj, 'items'):
             return obj
         else:
-            return {root[key] if key in root else key: self._recurse_children(value, root) for key, value in
-                    obj.items()}
+            return {
+                root[key]
+                if key in root else key: self._recurse_children(value, root)
+                for key, value in obj.items()}
 
     def to_obj(self):
         """ return the internal object """

@@ -18,19 +18,17 @@
 #
 import os
 import sys
-
-# sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../..'))
-import jsonextended
-
-# create releases page
 import urllib
 import json
 
-git_history = urllib.request.urlopen('https://api.github.com/repos/chrisjsewell/jsonextended/releases').read().decode(
-    'utf-8')
-git_history_json = json.loads(git_history)
+# sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../..'))
+import jsonextended  # noqa: E402
 
+git_history = urllib.request.urlopen(
+    'https://api.github.com/repos/chrisjsewell/jsonextended/releases')
+git_history = git_history.read().decode('utf-8')
+git_history_json = json.loads(git_history)
 
 ordered_releases = {}
 for rel in git_history_json:
@@ -39,7 +37,8 @@ for rel in git_history_json:
     minor = float(".".join(rversion[2:4]))
     if major not in ordered_releases:
         ordered_releases[major] = {}
-    ordered_releases[major][minor] = {"version": rel['tag_name'], "header": rel['name'], "body": rel["body"]}
+    ordered_releases[major][minor] = {
+        "version": rel['tag_name'], "header": rel['name'], "body": rel["body"]}
 
 with open('releases.rst', 'w') as f:
     f.write('Releases\n')
@@ -213,8 +212,10 @@ napoleon_use_param = True
 napoleon_use_rtype = True
 
 
-# adapted from https://github.com/markovmodel/PyEMMA/blob/devel/doc/source/conf.py#L285
-# and discussed here: https://stackoverflow.com/questions/20569011/python-sphinx-autosummary-automated-listing-of-member-functions
+# adapted from:
+# https://github.com/markovmodel/PyEMMA/blob/devel/doc/source/conf.py#L285
+# and discussed here:
+# https://stackoverflow.com/questions/20569011/python-sphinx-autosummary-automated-listing-of-member-functions
 def setup(app):
     # app.connect('autodoc-skip-member', skip_deprecated)
     try:
@@ -241,19 +242,23 @@ def setup(app):
             def get_functions(mod):
 
                 def is_function_local(obj):
-                    return isinstance(obj, FunctionType) and obj.__module__ == mod.__name__
+                    return (isinstance(obj, FunctionType)
+                            and obj.__module__ == mod.__name__)
 
                 members = inspect.getmembers(mod, predicate=is_function_local)
-                return [name for name, value in members if not name.startswith('_')]
+                return [name for name, value in members
+                        if not name.startswith('_')]
 
             @staticmethod
             def get_classes(mod):
 
                 def is_class_local(obj):
-                    return inspect.isclass(obj) and obj.__module__ == mod.__name__
+                    return (inspect.isclass(obj)
+                            and obj.__module__ == mod.__name__)
 
                 members = inspect.getmembers(mod, predicate=is_class_local)
-                return [name for name, value in members if not name.startswith('_')]
+                return [name for name, value in members
+                        if not name.startswith('_')]
 
             def run(self):
 
@@ -265,10 +270,14 @@ def setup(app):
 
                 if 'classes' in self.options:
                     klasses = self.get_classes(mod)
-                    self.content = ["~%s.%s" % (mod_path, klass) for klass in klasses if not klass.startswith('_')]
+                    self.content = ["~%s.%s" % (
+                        mod_path, klass) for klass in klasses
+                        if not klass.startswith('_')]
                 if 'functions' in self.options:
                     functions = self.get_functions(mod)
-                    content = ["~%s.%s" % (mod_path, func) for func in functions if not func.startswith('_')]
+                    content = ["~%s.%s" % (mod_path, func)
+                               for func in functions
+                               if not func.startswith('_')]
                     if self.content:
                         self.content += content
                     else:

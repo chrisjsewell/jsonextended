@@ -1,7 +1,8 @@
-from jsonextended import _example_data_folder
 import inspect
-import re
 import os
+import re
+import subprocess
+from jsonextended import _example_data_folder
 
 # python 2/3 compatibility
 try:
@@ -135,8 +136,6 @@ def _memory_usage_ps():
     True
 
     """
-    import subprocess
-    import os
     out = subprocess.Popen(
         ['ps', 'v', '-p', str(os.getpid())],
         stdout=subprocess.PIPE).communicate()[0].split(b'\n')
