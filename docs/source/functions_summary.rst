@@ -5,22 +5,22 @@ JSON Parsing
 ------------
 
 .. autofuncsummary:: jsonextended.ejson
-   :functions:  
+   :functions:
    :classes:
-   :nosignatures:    
+   :nosignatures:
 
 JSON/Dict Manipulation
------------------
+----------------------
 
 .. autofuncsummary:: jsonextended.edict
-   :functions:  
+   :functions:
    :classes:
-   :nosignatures:    
+   :nosignatures:
 
 Physical Units
 ------------------
 
 .. autofuncsummary:: jsonextended.units.core
-   :functions:  
+   :functions:
    :classes:
-   :nosignatures:    
+   :nosignatures:

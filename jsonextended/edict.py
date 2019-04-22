@@ -185,7 +185,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
 
     Parameters
     ----------
-    d : obj
+    d : object
     lvlindent : int
         additional indentation spaces for each level
     initindent : int
@@ -200,7 +200,7 @@ def pprint(d, lvlindent=2, initindent=0, delim=':',
         whether to print values
     align_vals : bool
         whether to align values for each level
-    print_func : func or None
+    print_func : callable or None
         function to print strings (print if None)
     keycolor : None or str
          if str, color keys by this color,
@@ -370,7 +370,7 @@ def extract(d, path=None):
     Parameters
     ----------
     d : dict
-    path : list of str
+    path : list[str]
         keys to section
 
     Returns
@@ -438,7 +438,7 @@ def flatten(d, key_as_tuple=True, sep='.', list_of_dicts=None, all_iters=None):
 
     Parameters
     ----------
-    d : obj
+    d : object
     key_as_tuple : bool
         whether keys are list of nested keys or delimited string of nested keys
     sep : str
@@ -691,7 +691,7 @@ def merge(dicts, overwrite=False, append=False, list_of_dicts=False):
 
     Parameters
     ----------
-    dicts : list
+    dicts : list[dict]
         list of dictionaries
     overwrite : bool
         if true allow overwriting of current data
@@ -945,7 +945,7 @@ def remove_keyvals(d, keyvals=None, list_of_dicts=False, deepcopy=True):
     Parameters
     ----------
     d : dict
-    keyvals : dict or list of tuples
+    keyvals : dict or list[tuple]
         (key,value) pairs to remove
     list_of_dicts: bool
         treat list of dicts as additional branches
@@ -1092,7 +1092,7 @@ def filter_keyvals(d, keyvals, logic="OR", keep_siblings=False,
     Parameters
     ----------
     d : dict
-    keyvals : dict or list of tuples
+    keyvals : dict or list[tuple]
         (key,value) pairs to filter by
     logic : str
         "OR" or "AND" for matching pairs
@@ -1185,7 +1185,7 @@ def filter_keyfuncs(d, keyfuncs, logic="OR", keep_siblings=False,
     Parameters
     ----------
     d : dict
-    keyfuncs : dict or list of tuples
+    keyfuncs : dict or list[tuple]
         (key,funcs) pairs to filter by
     logic : str
         "OR" or "AND" for matching pairs
@@ -1322,7 +1322,7 @@ def filter_paths(d, paths, list_of_dicts=False, deepcopy=True):
     Parameters
     ----------
     d : dict
-    paths : list of tuples/strs
+    paths : list[str] or list[tuple]
     list_of_dicts: bool
         treat list of dicts as additional branches
     deepcopy: bool
@@ -1401,10 +1401,11 @@ def split_key(d, key, new_keys, before=True,
 
     Parameters
     ----------
-    d : dict_like
-    key: any
+    d : dict
+        or dict like
+    key: str
         existing key value
-    new_keys: list of values
+    new_keys: list[str]
         new levels to add
     before: bool
         add level before existing key (else after)
@@ -1455,11 +1456,11 @@ def apply(d, leaf_key, func, new_name=None, remove_lkey=True,
     Parameters
     ----------
     d : dict
-    leaf_key : any
+    leaf_key : str
         name of leaf key
-    func : func
+    func : callable
         function to apply
-    new_name : any
+    new_name : str
         if not None, rename leaf_key
     remove_lkey: bool
         whether to remove original leaf_key (if new_name is not None)
@@ -1517,10 +1518,10 @@ def combine_apply(d, leaf_keys, func, new_name,
     d : dict
     leaf_keys : list
         names of leaf keys
-    func : func
+    func : callable
         function to apply,
         must take at least len(leaf_keys) arguments
-    new_name : any
+    new_name : str
         new key name
     unflatten_level : int or None
         the number of levels to leave unflattened before combining,
@@ -1670,9 +1671,11 @@ def split_lists(d, split_keys, new_name='split',
 
 
 def combine_lists(d, keys=None, deepcopy=True):
-    """ combine lists of dicts
+    """combine lists of dicts
 
-    d : dict or list of dicts
+    Parameters
+    ----------
+    d : dict or list[dict]
     keys : list
         keys to combine (all if None)
     deepcopy: bool
@@ -1729,8 +1732,8 @@ def list_to_dict(lst, key=None, remove_key=True):
 
     Parameters
     ----------
-    lst : list of dicts
-    key : any
+    lst : list[dict]
+    key : str or None
         a key contained by all of the dicts
         if None use index number string
     remove_key : bool
@@ -1772,8 +1775,8 @@ def diff(new_dict, old_dict, iter_prefix='__iter__',
 
     Parameters
     ----------
-    new_dict: dict_like
-    old_dict: dict_like
+    new_dict: dict
+    old_dict: dict
     iter_prefix: str
         prefix to use for list and tuple indexes
     np_allclose: bool
@@ -2162,16 +2165,16 @@ class LazyLoad(object):
 
     Parameters
     ----------
-    obj : dict, string, file_like
-        object
-    ignore_regexes : list of str
+    obj: dict or str or object
+        file like object or path to file
+    ignore_regexes : list[str]
         ignore files and folders matching these regexes
-        (can contain *, ? and [] wildcards)
-    recursive : bool
+        (can contain \*, ? and [] wildcards)
+    recursive: bool
         if True, load subdirectories
-    parent : obj
+    parent : object
          the parent object of this instance
-    key_paths : bool
+    key_paths: bool
         indicates if the keys of the object can be resolved as file/folder
         paths (to ensure strings do not get unintentionally treated as paths)
     list_of_dicts: bool
@@ -2180,7 +2183,7 @@ class LazyLoad(object):
         if True, if parsing a file fails then an IOError will be raised
         if False, if parsing a file fails then only a logging.error will be
         made and the value will be returned as None
-    parser_kwargs : keywords or dict
+    parser_kwargs: dict
         additional keywords for parser plugins read_file method,
         (loaded decoder plugins are parsed by default)
 

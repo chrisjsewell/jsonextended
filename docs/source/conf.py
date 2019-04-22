@@ -48,12 +48,13 @@ with open('releases.rst', 'w') as f:
         header = True
         for minor in sorted(list(ordered_releases[major].keys())):
             rel = ordered_releases[major][minor]
-            f.write(' '.join([rel['version'], '-', rel['header'], '\n']))
+            title_text = ' '.join([rel['version'], '-', rel['header'], '\n'])
+            f.write(title_text)
             if header:
-                f.write('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+                f.write('~' * len(title_text))
                 header = False
             else:
-                f.write('++++++++++++++++++++++++++++++++++++++++++')
+                f.write('+' * len(title_text))
             f.write('\n')
             for line in rel['body'].split('\n'):
                 f.write(' '.join([line, '\n']))
@@ -210,6 +211,16 @@ napoleon_use_admonition_for_references = False
 napoleon_use_ivar = True
 napoleon_use_param = True
 napoleon_use_rtype = True
+
+nitpick_ignore = [
+    ("py:class", "file_like"),
+    ("py:class", "path_like"),
+    ("py:class", "callable"),
+    ("py:class", "type_class"),
+    ("py:class", "numpy.ndarray"),
+    ("py:class", "pint.quantity._Quantity"),
+    ("py:class", "builtins.set"),
+    ]
 
 
 # adapted from:

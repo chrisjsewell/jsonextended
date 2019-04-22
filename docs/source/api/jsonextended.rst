@@ -1,4 +1,4 @@
-Package API
+jsonextended package
 ====================
 
 Subpackages
@@ -6,14 +6,21 @@ Subpackages
 
 .. toctree::
 
-    jsonextended.edict
-    jsonextended.ejson
-    jsonextended.plugins
     jsonextended.encoders
     jsonextended.parsers
     jsonextended.units
-    jsonextended.mockpath
-    jsonextended.utils
+
+Submodules
+----------
+
+.. toctree::
+
+   jsonextended.edict
+   jsonextended.ejson
+   jsonextended.example_mockpaths
+   jsonextended.mockpath
+   jsonextended.plugins
+   jsonextended.utils
 
 Module contents
 ---------------

@@ -320,7 +320,7 @@ def load_plugins_dir(path, category=None, overwrite=False):
 
     Parameters
     ----------
-    path : str or path-like
+    path : str or path_like
     category : None or str
         if str, apply for single plugin category
     overwrite : bool
@@ -543,7 +543,7 @@ def parse(fpath, **kwargs):
     fpath : file_like
          string, object with 'open' and 'name' attributes, or
          object with 'readline' and 'name' attributes
-    kwargs : keywords
+    kwargs :
         to pass to parser plugin
 
     Examples

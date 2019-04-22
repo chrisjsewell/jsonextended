@@ -7,6 +7,7 @@ Submodules
 .. toctree::
 
    jsonextended.encoders.decimals
+   jsonextended.encoders.fraction
    jsonextended.encoders.ndarray
    jsonextended.encoders.pint_quantity
    jsonextended.encoders.set

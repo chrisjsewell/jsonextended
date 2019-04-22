@@ -12,6 +12,7 @@ Submodules
    jsonextended.parsers.ipynb
    jsonextended.parsers.jsons
    jsonextended.parsers.keypairs
+   jsonextended.parsers.yaml
 
 Module contents
 ---------------

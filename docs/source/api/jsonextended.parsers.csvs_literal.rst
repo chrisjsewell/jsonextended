@@ -1,5 +1,5 @@
-jsonextended.parsers.csvs_literal module
-========================================
+jsonextended.parsers.csvs\_literal module
+=========================================
 
 .. automodule:: jsonextended.parsers.csvs_literal
     :members:

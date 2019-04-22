@@ -1,5 +1,5 @@
-jsonextended.encoders.pint_quantity module
-==========================================
+jsonextended.encoders.pint\_quantity module
+===========================================
 
 .. automodule:: jsonextended.encoders.pint_quantity
     :members:

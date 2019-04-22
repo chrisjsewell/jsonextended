@@ -182,8 +182,8 @@ class MockPath(object):
     >>> list(dir_obj.glob("**/*"))
     [MockFolder("root/dir1"), MockFolder("root/dir1/subdir"), MockFile("root/dir1/subdir/test.txt"), MockFile("root/dir1/test.txt"), MockFolder("root/dir2"), MockFile("root/dir2/test.txt"), MockFile("root/test.txt")]
 
-    #>>> list(dir_obj.glob("**/dir1"))
-    #[MockFolder("root/dir1")]
+    # >>> list(dir_obj.glob("\*\*/dir1"))
+    # [MockFolder("root/dir1")]
 
     >>> new = dir_obj.joinpath('dir3')
     >>> new.mkdir()
@@ -810,7 +810,8 @@ class MockPath(object):
 
         Parameters
         ----------
-        source: str, file_obj, pathlib.Path or MockPath
+        source: str or pathlib.Path or MockPath
+            any file like object or path to a file
 
         Returns
         -------

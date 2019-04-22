@@ -143,12 +143,12 @@ def jkeys(jfile, key_path=None, in_memory=True, ignore_prefix=('.', '_')):
         if str, must be existing file or folder,
         if file_like, must have 'read' method
         if path_like, must have 'iterdir' method (see pathlib.Path)
-    key_path : list of str
+    key_path : list[str]
         a list of keys to index into the json before returning keys
     in_memory : bool
         if true reads json into memory before finding keys
         (this is faster but uses more memory)
-    ignore_prefix : list of str
+    ignore_prefix : list[str]
         ignore folders beginning with these prefixes
 
     Examples
@@ -218,7 +218,7 @@ def _file_with_keys(file_obj, key_path=None, parse_decimal=False):
     ----------
     file_obj : object
         object with read method
-    key_path : list of str
+    key_path : list[str]
         key to index befor parsing
     parse_decimal : bool
         whether to parse numbers as Decimal instances (retains exact precision)
@@ -339,12 +339,12 @@ def to_dict(jfile, key_path=None, in_memory=True,
         if str, must be existing file or folder,
         if file_like, must have 'read' method
         if path_like, must have 'iterdir' method (see pathlib.Path)
-    key_path : list of str
+    key_path : list[str]
         a list of keys to index into the json before parsing it
     in_memory : bool
         if true reads full json into memory before filtering keys
         (this is faster but uses more memory)
-    ignore_prefix : list of str
+    ignore_prefix : list[str]
         ignore folders beginning with these prefixes
     parse_decimal : bool
         whether to parse numbers as Decimal instances (retains exact precision)

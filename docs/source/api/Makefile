@@ -1,1 +1,1 @@
-sphinx-apidoc --force --separate -o . ../../../../jsonextended/
+sphinx-apidoc --force --separate -o . ../../../ ../../../setup.py

@@ -2,44 +2,50 @@ language: python
 
 matrix:
   include:
-  - python: 2.7
-  - python: 3.4
-  - python: 3.5
   - python: 3.6
+    env: TEST_TYPE="flake8"
+  # - env: TEST_TYPE="rtd"
+  - python: 2.7
+    env: TEST_TYPE="pytest"
+  - python: 3.4
+    env: TEST_TYPE="pytest"
+  - python: 3.5
+    env: TEST_TYPE="pytest"
+  - python: 3.6
+    env: TEST_TYPE="pytest" PYPI_DEPLOY=true
   - python: 3.7
+    env: TEST_TYPE="pytest"
   allow_failures:
   - python: 3.4
+    env: TEST_TYPE="pytest"
   - python: 3.5
+    env: TEST_TYPE="pytest"
 
 before_install:
   - pip install -U pip setuptools wheel
 
 install:
-  - travis_wait pip install -r requirements.txt
-  - pip install -r test_requirements.txt
-  - pip install .
-  - pip install --quiet coverage
-  - pip install --quiet coveralls
+  - |
+    if [[ "$TEST_TYPE" == "pytest" ]]; then
+      travis_wait pip install -r requirements.txt
+      pip install -r test_requirements.txt
+      travis_wait pip install .
+      pip install --quiet coverage
+      pip install --quiet coveralls
+    fi
+  - |
+    if [[ "$TEST_TYPE" == "flake8" ]]; then
+      pip install "flake8(>=3.7,<3.8)"
+    fi
 
 script:
-  - pytest -v --cov=jsonextended --cov-report= jsonextended
+- if [[ "$TEST_TYPE" == "pytest" ]]; then pytest -v --cov=jsonextended --cov-report= jsonextended ; fi
+- if [[ "$TEST_TYPE" == "flake8" ]]; then flake8 . ; fi
 
 after_success:
-  - coveralls
+  - if [[ "$TEST_TYPE" == "pytest" ]]; then coveralls ; fi
 
 deploy:
-    # test pypi
-#  - provider: pypi
-#    distributions: bdist_wheel
-#    server: https://test.pypi.org/legacy/
-#    user: cjsewell
-#    password:
-#      secure: aC73JgjVXqRB2OX9ut8mv3HnUYMGuFzBZjFa6ZxWA/4WYLP5hyfEAP6w2kW4Thspbo7B4X/chMBb3DzsO2q8XDLmiEcCy6wyt8LYGxgEXrg6t+SvwbkvsyHCr2aCO5K6a0qL3Hd2B/y/+APT3c2vPho6AYjEkGhUQmzIT3yCo6Ss3E++LdhudY7qbxno896IeymAsawUCtSOD1f2KREy0GtzuyUitqyaf5J6rSmENQwj1rIl+wzPI4tILgL3CIfAO9JE2xygvWP7s2lWYy+Ln/o+CjjiLsmhGYy8CcIIDQ8VSyOh/UT0T7IVyEMpHLY2twdjLMH4NUA6EpEKFxDosah8Zmsl0gzgkE1VZF+ARuOZQcMyRFCDOFHILDpAPTKrj7qMj+ZCq2AoZmGy4H7eEDYXNdPRwUonF4ofhsr6ZyRUK5UtQhWXXrvx/nDqwDIWo7G1U5ZBy5DSO4OWa2VIgbhOiubWmmx6epbAV6gsR8i1R5obB0sB7AU2HVeuBCeWZnwNklBG4gTbxNbdNRVp5KcKVm9rHU/w+ZHBI/Q2Acb9+JlhQlnOyWUm0Vq+53cM+BZLLxFRw4Jc5XL+fU8PlzI3nFWnsI1Z+hXeJG5EmG/BchCHinTzE55NeryDtXzAQPI/KSuOfJTYemvz5bwEXiQEpSJYXG9hvmMI3h1a7x0=
-#    on:
-#      branch: master
-#      tags: false
-#      condition: $TRAVIS_PYTHON_VERSION = "3.6"
-     # production pypi
   - provider: pypi
     distributions: "sdist bdist_wheel"
     user: "cjsewell"
@@ -48,4 +54,4 @@ deploy:
     on:
       branch: master
       tags: true
-      condition: $TRAVIS_PYTHON_VERSION = "3.6"
+      condition: $PYPI_DEPLOY = true
