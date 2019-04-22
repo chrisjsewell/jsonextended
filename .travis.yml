@@ -4,7 +4,8 @@ matrix:
   include:
   - python: 3.6
     env: TEST_TYPE="flake8"
-  - env: TEST_TYPE="rtd"
+  - python: 3.6
+    env: TEST_TYPE="rtd"
   - python: 2.7
     env: TEST_TYPE="pytest"
   - python: 3.4
@@ -25,8 +26,7 @@ before_install:
 install:
   - |
     if [[ "$TEST_TYPE" == "pytest" ]]; then
-      travis_wait pip install -r requirements.txt
-      pip install -r test_requirements.txt
+      travis_wait pip install -r test_requirements.txt
       travis_wait pip install .
       pip install --quiet coverage
       pip install --quiet coveralls
@@ -37,6 +37,8 @@ install:
     fi
   - |
     if [[ "$TEST_TYPE" == "rtd" ]]; then
+      travis_wait pip install -r test_requirements.txt
+      travis_wait pip install .
       pip install sphinx
     fi
 
