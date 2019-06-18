@@ -15,9 +15,11 @@ from jsonextended.edict import flatten, flatten2d, unflatten, merge
 def get_in_units(value, units):
     """get a value in the required units """
     try:
-        return ureg.Quantity(value, units)
-    except NameError:
+        from pint import UnitRegistry
+        ureg = UnitRegistry()
+    except ImportError:
         raise ImportError('please install pint to use this module')
+    return ureg.Quantity(value, units)
 
 
 def apply_unitschema(data, uschema, as_quantity=True,
