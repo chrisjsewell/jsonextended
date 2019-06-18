@@ -3,7 +3,7 @@
     "python.testing.pyTestEnabled": true,
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.pythonPath": "/anaconda/envs/lsr/bin/python",
+    "python.pythonPath": "/anaconda/envs/aiida-workshop/bin/python",
     "python.linting.pylintEnabled": false,
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true

@@ -16,49 +16,21 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+import inspect
+import json
 import os
 import sys
 import urllib
-import json
+from types import FunctionType
+
+from sphinx.ext.autosummary import Autosummary
+# from sphinx.ext.autosummary import get_documenter
+from docutils.parsers.rst import directives
+# from sphinx.util.inspect import safe_getattr
 
 # sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../..'))
 import jsonextended  # noqa: E402
-
-git_history = urllib.request.urlopen(
-    'https://api.github.com/repos/chrisjsewell/jsonextended/releases')
-git_history = git_history.read().decode('utf-8')
-git_history_json = json.loads(git_history)
-
-ordered_releases = {}
-for rel in git_history_json:
-    rversion = rel['tag_name'].replace("v", "").split(".") + ["0"]
-    major = float(".".join(rversion[0:2]))
-    minor = float(".".join(rversion[2:4]))
-    if major not in ordered_releases:
-        ordered_releases[major] = {}
-    ordered_releases[major][minor] = {
-        "version": rel['tag_name'], "header": rel['name'], "body": rel["body"]}
-
-with open('releases.rst', 'w') as f:
-    f.write('Releases\n')
-    f.write('---------\n')
-    f.write('\n')
-    for major in reversed(sorted(list(ordered_releases.keys()))):
-        header = True
-        for minor in sorted(list(ordered_releases[major].keys())):
-            rel = ordered_releases[major][minor]
-            title_text = ' '.join([rel['version'], '-', rel['header'], '\n'])
-            f.write(title_text)
-            if header:
-                f.write('~' * len(title_text))
-                header = False
-            else:
-                f.write('+' * len(title_text))
-            f.write('\n')
-            for line in rel['body'].split('\n'):
-                f.write(' '.join([line, '\n']))
-            f.write('\n')
 
 # -- General configuration ------------------------------------------------
 
@@ -220,84 +192,121 @@ nitpick_ignore = [
     ("py:class", "numpy.ndarray"),
     ("py:class", "pint.quantity._Quantity"),
     ("py:class", "builtins.set"),
-    ]
+]
 
 
-# adapted from:
-# https://github.com/markovmodel/PyEMMA/blob/devel/doc/source/conf.py#L285
-# and discussed here:
-# https://stackoverflow.com/questions/20569011/python-sphinx-autosummary-automated-listing-of-member-functions
+def create_releases_page():
+    try:
+        git_history = urllib.request.urlopen(
+            'https://api.github.com/repos/chrisjsewell/jsonextended/releases')
+    except urllib.error.HTTPError:
+        return
+    git_history = git_history.read().decode('utf-8')
+    git_history_json = json.loads(git_history)
+
+    ordered_releases = {}
+    for rel in git_history_json:
+        rversion = rel['tag_name'].replace("v", "").split(".") + ["0"]
+        major = float(".".join(rversion[0:2]))
+        minor = float(".".join(rversion[2:4]))
+        if major not in ordered_releases:
+            ordered_releases[major] = {}
+        ordered_releases[major][minor] = {
+            "version": rel['tag_name'],
+            "header": rel['name'],
+            "body": rel["body"]}
+
+    with open('releases.rst', 'w') as f:
+        f.write('Releases\n')
+        f.write('---------\n')
+        f.write('\n')
+        for major in reversed(sorted(list(ordered_releases.keys()))):
+            header = True
+            for minor in sorted(list(ordered_releases[major].keys())):
+                rel = ordered_releases[major][minor]
+                title_text = ' '.join(
+                    [rel['version'], '-', rel['header'], '\n'])
+                f.write(title_text)
+                if header:
+                    f.write('~' * len(title_text))
+                    header = False
+                else:
+                    f.write('+' * len(title_text))
+                f.write('\n')
+                for line in rel['body'].split('\n'):
+                    f.write(' '.join([line, '\n']))
+                f.write('\n')
+
+
+create_releases_page()
+
+
+class AutoFunctionSummary(Autosummary):
+    """
+    adapted from:
+    https://github.com/markovmodel/PyEMMA/blob/devel/doc/source/conf.py#L285
+    and discussed here:
+    https://stackoverflow.com/questions/20569011/python-sphinx-autosummary-automated-listing-of-member-functions
+
+    """
+    option_spec = {
+        'functions': directives.unchanged,
+        'classes': directives.unchanged,
+        'toctree': directives.unchanged,
+        'nosignatures': directives.unchanged
+    }
+
+    required_arguments = 1
+
+    @staticmethod
+    def get_functions(mod):
+
+        def is_function_local(obj):
+            return (isinstance(obj, FunctionType)
+                    and obj.__module__ == mod.__name__)
+
+        members = inspect.getmembers(mod, predicate=is_function_local)
+        return [name for name, value in members
+                if not name.startswith('_')]
+
+    @staticmethod
+    def get_classes(mod):
+
+        def is_class_local(obj):
+            return (inspect.isclass(obj)
+                    and obj.__module__ == mod.__name__)
+
+        members = inspect.getmembers(mod, predicate=is_class_local)
+        return [name for name, value in members
+                if not name.startswith('_')]
+
+    def run(self):
+
+        mod_path = self.arguments[0]
+
+        (package_name, mod_name) = mod_path.rsplit('.', 1)
+        pkg = __import__(package_name, globals(), locals(), [mod_name])
+        mod = getattr(pkg, mod_name)
+
+        if 'classes' in self.options:
+            klasses = self.get_classes(mod)
+            self.content = ["~%s.%s" % (
+                mod_path, klass) for klass in klasses
+                if not klass.startswith('_')]
+        if 'functions' in self.options:
+            functions = self.get_functions(mod)
+            content = ["~%s.%s" % (mod_path, func) for func in functions
+                       if not func.startswith('_')]
+            if self.content:
+                self.content += content
+            else:
+                self.content = content
+        try:
+            pass
+        finally:
+            return super(AutoFunctionSummary, self).run()
+
+
 def setup(app):
     # app.connect('autodoc-skip-member', skip_deprecated)
-    try:
-        from sphinx.ext.autosummary import Autosummary
-        # from sphinx.ext.autosummary import get_documenter
-        from docutils.parsers.rst import directives
-        # from sphinx.util.inspect import safe_getattr
-        # import re
-        import inspect
-        from types import FunctionType
-
-        class AutoFunctionSummary(Autosummary):
-
-            option_spec = {
-                'functions': directives.unchanged,
-                'classes': directives.unchanged,
-                'toctree': directives.unchanged,
-                'nosignatures': directives.unchanged
-            }
-
-            required_arguments = 1
-
-            @staticmethod
-            def get_functions(mod):
-
-                def is_function_local(obj):
-                    return (isinstance(obj, FunctionType)
-                            and obj.__module__ == mod.__name__)
-
-                members = inspect.getmembers(mod, predicate=is_function_local)
-                return [name for name, value in members
-                        if not name.startswith('_')]
-
-            @staticmethod
-            def get_classes(mod):
-
-                def is_class_local(obj):
-                    return (inspect.isclass(obj)
-                            and obj.__module__ == mod.__name__)
-
-                members = inspect.getmembers(mod, predicate=is_class_local)
-                return [name for name, value in members
-                        if not name.startswith('_')]
-
-            def run(self):
-
-                mod_path = self.arguments[0]
-
-                (package_name, mod_name) = mod_path.rsplit('.', 1)
-                pkg = __import__(package_name, globals(), locals(), [mod_name])
-                mod = getattr(pkg, mod_name)
-
-                if 'classes' in self.options:
-                    klasses = self.get_classes(mod)
-                    self.content = ["~%s.%s" % (
-                        mod_path, klass) for klass in klasses
-                        if not klass.startswith('_')]
-                if 'functions' in self.options:
-                    functions = self.get_functions(mod)
-                    content = ["~%s.%s" % (mod_path, func)
-                               for func in functions
-                               if not func.startswith('_')]
-                    if self.content:
-                        self.content += content
-                    else:
-                        self.content = content
-                try:
-                    pass
-                finally:
-                    return super(AutoFunctionSummary, self).run()
-
-        app.add_directive('autofuncsummary', AutoFunctionSummary)
-    except BaseException as e:
-        raise e
+    app.add_directive('autofuncsummary', AutoFunctionSummary)
